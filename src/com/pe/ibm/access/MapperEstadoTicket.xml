@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+ 
+ 
+ 	<mapper namespace="com.pe.ibm.access.MapperEstadoTicket">
+  
+	<resultMap id="resultadoConsultaFecha" type="com.pe.ibm.bean.BeanTicketStatus">
+		 <result property="changedate" column="1"/>
+	</resultMap>
+	
+	<select id="consultaFechaInicioTiempoEsc" parameterType="String" resultMap="resultadoConsultaFecha">
+ 	SELECT MIN(t.CHANGEDATE)
+    FROM MOBILITY.TKSTATUS AS t
+    WHERE t.TICKETID = #{idticket} 
+    AND t.STATUS IN ('QUEUED')
+    AND (t.OWNERGROUP LIKE 'I-SDD-PE%' OR t.OWNERGROUP LIKE 'I-DCS-PE%')
+    AND  t.CHANGEDATE <![CDATA[<=]]> (SELECT MIN(t2.CHANGEDATE) 
+    FROM MOBILITY.TKSTATUS AS t2
+    WHERE t2.TICKETID = #{idticket}
+<!--     AND t2.STATUS LIKE ('QUEUED') -->
+    AND (t2.OWNERGROUP LIKE 'I-DCS-PE%'))
+    AND NOT EXISTS(SELECT t1.CHANGEDATE FROM MOBILITY.TKSTATUS AS t1 
+    WHERE t1.TICKETID LIKE #{idticket} 
+    AND (t1.OWNERGROUP NOT LIKE 'I-SDD-PE%' AND t1.OWNERGROUP NOT LIKE 'I-DCS-PE%'))
+    </select>
+    
+     <select id="consultaFechaFinTiempoEsc" parameterType="String" resultMap="resultadoConsultaFecha">
+
+		SELECT 
+		MIN(t.CHANGEDATE)
+	    FROM MOBILITY.TKSTATUS AS t
+	    WHERE t.TICKETID = #{idticket}
+	    AND (t.OWNERGROUP LIKE 'I-DCS-PE%')
+	    AND NOT EXISTS (SELECT t1.CHANGEDATE FROM MOBILITY.TKSTATUS AS t1 
+	    WHERE t1.TICKETID = #{idticket} AND (t1.OWNERGROUP NOT LIKE 'I-SDD-PE%' AND t1.OWNERGROUP NOT LIKE 'I-DCS-PE%'))
+	    AND t.CHANGEDATE >= (SELECT MIN(t2.CHANGEDATE) 
+	    FROM MOBILITY.TKSTATUS AS t2
+	    WHERE t2.TICKETID = #{idticket}
+	    AND t2.STATUS IN ('QUEUED')
+	    AND (t2.OWNERGROUP LIKE 'I-SDD-PE%' OR t.OWNERGROUP LIKE 'I-DCS-PE%')) 
+    </select>
+	
+
+ 	 <select id="consultaFechaInicioTiempoRpta" parameterType="String" resultMap="resultadoConsultaFecha">
+ 		SELECT MIN(t.CHANGEDATE)
+	    FROM MOBILITY.TKSTATUS AS t
+	    WHERE t.TICKETID = #{idticket} 
+	    AND (t.OWNERGROUP LIKE 'I-DCS-PE%')
+	    AND  t.CHANGEDATE <![CDATA[<=]]>  (SELECT MIN(t2.CHANGEDATE) 
+	    FROM MOBILITY.TKSTATUS AS t2
+	    WHERE t2.TICKETID = #{idticket} 
+	    AND (t2.STATUS IN ('INPROG'))
+	    AND (t2.OWNERGROUP LIKE 'I-DCS-PE%'))
+	    AND NOT EXISTS(SELECT t1.CHANGEDATE FROM MOBILITY.TKSTATUS AS t1 
+	    WHERE t1.TICKETID LIKE #{idticket} 
+	    AND (t1.OWNERGROUP NOT LIKE 'I-SDD-PE%' AND t1.OWNERGROUP NOT LIKE 'I-DCS-PE%'))
+ 	
+ 	</select>
+	
+ 	 <select id="consultaFechaInicioTiempoRptaBacklog" parameterType="String" resultMap="resultadoConsultaFecha">
+ 		SELECT MIN(t.CHANGEDATE)
+	    FROM MOBILITY.TKSTATUS AS t
+	    WHERE t.TICKETID = #{idticket} 
+	    AND (t.OWNERGROUP LIKE 'I-DCS-PE%')
+	    AND NOT EXISTS(SELECT t1.CHANGEDATE FROM MOBILITY.TKSTATUS AS t1 
+	    WHERE t1.TICKETID LIKE #{idticket} 
+	    AND (t1.OWNERGROUP NOT LIKE 'I-SDD-PE%' AND t1.OWNERGROUP NOT LIKE 'I-DCS-PE%'))
+ 	
+    </select>
+    
+    <select id="consultaFechaFinTiempoRpta" parameterType="String" resultMap="resultadoConsultaFecha">
+     	SELECT 
+	    MIN(t.CHANGEDATE)
+	    FROM MOBILITY.TKSTATUS AS t
+	    WHERE t.TICKETID = #{idticket}
+	    AND (t.OWNERGROUP LIKE 'I-DCS-PE%')
+	    AND (t.STATUS IN ('INPROG'))
+	    AND NOT EXISTS (SELECT t1.CHANGEDATE FROM MOBILITY.TKSTATUS AS t1 
+	    WHERE t1.TICKETID = #{idticket} AND (t1.OWNERGROUP NOT LIKE 'I-SDD-PE%' AND t1.OWNERGROUP NOT LIKE 'I-DCS-PE%'))
+	   
+    </select>
+    
+    <select id="consultaFechaInicioTiempoSol" parameterType="String" resultMap="resultadoConsultaFecha">
+ 		SELECT MIN(t.CHANGEDATE)
+	    FROM MOBILITY.TKSTATUS AS t
+	    WHERE t.TICKETID = #{idticket}
+	    AND t.STATUS IN ('INPROG')
+	    AND (t.OWNERGROUP LIKE 'I-DCS-PE%')
+	    AND  t.CHANGEDATE <![CDATA[<=]]>  (SELECT MIN(t2.CHANGEDATE) 
+	    FROM MOBILITY.TKSTATUS AS t2
+	    WHERE t2.TICKETID = #{idticket} 
+	    AND (t2.STATUS IN ('RESOLVED'))
+	    AND (t2.OWNERGROUP LIKE 'I-DCS-PE%'))
+	    AND NOT EXISTS (SELECT t1.CHANGEDATE FROM MOBILITY.TKSTATUS AS t1 
+	    WHERE t1.TICKETID = #{idticket} AND (t1.OWNERGROUP NOT LIKE 'I-SDD-PE%' AND t1.OWNERGROUP NOT LIKE 'I-DCS-PE%'))
+ 	</select>
+	
+ 	 <select id="consultaFechaInicioTiempoSolBacklog" parameterType="String" resultMap="resultadoConsultaFecha">
+ 		SELECT MIN(t.CHANGEDATE)
+	    FROM MOBILITY.TKSTATUS AS t
+	    WHERE t.TICKETID = #{idticket}
+	    AND t.STATUS IN ('INPROG')
+	    AND (t.OWNERGROUP LIKE 'I-DCS-PE%')
+	    AND NOT EXISTS (SELECT t1.CHANGEDATE FROM MOBILITY.TKSTATUS AS t1 
+	    WHERE t1.TICKETID = #{idticket} AND (t1.OWNERGROUP NOT LIKE 'I-SDD-PE%' AND t1.OWNERGROUP NOT LIKE 'I-DCS-PE%'))
+    </select>
+    
+    <select id="consultaFechaFinTiempoSolucion" parameterType="String" resultMap="resultadoConsultaFecha">
+     	SELECT MAX(t.CHANGEDATE)
+	    FROM MOBILITY.TKSTATUS AS t
+	    WHERE t.TICKETID = #{idticket}
+	    AND t.STATUS IN ('RESOLVED')
+	    AND (t.OWNERGROUP LIKE 'I-DCS-PE%')
+	    AND NOT EXISTS (SELECT t1.CHANGEDATE FROM MOBILITY.TKSTATUS AS t1 
+	    WHERE t1.TICKETID = #{idticket} AND (t1.OWNERGROUP NOT LIKE 'I-SDD-PE%' AND t1.OWNERGROUP NOT LIKE 'I-DCS-PE%'))
+    </select>
+    
+    
+    
+    
+    <resultMap id="resultadoConsultaEstado" type="com.pe.ibm.bean.BeanTicketStatus">
+    	 <result property="ticketid" column="TICKETID"/>
+    	 <result property="clase" column="CLASS"/>
+ 		 <result property="estado" column="STATUS"/>
+ 		 <result property="ownergroup" column="OWNERGROUP"/>
+		 <result property="changedate" column="CHANGEDATE"/>
+	</resultMap>
+    <select id="consultaEstadosTicket" parameterType="com.pe.ibm.bean.BeanTicketStatus" resultMap="resultadoConsultaEstado">
+	SELECT STATUS, CHANGEDATE 
+	FROM MOBILITY.TKSTATUS 
+	WHERE TICKETID = #{idticket} 
+	AND CHANGEDATE BETWEEN #{fechaInicio} AND #{fechaFin}
+	ORDER BY TKSTATUSID
+    </select>  
+    <select id="consultaEstadosTicketBacklogDCS"  parameterType="com.pe.ibm.bean.BeanMaximo"  resultMap="resultadoConsultaEstado">
+     	SELECT t.TICKETID, t.CLASS, t.STATUS, t.CHANGEDATE, t.OWNERGROUP
+	    FROM MOBILITY.TKSTATUS AS t
+<!-- 	    WHERE t.TICKETID IN ('SR2787032','SR2790683','IN1961965') -->
+	    WHERE t.TICKETID IN (${idTicket})
+<!-- 		WHERE t.TICKETID IN  -->
+<!-- 		<foreach collection="list" index="index" item="item" open="(" close=")"  separator="," >   -->
+<!--         ${item.ticketid}  -->
+<!--     	</foreach>  -->
+	    AND NOT EXISTS(SELECT t1.CHANGEDATE FROM MOBILITY.TKSTATUS AS t1 
+	    WHERE t1.TICKETID = t.TICKETID
+	    AND (t1.OWNERGROUP NOT LIKE 'I-SDD-PE%' AND t1.OWNERGROUP NOT LIKE 'I-DCS-PE%'))
+		ORDER BY  t.TICKETID, t.CHANGEDATE
+    </select>
+</mapper>

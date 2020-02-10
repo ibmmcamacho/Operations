@@ -1,0 +1,173 @@
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="perfil">
+
+	<resultMap id="resultPerfil" type="com.pe.ibm.bean.BeanPerfil">
+		<result property="iIdPerfil" column="IDPERFIL" />
+		<result property="strDescripcion" column="DESCRIPCION" />
+		<result property="iEstado" column="ESTADO" />
+	</resultMap>
+
+	<select id="getPerfil" parameterType="com.pe.ibm.bean.BeanPerfil" resultMap="resultPerfil">
+		
+		SELECT 
+			IDPERFIL,
+			DESCRIPCION
+			
+		FROM 
+			OPERACION.PERFIL 
+		WHERE 			
+			 <if test='iTeam != 0'>
+   				IDTEAM = #{iTeam} AND
+             </if>
+             
+          ESTADO = 1 AND DESCRIPCION IS NOT NULL ORDER BY DESCRIPCION
+             
+	</select>
+	
+	
+	
+	<resultMap id="resultCboPerfilDet" type="com.pe.ibm.bean.BeanPerfilDet">
+		<result property="iIdPerfilDet" column="IDPERFILDET" />
+		<result property="strDescripcion" column="DESCRIPCION" />
+		
+	</resultMap>
+	
+	
+	<select id="getCboPerfilDet" parameterType="com.pe.ibm.bean.BeanPerfilDet" resultMap="resultCboPerfilDet">
+			SELECT DISTINCT 
+     			DESCRIPCION 
+     		FROM 
+     			OPERACION.PERFILDET
+ 			WHERE NOT
+     			IDPERFIL = #{IdPerfil} 	
+	 		AND         
+				ESTADO = 1 				
+			AND 
+				DESCRIPCION IS NOT NULL 
+	</select>
+	
+	
+	<!-- LISTAR PERFILDETALLE -->
+	<resultMap id="resultListPerfilDet" type="com.pe.ibm.bean.BeanPerfilDet">
+		<result property="iIdPerfilDet" column="IDPERFILDET" />		
+		<result property="strDescripcion" column="DESCRIPCION" />
+		<result property="url" column="URL" />
+		<result property="iconizq" column="ICONIZQ" />
+		<result property="iconder" column="ICONDER" />
+		<result property="nivel" column="NIVEL" />
+		<result property="orden" column="ORDEN" />		
+	</resultMap>
+
+	<select id="getlistPerfilDet" parameterType="com.pe.ibm.bean.BeanPerfilDet" resultMap="resultListPerfilDet">
+		SELECT 
+			IDPERFILDET,
+			DESCRIPCION,
+			URL,
+			ICONIZQ,
+			ICONDER,
+			NIVEL,
+			ORDEN			
+		FROM OPERACION.PERFILDET 			
+		WHERE	
+		
+		IDPERFIL = #{IdPerfil} AND 
+		ESTADO = 1 AND 
+		DESCRIPCION IS NOT NULL  
+		
+		ORDER BY 
+			ORDEN 
+		ASC
+		
+	</select>
+	<!-- FIN LISTAR PERFILDETALLE -->
+	
+	<!-- GUARDAR ,ACTUALIZAR, ELIMINAR PERFILDETALLE -->
+	
+	<insert id="savePerfil" parameterType="com.pe.ibm.bean.BeanPerfil">
+		INSERT INTO OPERACION.PERFIL(DESCRIPCION,IDTEAM)
+			VALUES(
+			#{strDescripcion},
+			#{iTeam})
+	</insert>
+	
+	<update id="updatePerfil" parameterType="com.pe.ibm.bean.BeanPerfil">
+		UPDATE OPERACION.PERFIL SET
+			DESCRIPCION = #{strDescripcion},
+			IDTEAM = #{iTeam}
+		WHERE
+			IDPERFIL = #{iIdPerfil}
+	</update>
+	
+	<update id="deletePerfil" parameterType="com.pe.ibm.bean.BeanPerfil">
+		UPDATE OPERACION.PERFIL SET 			
+			ESTADO = 0
+		WHERE 
+			IDPERFIL = #{iIdPerfil}
+	</update>
+	
+	
+	
+	
+	
+	<insert id="savePerfilDet" parameterType="com.pe.ibm.bean.BeanPerfilDet">
+		INSERT INTO OPERACION.PERFILDET(IDPERFIL,DESCRIPCION,URL,ICONIZQ,ICONDER,NIVEL,ORDEN)
+			VALUES(
+			#{IdPerfil},
+			#{strDescripcion},
+			#{url},
+			#{iconizq},
+			#{iconder},
+			#{nivel},
+			#{orden})
+		
+	</insert>
+
+	<update id="updatePerfilDet" parameterType="com.pe.ibm.bean.BeanPerfilDet">
+		UPDATE OPERACION.PERFILDET SET 
+			DESCRIPCION = #{strDescripcion},
+			URL = #{url},			
+			ICONIZQ = #{iconizq},
+			ICONDER = #{iconder},
+			NIVEL = #{nivel},
+			ORDEN = #{orden}			
+		WHERE 
+			IDPERFILDET = #{iIdPerfilDet}
+	</update>
+	
+	<update id="deletePerfilDet" parameterType="com.pe.ibm.bean.BeanPerfilDet">
+		UPDATE OPERACION.PERFILDET SET 			
+			ESTADO = 0			
+		WHERE 
+			IDPERFILDET = #{iIdPerfilDet}
+	</update>
+	
+	<!-- GUARDAR ,ACTUALIZAR, ELIMINAR PERFILDETALLE -->
+	
+	
+	
+	<resultMap id="resultusergrade" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="strValor1" column="NOMBRE" />
+		<result property="strValor2" column="EMAIL" />
+		<result property="strValor3" column="GRADO" />
+	</resultMap>
+	
+	<select id="usergrade" resultMap="resultusergrade" parameterType = "com.pe.ibm.bean.BeanMaximo" >			
+	
+	 SELECT 
+	 	NOMBRE,
+	 	EMAIL,
+	 	GRADO 
+	 FROM 
+	 	OPERACION.EMPLEADO
+ 	WHERE GRADO IS NOT NULL
+ 	GROUP BY NOMBRE,EMAIL,GRADO		
+	ORDER BY NOMBRE
+	</select>
+	
+	
+	
+	
+</mapper>

@@ -1,0 +1,304 @@
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="options">
+	
+	<resultMap id="resultOptions" type="com.pe.ibm.bean.BeanOptions">
+		<result property="iIdOption" column="IDOPTION" />
+		<result property="strDescripcion" column="DESCRIPCION" />
+		<result property="strValor1" column="VALOR1" />
+		<result property="strValor2" column="VALOR2" />
+	</resultMap>
+	
+	<select id="getOptions" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultOptions">
+		SELECT
+			IDOPTION, 
+			DESCRIPCION,
+			VALOR1,
+			VALOR2
+		FROM 
+			OPERACION.OPTIONS
+		WHERE 
+			ESTADO = 1 AND 
+			IDTEAM = #{iTeam} AND 
+			UPPER(TIPO) = UPPER(#{strType})
+		ORDER BY 
+			DESCRIPCION
+		ASC
+	</select>
+
+	<resultMap id="resultOptionsAnioClaim" type="com.pe.ibm.bean.BeanOptions">
+		<result property="strDescripcion" column="ANIO" />
+	</resultMap>
+	
+	<select id="getOptionsAnioClaim" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultOptionsAnioClaim">
+		SELECT DISTINCT YEAR(DESCRIPCION) AS ANIO FROM OPERACION.OPTIONS WHERE IDTEAM = 1 AND TIPO = 'FECHACLAIM' ORDER BY YEAR(DESCRIPCION) ASC
+	</select>
+	
+	
+	<resultMap id="resultOptionsFechaClaim" type="com.pe.ibm.bean.BeanOptions">
+		<result property="iIdOption" column="IDOPTION" />
+		<result property="strDescripcion" column="DESCRIPCION" />
+		<result property="strValor1" column="VALOR1" />
+		<result property="strValor2" column="VALOR2" />
+		<result property="iValor1" column="IVALOR1" />
+	</resultMap>
+	
+	<select id="getOptionsFechaClaim" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultOptionsFechaClaim">
+		SELECT IDOPTION, DESCRIPCION,VALOR1,VALOR2, IVALOR1 FROM
+		(SELECT IDOPTION, DESCRIPCION, VALOR1, VALOR2, IVALOR1 FROM OPERACION.OPTIONS WHERE ESTADO = 1 AND IDTEAM = 1 AND UPPER(TIPO) = UPPER('FECHACLAIM')) 
+		WHERE YEAR(DESCRIPCION) = #{iValor1} AND (DATE(DESCRIPCION) - 7 DAYS) <![CDATA[<=]]> CURRENT_DATE ORDER BY DESCRIPCION DESC
+	</select>
+	
+	<resultMap id="resultOptionsImage" type="com.pe.ibm.bean.BeanOptions">
+		<result property="iIdOption" column="IDOPTION" />
+		<result property="strDescripcion" column="DESCRIPCION" />
+		<result property="strValor1" column="VALOR1" />
+		<result property="strValor2" column="VALOR2" />
+		<result property="strValor3" column="VALORIMG" />
+	</resultMap>
+	
+	<select id="getOptionsImage" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultOptionsImage">
+		SELECT
+			IDOPTION, 
+			DESCRIPCION,
+			VALOR1,
+			VALOR2,
+			VALORIMG
+		FROM 
+			OPERACION.OPTIONS
+		WHERE 
+			ESTADO = 1 AND 
+			IDTEAM = #{iTeam} AND 
+			UPPER(TIPO) = UPPER(#{strType})
+		ORDER BY 
+			DESCRIPCION
+		ASC
+	</select>
+	
+	
+	<resultMap id="resultOptions2" type="com.pe.ibm.bean.BeanOptions">
+		<result property="iIdOption" column="IDOPTION" />
+		<result property="strDescripcion" column="DESCRIPCION" />
+		<result property="strValor1" column="VALOR1" />
+		<result property="strValor2" column="VALOR2" />
+	</resultMap>
+	
+	<select id="getOptions2" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultOptions2">
+		SELECT
+			IDOPTION, 
+			DESCRIPCION,
+			VALOR1,
+			VALOR2
+		FROM 
+			OPERACION.OPTIONS
+		WHERE 
+			ESTADO = 1 AND 
+			IDTEAM = (SELECT IDTEAM FROM OPERACION.TEAM WHERE DESCRIPCION = #{strTeam} FETCH FIRST 1 ROWS ONLY) AND 
+			UPPER(TIPO) = UPPER(#{strType})
+		ORDER BY 
+			DESCRIPCION
+		ASC
+	</select>
+	
+	
+	<resultMap id="resultOptions3" type="com.pe.ibm.bean.BeanOptions">
+		<result property="iIdOption" column="IDOPTION" />
+		<result property="strDescripcion" column="DESCRIPCION" />
+		<result property="strValor1" column="VALOR1" />
+		<result property="strValor2" column="VALOR2" />
+	</resultMap>
+	
+	<select id="getOptions3" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultOptions3">
+		SELECT
+			IDOPTION, 
+			DESCRIPCION,
+			VALOR1,
+			VALOR2
+		FROM 
+			OPERACION.OPTIONS
+		WHERE 
+			ESTADO = 1 AND 
+			IDTEAM = #{iTeam} AND 
+			UPPER(TIPO) = UPPER(#{strType}) AND
+			UPPER(VALOR1) = UPPER(#{strValor1})
+		ORDER BY 
+			DESCRIPCION
+		ASC
+	</select>
+	
+	<resultMap id="resultOptions3_" type="com.pe.ibm.bean.BeanOptions">
+		<result property="iIdOption" column="IDOPTION" />
+		<result property="strDescripcion" column="DESCRIPCION" />
+		<result property="strValor1" column="VALOR1" />
+		<result property="strValor2" column="VALOR2" />
+	</resultMap>
+	
+	<select id="getOptions3_" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultOptions3_">
+		SELECT
+			IDOPTION, 
+			DESCRIPCION,
+			VALOR1,
+			VALOR2
+		FROM 
+			OPERACION.OPTIONS
+		WHERE 
+			ESTADO = 1 AND 
+			IDTEAM = #{iTeam} AND 
+			UPPER(TIPO) = UPPER(#{strType}) AND
+			UPPER(VALOR1) IN (${strValor1})
+		ORDER BY 
+			DESCRIPCION
+		ASC
+	</select>
+	
+	
+	<resultMap id="resultOptions4" type="com.pe.ibm.bean.BeanOptions">
+		<result property="iIdOption" column="IDOPTION" />
+		<result property="strDescripcion" column="DESCRIPCION" />
+		<result property="strValor1" column="VALOR1" />
+		<result property="strValor2" column="VALOR2" />
+	</resultMap>
+	<select id="getOptions4" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultOptions4">
+		SELECT
+			IDOPTION, 
+			DESCRIPCION,
+			VALOR1,
+			VALOR2
+		FROM 
+			OPERACION.OPTIONS
+		WHERE 
+			ESTADO = 1 AND 
+			IDTEAM = #{iTeam} AND 
+			UPPER(TIPO) = UPPER(#{strType}) AND
+			UPPER(DESCRIPCION) = UPPER(#{strValor1})
+		ORDER BY 
+			DESCRIPCION
+		ASC
+	</select>
+	
+	<resultMap id="resultOptions5" type="com.pe.ibm.bean.BeanOptions">
+		<result property="iIdOption" column="IDOPTION" />
+		<result property="strDescripcion" column="DESCRIPCION" />
+		<result property="strValor1" column="VALOR1" />
+		<result property="strValor2" column="VALOR2" />
+	</resultMap>
+	<select id="getOptions5" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultOptions5">
+		SELECT
+			IDOPTION,
+			DESCRIPCION,
+			VALOR1,
+			VALOR2
+		FROM
+			OPERACION.OPTIONS
+		WHERE
+			ESTADO = 1 AND 
+			IDTEAM = #{iTeam} AND 
+			UPPER(TIPO) = UPPER(#{strType}) AND
+			UPPER(VALOR1) IN (${strValor1})
+		ORDER BY 
+			VALOR1
+		ASC
+	</select>
+	
+	<resultMap id="resultOptions6" type="com.pe.ibm.bean.BeanOptions">
+		<result property="iIdOption" column="IDOPTION" />
+		<result property="strDescripcion" column="DESCRIPCION" />
+		<result property="strValor1" column="VALOR1" />
+		<result property="strValor2" column="VALOR2" />
+	</resultMap>
+	<select id="getOptions6" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultOptions6">
+		SELECT
+			IDOPTION, 
+			DESCRIPCION||' - '||VALOR1 AS DESCRIPCION
+			
+		FROM 
+			OPERACION.OPTIONS_CONT
+		WHERE 
+			ESTADO = 1 AND 
+			IDTEAM = (SELECT IDTEAM FROM OPERACION.TEAM WHERE DESCRIPCION = #{strTeam} FETCH FIRST 1 ROWS ONLY) AND 
+			UPPER(TIPO) = UPPER(#{strType})
+		ORDER BY 
+			DESCRIPCION
+		ASC
+	</select>
+	
+	<select id="getOptions7" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultOptions6">
+		SELECT
+			IDOPTION, 
+			DESCRIPCION||' - '||VALOR1 AS DESCRIPCION
+			
+		FROM 
+			OPERACION.OPTIONS
+		WHERE 
+			ESTADO = 1 AND 
+			IDTEAM = (SELECT IDTEAM FROM OPERACION.TEAM WHERE DESCRIPCION = #{strTeam} FETCH FIRST 1 ROWS ONLY) AND 
+			UPPER(TIPO) = UPPER(#{strType})
+		ORDER BY 
+			DESCRIPCION
+		ASC
+	</select>
+
+	
+	<resultMap id="resultgetCalculoTiempoSolucion" type="com.pe.ibm.bean.BeanParameters">
+		<result property="strValor1" column="RESULTADO"/>
+	</resultMap>
+	
+	<select id="getCalculoTiempoSolucion" parameterType="com.pe.ibm.bean.BeanMaximo" resultMap="resultgetCalculoTiempoSolucion">
+		SELECT
+			CASE WHEN
+				(TIMESTAMPDIFF(16,CHAR(CURRENT_TIMESTAMP - TIMESTAMP(#{ticketFechaCreacion})))) > 
+				(CASE WHEN (
+				            SELECT COUNT(1) TIEMPO FROM CHATBOT.TIEMPO_ESTIMADO_SOLUCION WHERE ESTADO_ID = 1
+				            AND CLIENTE_ID = #{ticketIdCliente}
+				            AND CLASSSTRUCTUREID = #{ticketClassStructureId}) > 0 THEN (
+				            		SELECT TIEMPO FROM CHATBOT.TIEMPO_ESTIMADO_SOLUCION WHERE ESTADO_ID = 1
+				                AND CLIENTE_ID = #{ticketIdCliente}
+				                AND CLASSSTRUCTUREID = #{ticketClassStructureId}) ELSE 0 END)
+			THEN 'MAYOR'
+			ELSE 'MENOR'
+			END AS RESULTADO
+		FROM SYSIBM.SYSDUMMY1
+  	</select>
+	
+	<resultMap id="resultType" type="com.pe.ibm.bean.BeanOptions">
+		<result property="strDescripcion" column="TIPO" />
+	</resultMap>
+	
+	<select id="getType" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultType">
+		SELECT 
+			DISTINCT TIPO
+		FROM 
+			OPERACION.OPTIONS
+		WHERE 
+			ESTADO = 1 AND 
+			IDTEAM = #{iTeam}
+	</select>
+ 	
+	<insert id="saveOption" parameterType="com.pe.ibm.bean.BeanOptions">
+		INSERT INTO OPERACION.OPTIONS(DESCRIPCION,VALOR1,VALOR2,TIPO,IDTEAM,USERMOD)
+		VALUES(#{strDescripcion},#{strValor1},#{strValor2},UPPER(#{strTipo}),#{iTeam},#{strUser})
+	</insert>
+
+	<update id="updateOption" parameterType="com.pe.ibm.bean.BeanOptions">
+		UPDATE OPERACION.OPTIONS SET 
+			DESCRIPCION = #{strDescripcion},
+			VALOR1 = #{strValor1},
+			VALOR2 = #{strValor2},
+			TIPO = UPPER(#{strTipo}),
+			IDTEAM = #{iTeam}
+		WHERE 
+			IDOPTION = #{iIdOption}
+	</update>
+	
+	<update id="deleteOption" parameterType="com.pe.ibm.bean.BeanOptions">
+		UPDATE OPERACION.OPTIONS SET 
+			ESTADO = 0
+			,DATEREG = CURRENT_TIMESTAMP
+			,USERMOD = #{strUser}  
+		WHERE 
+			IDOPTION = #{iIdOption}
+	</update>
+	
+</mapper>

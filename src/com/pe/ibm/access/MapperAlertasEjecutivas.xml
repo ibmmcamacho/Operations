@@ -1,0 +1,447 @@
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="alerta">
+	
+	<resultMap id="resultTicketAlertaTimeLine" type="com.pe.ibm.bean.BeanAlerta">
+		<result property="strFechaReg" column="FECHACREACION" />
+		<result property="maximoIdTicket" column="IDTICKET" />
+		<result property="maximoCliente" column="CLIENTE" />
+		<result property="usuarioModificador" column="SUPERVISOR" />
+		<result property="iMinutos" column="MINUTOS" />
+	</resultMap>
+
+	<select id="getTicketAlertaTimeLine" resultMap="resultTicketAlertaTimeLine">
+		SELECT
+			FECHACREACION
+			,IDTICKET
+			,(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE VALOR1 = IDCLIENTE FETCH FIRST 1 ROWS ONLY) CLIENTE
+			,(SELECT NOMBRE FROM OPERACION.EMPLEADO WHERE IDEMPLEADO = IDUSUARIO_MODIFICADOR FETCH FIRST 1 ROWS ONLY) SUPERVISOR
+			,CAST(TIMESTAMPDIFF(4,CHAR(TIMESTAMP(CURRENT_TIMESTAMP) - TIMESTAMP(FECHACREACION))) AS VARCHAR(10)) MINUTOS
+		FROM
+			INCIDENTES.ALERTAS
+		WHERE
+			ACTIVADO = 1 AND
+			IDESTADO NOT IN (SELECT IDOPTION FROM OPERACION.OPTIONS WHERE TIPO = 'ESTADO_ALERTA' AND DESCRIPCION IN ('FIN','INICIO/FIN'))
+	</select>
+
+	<resultMap id="resultDetalleIncidencia" type="com.pe.ibm.bean.BeanAlerta">
+		<result property="idAlertaDet" column="IDALERTADET" />
+		<result property="strFechaReg" column="FECHAREGISTRO" />
+		<result property="strMensaje" column="DETALLE" />
+		<result property="usuarioCreador" column="EMPLEADO" />
+	</resultMap>
+
+	<select id="getDetalleIncidencia" parameterType="com.pe.ibm.bean.BeanEmpleado" resultMap="resultDetalleIncidencia">
+		SELECT  
+			A.IDALERTADET,
+			A.FECHAREGISTRO,
+			A.DETALLE,
+			(SELECT NOMBRE || ' ' || AP_PATERNO FROM OPERACION.EMPLEADO WHERE IDEMPLEADO = A.IDSUPERVISOR FETCH FIRST 1 ROWS ONLY) AS EMPLEADO 
+		FROM 
+			INCIDENTES.ALERTAS_DETALLE A
+		WHERE
+			A.ESTADO = 1 AND
+			 A.IDALERTA = #{iDetalleAlertaEjecutiva}
+		ORDER BY FECHAREGISTRO ASC
+	</select>
+	
+
+
+	<resultMap id="resultDetalleIncidencia2" type="com.pe.ibm.bean.BeanAlerta">
+		<result property="idAlertaDet" column="IDALERTADET" />
+		<result property="strFechaReg" column="FECHAREGISTRO" />
+		<result property="strMensaje" column="DETALLE" />
+		<result property="usuarioCreador" column="EMPLEADO" />
+	</resultMap>
+
+	<select id="getDetalleIncidencia2" parameterType="String" resultMap="resultDetalleIncidencia2">	
+	SELECT  
+			A.IDALERTADET,
+			A.FECHAREGISTRO,
+			A.DETALLE,
+			(SELECT NOMBRE || ' ' || AP_PATERNO FROM OPERACION.EMPLEADO WHERE IDEMPLEADO = A.IDSUPERVISOR FETCH FIRST 1 ROWS ONLY) AS EMPLEADO 
+		FROM 
+			INCIDENTES.ALERTAS_DETALLE A
+		WHERE
+			A.ESTADO = 1 AND
+			 A.IDALERTA IN (SELECT IDALERTA FROM INCIDENTES.ALERTAS WHERE IDTICKET = #{strTicketId}) 
+		ORDER BY FECHAREGISTRO ASC
+	</select>
+	
+	
+	<resultMap id="resultGrupoDistribucion" type="com.pe.ibm.bean.BeanOptions">
+		<result property="strDescripcion" column="DESCRIPCION" />
+	</resultMap>
+	
+	<select id="getGrupoDistribucion" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultGrupoDistribucion">
+		SELECT 
+			DISTINCT DESCRIPCION
+		FROM 
+			OPERACION.OPTIONS
+		WHERE 
+			ESTADO = 1 AND 
+			IDTEAM = #{iTeam} AND 
+			TIPO = UPPER(#{strType})
+		ORDER BY 
+			DESCRIPCION
+	</select>
+	
+	<resultMap id="resultListaDistribucion" type="com.pe.ibm.bean.BeanOptions">
+		<result property="iIdOption" column="IDOPTION" />
+		<result property="strDescripcion" column="DESCRIPCION" />
+		<result property="strValor1" column="VALOR1" />
+		<result property="strValor2" column="VALOR2" />
+	</resultMap>
+	
+	<select id="getListaDistribucion" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultListaDistribucion">
+		SELECT 
+			DISTINCT VALOR2
+		FROM 
+			OPERACION.OPTIONS
+		WHERE 
+			ESTADO = 1 AND 
+			IDTEAM = #{iTeam} AND
+			TIPO = UPPER(#{strType}) AND
+			DESCRIPCION IN (${strValor1})
+		ORDER BY
+			VALOR2
+		ASC
+	</select>
+	
+	<resultMap id="resultListaContactos" type="com.pe.ibm.bean.BeanOptions">
+		<result property="strValor1" column="VALOR1" />
+		<result property="strValor2" column="VALOR2" />
+	</resultMap>
+	
+	<select id="getListaContactos" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultListaContactos">
+		SELECT 
+			DISTINCT VALOR1,
+			VALOR2 
+		FROM 
+			OPERACION.OPTIONS 
+		WHERE
+			ESTADO = 1 AND
+			TIPO = UPPER('DISTRIBUCION_ALERTA2')
+		ORDER BY 
+			VALOR1
+		ASC
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	<update id="actualizarAperturaTicket" parameterType="com.pe.ibm.bean.BeanAlerta">
+		UPDATE INCIDENTES.ALERTAS SET IDESTADO = (SELECT IDOPTION FROM OPERACION.OPTIONS WHERE DESCRIPCION IN ('INICIO') AND TIPO = 'ESTADO_ALERTA' AND IDTEAM = 1), IDUSUARIO_MODIFICADOR = #{idUsuario} WHERE IDALERTA = #{idAlerta}
+ 	</update>
+	
+ 	<insert id="guardarDetalleIncidencia" parameterType="com.pe.ibm.bean.BeanAlerta">
+ 		INSERT INTO INCIDENTES.ALERTAS_DETALLE(IDALERTA,DETALLE,IDSUPERVISOR) VALUES(#{idAlerta}, #{strMensaje}, #{idUsuario})
+ 	</insert>
+ 	
+ 	<update id="actualizarDetalleIncidencia" parameterType="com.pe.ibm.bean.BeanAlerta">
+ 		UPDATE INCIDENTES.ALERTAS_DETALLE SET DETALLE = #{strMensaje}, IDSUPERVISOR = #{idUsuario} WHERE IDALERTADET = #{idAlertaDet}
+ 	</update>
+ 	
+ 	<update id="eliminarDetalleIncidencia" parameterType="com.pe.ibm.bean.BeanAlerta">
+ 		UPDATE INCIDENTES.ALERTAS_DETALLE SET ESTADO = 0 WHERE IDALERTADET = #{idAlertaDet}
+ 	</update>
+ 	
+	<insert id="saveAlerta" parameterType="com.pe.ibm.bean.BeanAlerta">
+		INSERT INTO INCIDENTES.ALERTAS(
+		<choose>
+		    <when test="maximoIdTicket != null">IDTICKET,</when>
+		</choose>
+		<choose>
+		    <when test="idEstadoAlerta != null">IDESTADO,</when>
+		</choose>
+		<choose>
+		    <when test="maximoIdCliente != null">IDCLIENTE,</when>
+		</choose>
+		<choose>
+		    <when test="maximoResumen != null">RESUMEN,</when>
+		</choose>
+		<choose>
+		    <when test="maximoDetalle != null">DETALLE,</when>
+		</choose>
+		<choose>
+		    <when test="maximoPrioridad != null">PRIORIDAD,</when>
+		</choose>
+		<choose>
+		    <when test="maximoPrioridad != null">PRIORIDADPOST,</when>
+		</choose>
+		<choose>
+		    <when test="maximoFechaCreacion != null">FECHACREACION,</when>
+		</choose>
+		<choose>
+		    <when test="maximoIdEstado != null">ESTADO,</when>
+		</choose>
+		<choose>
+		    <when test="maximoIdGrupoPropietario != null">GRUPO_PROPIETARIO,</when>
+		</choose>
+		<choose>
+		    <when test="maximoIdGrupoResolutor != null">GRUPO_RESOLUTOR,</when>
+		</choose>
+		<choose>
+		    <when test="pm != null">PM,</when>
+		</choose>
+		<choose>
+		    <when test="idCrisisTurno != null">CRISIS_TURNO,</when>
+		</choose>
+		<choose>
+		    <when test="fechaNotificacionIbm != null">FECHA_NOTIFICACION_IBM,</when>
+		</choose>
+		<choose>
+		    <when test="dataCenter != null">IDDATA_CENTER,</when>
+		</choose>
+		<choose>
+		    <when test="fechaFin != null">FECHA_FIN,</when>
+		</choose>
+		<choose>
+		    <when test="strTeamSoporte != null">TEAMSOPORTE,</when>
+		</choose>
+		<choose>
+		    <when test="idTipoFalla != null">TIPO_FALLA,</when>
+		</choose>
+		<choose>
+		    <when test="concurrencia != null">CONCURRENCIA,</when>
+		</choose>
+		<choose>
+		    <when test="otrosClientes != null">OTROS_CLIENTES,</when>
+		</choose>
+		<choose>
+		    <when test="propietarioIncidencia != null">PROPIETARIO_INCIDENCIA,</when>
+		</choose>
+		<choose>
+		    <when test="servicioImpactado != null">SERVICIO_IMPACTADO,</when>
+		</choose>
+		<choose>
+		    <when test="sla != null">IDSLA,</when>
+		</choose>
+		<choose>
+		    <when test="impactoNegocio != null">IMPACTO_NEGOCIO,</when>
+		</choose>
+		<choose>
+		    <when test="idticketProblema != null">IDTICKET_PROBLEMA,</when>
+		</choose>
+		<choose>
+		    <when test="idticketCambio != null">IDTICKET_CAMBIO,</when>
+		</choose>
+		<choose>
+		    <when test="cambioPm != null">CAMBIOPM,</when>
+		</choose>
+		<choose>
+		    <when test="recibioAlerta != null">RECIBIO_ALERTA,</when>
+		</choose>
+		<choose>
+		    <when test="derivoCambio != null">DERIVO_CAMBIO,</when>
+		</choose>
+		<choose>
+		    <when test="desviacionesIncidentes != null">DESVIACIONES_INCIDENTES,</when>
+		</choose>
+		<choose>
+		    <when test="evaluacionCrisis != null">EVALUACION_CRISIS,</when>
+		</choose>
+		<choose>
+		    <when test="observaciones != null">OBSERVACIONES,</when>
+		</choose>
+<!-- 		<choose> -->
+<!-- 		    <when test="distribucion != null">DISTRIBUCION,</when> -->
+<!-- 		    <otherwise>NULL,</otherwise> -->
+<!-- 		</choose> -->
+		<choose>
+		    <when test="copiaDistribucion != null">COPIA_DISTRIBUCION,</when>
+		</choose>
+		<choose>
+		    <when test="idUsuario != null">IDUSUARIO_CREADOR,</when>
+		</choose>
+		<choose>
+		    <when test="idUsuario != null">IDUSUARIO_MODIFICADOR</when>
+		</choose>
+		)
+		VALUES
+		(
+		<choose>
+		    <when test="maximoIdTicket != null">#{maximoIdTicket},</when>
+		</choose>
+		<choose>
+		    <when test="idEstadoAlerta != null">#{idEstadoAlerta},</when>
+		</choose>
+		<choose>
+		    <when test="maximoIdCliente != null">#{maximoIdCliente},</when>
+		</choose>
+		<choose>
+		    <when test="maximoResumen != null">#{maximoResumen},</when>
+		</choose>
+		<choose>
+		    <when test="maximoDetalle != null">#{maximoDetalle},</when>
+		</choose>
+		<choose>
+		    <when test="maximoPrioridad != null">#{maximoPrioridad},</when>
+		</choose>
+		<choose>
+		    <when test="maximoPrioridad != null">#{maximoPrioridad},</when>
+		</choose>
+		<choose>
+		    <when test="maximoFechaCreacion != null">#{maximoFechaCreacion},</when>
+		</choose>
+		<choose>
+		    <when test="maximoIdEstado != null">#{maximoIdEstado},</when>
+		</choose>
+		<choose>
+		    <when test="maximoIdGrupoPropietario != null">#{maximoIdGrupoPropietario},</when>
+		</choose>
+		<choose>
+		    <when test="maximoIdGrupoResolutor != null">#{maximoIdGrupoResolutor},</when>
+		</choose>
+		<choose>
+		    <when test="pm != null">#{pm},</when>
+		</choose>
+		<choose>
+		    <when test="idCrisisTurno != null">#{crisisTurno},</when>
+		</choose>
+		<choose>
+		    <when test="fechaNotificacionIbm != null">#{fechaNotificacionIbm},</when>
+		</choose>
+		<choose>
+		    <when test="dataCenter != null">#{dataCenter},</when>
+		</choose>
+		<choose>
+		    <when test="fechaFin != null">#{fechaFin},</when>
+		</choose>
+		<choose>
+		    <when test="strTeamSoporte != null">#{strTeamSoporte},</when>
+		</choose>
+		<choose>
+		    <when test="idTipoFalla != null">#{idTipoFalla},</when>
+		</choose>
+		<choose>
+		    <when test="concurrencia != null">#{concurrencia},</when>
+		</choose>
+		<choose>
+		    <when test="otrosClientes != null">#{otrosClientes},</when>
+		</choose>
+		<choose>
+		    <when test="propietarioIncidencia != null">#{propietarioIncidencia},</when>
+		</choose>
+		<choose>
+		    <when test="servicioImpactado != null">#{servicioImpactado},</when>
+		</choose>
+		<choose>
+		    <when test="sla != null">#{sla},</when>
+		</choose>
+		<choose>
+		    <when test="impactoNegocio != null">#{impactoNegocio},</when>
+		</choose>
+		<choose>
+		    <when test="idticketProblema != null">#{idticketProblema},</when>
+		</choose>
+		<choose>
+		    <when test="idticketCambio != null">#{idticketCambio},</when>
+		</choose>
+		<choose>
+		    <when test="cambioPm != null">#{cambioPm},</when>
+		</choose>
+		<choose>
+		    <when test="recibioAlerta != null">#{recibioAlerta},</when>
+		</choose>
+		<choose>
+		    <when test="derivoCambio != null">#{derivoCambio},</when>
+		</choose>
+		<choose>
+		    <when test="desviacionesIncidentes != null">#{desviacionesIncidentes},</when>
+		</choose>
+		<choose>
+		    <when test="evaluacionCrisis != null">#{evaluacionCrisis},</when>
+		</choose>
+		<choose>
+		    <when test="observaciones != null">#{observaciones},</when>
+		</choose>
+<!-- 		<choose> -->
+<!-- 		    <when test="distribucion != null">#{distribucion},</when> -->
+<!-- 		    <otherwise>NULL,</otherwise> -->
+<!-- 		</choose> -->
+		<choose>
+		    <when test="copiaDistribucion != null">#{copiaDistribucion},</when>
+		</choose>
+		<choose>
+		    <when test="idUsuario != null">#{idUsuario},</when>
+		</choose>
+		<choose>
+		    <when test="idUsuario != null">#{idUsuario}</when>
+		</choose>
+		)
+	</insert>
+	
+	
+	<update id="updateAlerta" parameterType="com.pe.ibm.bean.BeanAlerta">
+		UPDATE INCIDENTES.ALERTAS SET
+			IDTICKET 				= 		#{maximoIdTicket}, 
+			IDESTADO 				= 		#{idEstadoAlerta}, 
+			IDCLIENTE 				= 		#{maximoIdCliente}, 
+			RESUMEN 				=		#{maximoResumen}, 
+			DETALLE 				= 		<![CDATA[ #{maximoDetalle} ]]>, 
+			PRIORIDADPOST			=		#{maximoPrioridad}, 
+			FECHACREACION 			= 		#{maximoFechaCreacion}, 
+			ESTADO 					= 		#{maximoIdEstado}, 
+			GRUPO_PROPIETARIO 		= 		#{maximoIdGrupoPropietario}, 
+			GRUPO_RESOLUTOR 		= 		#{maximoIdGrupoResolutor},
+			PM 						= 		#{pm}, 
+			CRISIS_TURNO 			= 		#{crisisTurno}, 
+			FECHA_NOTIFICACION_IBM 	= 		#{fechaNotificacionIbm}, 
+			<choose>
+			 	<when test="dataCenter != null">IDDATA_CENTER = #{dataCenter},</when>
+			</choose>
+			FECHA_FIN 				= 		#{fechaFin}, 
+			TEAMSOPORTE				=		#{strTeamSoporte},
+			TIPO_FALLA 				= 		#{idTipoFalla}, 
+			CONCURRENCIA 			= 		#{concurrencia}, 
+			OTROS_CLIENTES 			= 		#{otrosClientes}, 
+			PROPIETARIO_INCIDENCIA 	= 		#{propietarioIncidencia}, 
+			SERVICIO_IMPACTADO 		= 		#{servicioImpactado}, 
+			<choose>
+		    		<when test="sla != null">IDSLA = #{sla},</when>
+			</choose>
+			IMPACTO_NEGOCIO 		= 		#{impactoNegocio}, 
+			IDTICKET_PROBLEMA 		= 		#{idticketProblema},
+			IDTICKET_CAMBIO 		= 		#{idticketCambio}, 
+			CAMBIOPM 				= 		#{cambioPm},
+			RECIBIO_ALERTA 			= 		#{recibioAlerta}, 
+			DERIVO_CAMBIO 			= 		#{derivoCambio}, 
+			DESVIACIONES_INCIDENTES =		#{desviacionesIncidentes}, 
+			EVALUACION_CRISIS 		= 		#{evaluacionCrisis}, 
+			OBSERVACIONES	 		= 		#{observaciones},
+<!-- 			DISTRIBUCION 			= 		#{distribucion},  -->
+			COPIA_DISTRIBUCION 		= 		#{copiaDistribucion}, 
+			IDUSUARIO_MODIFICADOR 	= 		#{idUsuario}
+		WHERE
+			IDALERTA 				= 		#{idAlerta}
+	</update>
+	
+	<update id="deleteAlerta" parameterType="int">
+		UPDATE INCIDENTES.ALERTAS SET ACTIVADO = 0 WHERE IDALERTA = #{iIdAlerta} 
+	</update>
+	
+	<resultMap id="resultIdTicketAlertaIncidencia" type="com.pe.ibm.bean.BeanAlerta">
+		<result property="idAlerta" column="IDALERTA" />
+	</resultMap>
+
+	<select id="getIdTicketAlertaIncidencia" parameterType="String" resultMap="resultIdTicketAlertaIncidencia">
+		SELECT
+			IDALERTA
+		FROM
+			INCIDENTES.ALERTAS
+		WHERE
+			IDTICKET = #{maximoIdTicket} AND
+			ACTIVADO = 1
+		ORDER BY
+			IDALERTA DESC FETCH FIRST 1 ROWS ONLY
+	</select>
+	
+</mapper>

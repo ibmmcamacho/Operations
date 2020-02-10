@@ -1,0 +1,14 @@
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="feedBack">
+
+	<insert id="saveFeedBack" parameterType="com.pe.ibm.bean.BeanFeedBack">
+		INSERT INTO OPERACION.FEEDBACK(TEAM,RUTAPAGINA,USUARIO,PUNTUACION,COMENTARIO,EMAILOWNER)
+		VALUES(#{team},#{rutaPagina},#{usuario},#{puntuacion},#{comentario},#{emailOwner})
+	</insert>
+
+	
+	
+</mapper>

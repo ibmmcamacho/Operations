@@ -1,0 +1,1116 @@
+   <!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="maximoMobility">
+	
+	<resultMap id="resultClientMobility" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketIdCliente" column="PLUSCUSTOMER" />
+		<result property="ticketCliente" column="NAMECLIENTE"/>
+	</resultMap>
+	<select id="getClientMobility" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultClientMobility">
+	SELECT DISTINCT PLUSCUSTOMER,NAMECLIENTE from MOBILITY.TICKET_SRINC WHERE PLUSCUSTOMER IS NOT NULL 
+	<if test="strValor1 != null">
+		AND RELATEDTOGLOBAL = '${strValor1}'
+	</if>
+	 ORDER BY NAMECLIENTE ASC
+	</select>
+	
+	<resultMap id="resultTicketsResueltos" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketIdGrupoResolutor" column="OWNERGROUP" />
+		<result property="iValor1" column="SERVICIO"/>
+		<result property="iValor2" column="INCIDENTE"/>
+	</resultMap>
+	<select id="getTicketsResueltos" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultTicketsResueltos">
+	SELECT OWNERGROUP, SUM(SERVICIO) SERVICIO, SUM(INCIDENTE) INCIDENTE FROM (
+		SELECT 
+<!-- 			CASE WHEN OWNERGROUP = 'I-DCS-PE-VIR04-OSRT' THEN 'I-DCS-PE-VIR04-OS' WHEN OWNERGROUP = 'I-DCS-PE-VIR04-OSNR' THEN 'I-DCS-PE-VIR04-OS' ELSE OWNERGROUP END OWNERGROUP,  -->
+			OWNERGROUP,
+			SUM(SERVICIO) SERVICIO, 
+			SUM(INCIDENTE) INCIDENTE
+		FROM 
+			(
+			SELECT 
+<!-- 				CASE WHEN OWNERGROUP = 'I-DCS-PE-VIR04-OSRT' THEN 'I-DCS-PE-VIR04-OS' WHEN OWNERGROUP = 'I-DCS-PE-VIR04-OSNR' THEN 'I-DCS-PE-VIR04-OS' ELSE OWNERGROUP END OWNERGROUP,  -->
+				OWNERGROUP,
+				CASE WHEN STRCLASS IN('SR') THEN COUNT(1) ELSE 0 END AS SERVICIO,
+				CASE WHEN STRCLASS IN('INCIDENT') THEN COUNT(1) ELSE 0 END AS INCIDENTE
+			FROM
+				(SELECT * FROM MOBILITY.TICKET_SRINC WHERE (OWNERGROUP LIKE 'I-SDD%' OR OWNERGROUP LIKE 'I-DCS%' OR OWNERGROUP LIKE 'I-CLI%' OR OWNERGROUP LIKE 'I-EXT%') 
+				UNION ALL
+				SELECT * FROM MOBILITY.TICKET_SRINC_BACKLOG WHERE (OWNERGROUP LIKE 'I-SDD%' OR OWNERGROUP LIKE 'I-DCS%' OR OWNERGROUP LIKE 'I-CLI%' OR OWNERGROUP LIKE 'I-EXT%')) A
+			WHERE
+				DATE(TIMESTAMP(CREATIONDATE)) BETWEEN DATE('${strdate1}') AND DATE('${strdate2}')
+				
+				<if test="strValor1 != null">
+					AND PLUSCUSTOMER = '${strValor1}'
+				</if>
+				
+				<if test="strValor2 != null">
+					AND RELATEDTOGLOBAL = '${strValor2}'
+				</if>
+				
+				AND UPPER(CLASSIFICATIONLEVEL1) NOT IN('POSIBLE INCIDENTE') AND 
+				UPPER(CLASSIFICATIONLEVEL2) NOT IN('LLAMADA CORTADA','LLAMADA EQUIVOCADA','LLAMADA DE PRUEBA','LLAMADA FUERA DEL ALCANCE','NO REQUIERE SOLUCIÓN','POSIBLE INCIDENTE')
+			GROUP BY 
+				OWNERGROUP, STRCLASS
+			) 
+		GROUP BY 
+			OWNERGROUP
+		)
+		GROUP BY OWNERGROUP
+		ORDER BY 1
+	</select>
+	
+	<resultMap id="resultTicketsResueltosFechas" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="strValor1" column="FECHA" />
+		<result property="iValor1" column="INCIDENT"/>
+		<result property="iValor2" column="SR"/>
+	</resultMap>
+	<select id="getTicketsResueltosFechas" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultTicketsResueltosFechas">
+		SELECT FECHA, SUM(INCIDENT) INCIDENT, SUM(SR) SR FROM (
+			SELECT
+				DATE(TIMESTAMP(CREATIONDATE)) FECHA,
+				CASE WHEN UPPER(STRCLASS) = 'INCIDENT' THEN COUNT(1) ELSE 0 END INCIDENT,
+				CASE WHEN UPPER(STRCLASS) = 'SR' THEN COUNT(1) ELSE 0 END SR
+			FROM 
+				(SELECT * FROM MOBILITY.TICKET_SRINC WHERE (OWNERGROUP LIKE 'I-SDD%' OR OWNERGROUP LIKE 'I-DCS%' OR OWNERGROUP LIKE 'I-CLI%' OR OWNERGROUP LIKE 'I-EXT%') 
+				UNION 
+				SELECT * FROM MOBILITY.TICKET_SRINC_BACKLOG WHERE (OWNERGROUP LIKE 'I-SDD%' OR OWNERGROUP LIKE 'I-DCS%' OR OWNERGROUP LIKE 'I-CLI%' OR OWNERGROUP LIKE 'I-EXT%')) A
+			WHERE
+				DATE(TIMESTAMP(CREATIONDATE)) BETWEEN DATE('${strdate1}') AND DATE('${strdate2}')
+				<if test="strValor1 != null">
+					AND PLUSCUSTOMER = '${strValor1}'
+				</if>
+				
+				<if test="strValor3 != null">
+					AND RELATEDTOGLOBAL = '${strValor3}'
+				</if>
+
+				<if test="strValor2 != null">
+					AND OWNERGROUP = #{strValor2}
+				</if>
+				
+				AND UPPER(CLASSIFICATIONLEVEL1) NOT IN('POSIBLE INCIDENTE') AND 
+				UPPER(CLASSIFICATIONLEVEL2) NOT IN('LLAMADA CORTADA','LLAMADA EQUIVOCADA','LLAMADA DE PRUEBA','LLAMADA FUERA DEL ALCANCE','NO REQUIERE SOLUCIÓN','POSIBLE INCIDENTE')
+			GROUP BY 
+				DATE(TIMESTAMP(CREATIONDATE)),
+				STRCLASS
+			ORDER BY 1
+		) GROUP BY FECHA ORDER BY FECHA
+	</select>
+		
+	<resultMap id="resultTicketsResueltosEstados" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketClass" column="STRCLASS" />
+		<result property="ticketIdEstado" column="STATUS"/>
+		<result property="iCantidad" column="CANTIDAD"/>
+	</resultMap>
+	<select id="getTicketsResueltosEstados" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultTicketsResueltosEstados">
+		SELECT 
+			STRCLASS,
+			STATUS,
+			COUNT(1) CANTIDAD 
+		FROM 
+			(SELECT * FROM MOBILITY.TICKET_SRINC WHERE (OWNERGROUP LIKE 'I-SDD%' OR OWNERGROUP LIKE 'I-DCS%' OR OWNERGROUP LIKE 'I-CLI%' OR OWNERGROUP LIKE 'I-EXT%') 
+			UNION ALL
+			SELECT * FROM MOBILITY.TICKET_SRINC_BACKLOG WHERE (OWNERGROUP LIKE 'I-SDD%' OR OWNERGROUP LIKE 'I-DCS%' OR OWNERGROUP LIKE 'I-CLI%' OR OWNERGROUP LIKE 'I-EXT%')) A
+		WHERE
+			DATE(TIMESTAMP(CREATIONDATE)) BETWEEN DATE('${strdate1}') AND DATE('${strdate2}')
+			<if test="strValor1 != null">
+				AND PLUSCUSTOMER = '${strValor1}'
+			</if>
+				
+			<if test="strValor3 != null">
+				AND RELATEDTOGLOBAL = '${strValor3}'
+			</if>
+
+			<if test="strValor2 != null">
+				AND OWNERGROUP = #{strValor2}
+			</if>
+			
+			AND UPPER(CLASSIFICATIONLEVEL1) NOT IN('POSIBLE INCIDENTE') AND 
+			UPPER(CLASSIFICATIONLEVEL2) NOT IN('LLAMADA CORTADA','LLAMADA EQUIVOCADA','LLAMADA DE PRUEBA','LLAMADA FUERA DEL ALCANCE','NO REQUIERE SOLUCIÓN','POSIBLE INCIDENTE')
+		GROUP BY 
+			STRCLASS,
+			STATUS
+		ORDER BY 1,2
+	</select>
+	
+	<resultMap id="resultTiempoSolucion" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketIdGrupoResolutor" column="OWNERGROUP" />
+		<result property="strValor1" column="TIEMPO"/>
+		<result property="iValor1" column="MINUTOS"/>
+	</resultMap>
+	<select id="getTiempoSolucion" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultTiempoSolucion">
+	SELECT
+		OWNERGROUP, 
+		(AVG(TIMESTAMPDIFF(4,CHAR(TIMESTAMP(FINISHDATE) - TIMESTAMP(CREATIONDATE)))) / 60) || ':' || (AVG(MOD(TIMESTAMPDIFF(4,CHAR(TIMESTAMP(FINISHDATE) - TIMESTAMP(CREATIONDATE))),60))) || ':' || (AVG(MOD(TIMESTAMPDIFF(2,CHAR(TIMESTAMP(FINISHDATE) - TIMESTAMP(CREATIONDATE))),60))) TIEMPO,
+		AVG(TIMESTAMPDIFF(4,CHAR(TIMESTAMP(FINISHDATE) - TIMESTAMP(CREATIONDATE)))) MINUTOS
+		FROM (
+		SELECT 
+			CASE WHEN (SELECT COUNT(1) FROM OPERACION.OPTIONS WHERE VALOR1 = OWNERGROUP) <![CDATA[>]]> 0 THEN
+<!-- 				(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE VALOR1 = OWNERGROUP FETCH FIRST 1 ROW ONLY) ELSE CASE WHEN OWNERGROUP = 'I-DCS-PE-VIR04-OSRT' THEN 'I-DCS-PE-VIR04-OS' WHEN OWNERGROUP = 'I-DCS-PE-VIR04-OSNR' THEN 'I-DCS-PE-VIR04-OS' ELSE OWNERGROUP END END OWNERGROUP, -->
+				(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE VALOR1 = OWNERGROUP FETCH FIRST 1 ROW ONLY) ELSE OWNERGROUP END OWNERGROUP,
+			CREATIONDATE, FINISHDATE, PLUSCUSTOMER, CLASSIFICATIONLEVEL1, CLASSIFICATIONLEVEL2, RELATEDTOGLOBAL
+		FROM
+			(SELECT * FROM MOBILITY.TICKET_SRINC WHERE (OWNERGROUP LIKE 'I-SDD%' OR OWNERGROUP LIKE 'I-DCS%' OR OWNERGROUP LIKE 'I-CLI%' OR OWNERGROUP LIKE 'I-EXT%') 
+			UNION ALL
+			SELECT * FROM MOBILITY.TICKET_SRINC_BACKLOG WHERE (OWNERGROUP LIKE 'I-SDD%' OR OWNERGROUP LIKE 'I-DCS%' OR OWNERGROUP LIKE 'I-CLI%' OR OWNERGROUP LIKE 'I-EXT%')) A
+		) B
+		WHERE
+			 CREATIONDATE != '' AND FINISHDATE != ''
+			<if test="strValor1 != null">
+				AND PLUSCUSTOMER = '${strValor1}'
+			</if>
+			
+			<if test="strValor2 != null">
+				AND RELATEDTOGLOBAL = '${strValor2}'
+			</if>
+			AND DATE(TIMESTAMP(CREATIONDATE)) BETWEEN DATE('${strdate1}') AND DATE('${strdate2}') AND
+			UPPER(CLASSIFICATIONLEVEL1) NOT IN('POSIBLE INCIDENTE') AND 
+			UPPER(CLASSIFICATIONLEVEL2) NOT IN('LLAMADA CORTADA','LLAMADA EQUIVOCADA','LLAMADA DE PRUEBA','LLAMADA FUERA DEL ALCANCE','NO REQUIERE SOLUCIÓN','POSIBLE INCIDENTE')
+		GROUP BY
+			OWNERGROUP
+	ORDER BY 1
+	</select>
+	
+	<resultMap id="resultUsuariosTop" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketPersonaAfectada" column="NAMEAFFECTEDPERSON" />
+		<result property="iValor1" column="SERVICIO" />
+		<result property="iValor2" column="INCIDENTE"/>
+	</resultMap>
+	<select id="getUsuariosTop" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultUsuariosTop">
+		SELECT
+			NAMEAFFECTEDPERSON,
+			SUM(SERVICIO) SERVICIO, 
+			SUM(INCIDENTE) INCIDENTE
+		FROM(
+			SELECT
+				NAMEAFFECTEDPERSON, 
+				CASE WHEN STRCLASS IN('SR') THEN COUNT(1) ELSE 0 END AS SERVICIO,
+				CASE WHEN STRCLASS IN('INCIDENT') THEN COUNT(1) ELSE 0 END AS INCIDENTE
+			FROM 
+				(SELECT * FROM MOBILITY.TICKET_SRINC WHERE (OWNERGROUP LIKE 'I-SDD%' OR OWNERGROUP LIKE 'I-DCS%' OR OWNERGROUP LIKE 'I-CLI%' OR OWNERGROUP LIKE 'I-EXT%') 
+				UNION ALL
+				SELECT * FROM MOBILITY.TICKET_SRINC_BACKLOG WHERE (OWNERGROUP LIKE 'I-SDD%' OR OWNERGROUP LIKE 'I-DCS%' OR OWNERGROUP LIKE 'I-CLI%' OR OWNERGROUP LIKE 'I-EXT%')) A
+			WHERE
+				DATE(TIMESTAMP(CREATIONDATE)) BETWEEN DATE('${strdate1}') AND DATE('${strdate2}')
+			<if test="strValor1 != null">
+				AND PLUSCUSTOMER = '${strValor1}'
+			</if>
+							
+			<if test="strValor2 != null">
+				AND RELATEDTOGLOBAL = '${strValor2}'
+			</if>
+
+			<if test="strValor2 != null">
+				AND OWNERGROUP = #{strValor2}
+			</if>
+			
+			AND UPPER(CLASSIFICATIONLEVEL1) NOT IN('POSIBLE INCIDENTE') AND 
+			UPPER(CLASSIFICATIONLEVEL2) NOT IN('LLAMADA CORTADA','LLAMADA EQUIVOCADA','LLAMADA DE PRUEBA','LLAMADA FUERA DEL ALCANCE','NO REQUIERE SOLUCIÓN','POSIBLE INCIDENTE')
+			GROUP BY
+				NAMEAFFECTEDPERSON,
+				STRCLASS
+			)
+		GROUP BY
+			NAMEAFFECTEDPERSON
+		ORDER BY 2 DESC
+		FETCH FIRST 10 ROWS ONLY
+	</select>
+	
+	<resultMap id="resultSedes" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketLocal" column="LOCATION" />
+		<result property="ticketLugar" column="DESCRIPTIONLOCATION" />
+		<result property="iCantidad" column="CANTIDAD"/>
+	</resultMap>
+	<select id="getSedes" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultSedes">
+		SELECT 
+			COALESCE(LOCATION,'') LOCATION,
+			COALESCE(DESCRIPTIONLOCATION,'') DESCRIPTIONLOCATION,
+			COUNT(1) CANTIDAD 
+		FROM 
+			(SELECT * FROM MOBILITY.TICKET_SRINC WHERE (OWNERGROUP LIKE 'I-SDD%' OR OWNERGROUP LIKE 'I-DCS%' OR OWNERGROUP LIKE 'I-CLI%' OR OWNERGROUP LIKE 'I-EXT%') 
+			UNION 
+			SELECT * FROM MOBILITY.TICKET_SRINC_BACKLOG WHERE (OWNERGROUP LIKE 'I-SDD%' OR OWNERGROUP LIKE 'I-DCS%' OR OWNERGROUP LIKE 'I-CLI%' OR OWNERGROUP LIKE 'I-EXT%')) A
+		WHERE
+			DATE(TIMESTAMP(CREATIONDATE)) BETWEEN DATE('${strdate1}') AND DATE('${strdate2}') 
+			<if test="strValor1 != null">
+				AND PLUSCUSTOMER = '${strValor1}'
+			</if>
+							
+			<if test="strValor3 != null">
+				AND RELATEDTOGLOBAL = '${strValor3}'
+			</if>
+			
+			<if test="strValor2 != null">
+				AND OWNERGROUP = #{strValor2}
+			</if>
+			
+			AND UPPER(CLASSIFICATIONLEVEL1) NOT IN('POSIBLE INCIDENTE') AND 
+			UPPER(CLASSIFICATIONLEVEL2) NOT IN('LLAMADA CORTADA','LLAMADA EQUIVOCADA','LLAMADA DE PRUEBA','LLAMADA FUERA DEL ALCANCE','NO REQUIERE SOLUCIÓN','POSIBLE INCIDENTE') 
+		GROUP BY 
+			LOCATION,DESCRIPTIONLOCATION
+	</select>
+	
+	
+	
+	
+	<resultMap id="resultBackLog" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketIdGrupoResolutor" column="OWNERGROUP"/>
+		<result property="iCantidad" column="CANTIDAD"/>
+	</resultMap>
+	<select id="getBackLog" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultBackLog">
+		SELECT OWNERGROUP, SUM(CANTIDAD) CANTIDAD FROM (
+			SELECT
+				CASE WHEN (SELECT COUNT(1) FROM OPERACION.OPTIONS WHERE VALOR1 = OWNERGROUP) > 0 THEN
+				(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE VALOR1 = OWNERGROUP FETCH FIRST 1 ROW ONLY) ELSE
+<!-- 				CASE WHEN OWNERGROUP = 'I-DCS-PE-VIR04-OSRT' THEN 'I-DCS-PE-VIR04-OS' WHEN OWNERGROUP = 'I-DCS-PE-VIR04-OSNR' THEN 'I-DCS-PE-VIR04-OS'ELSE OWNERGROUP END END OWNERGROUP, -->
+				OWNERGROUP END OWNERGROUP,
+				COUNT(1) CANTIDAD
+			FROM 
+				MOBILITY.TICKET_SRINC_BACKLOG
+			WHERE
+				STATUS NOT IN('RESOLVED','RESOLVCONF','CLOSED','CANCELLED')
+				<if test="strValor1 != null">
+					AND PLUSCUSTOMER = '${strValor1}'
+				</if>
+				
+				<if test="strValor4 != null">
+					AND RELATEDTOGLOBAL = '${strValor4}'
+				</if>
+			
+				<if test="strValor3 != null">
+					AND EMAILAFFECTEDPERSON IN (${strValor3})
+				</if>
+				
+				AND CLASSIFICATIONLEVEL2 NOT IN('POSIBLE INCIDENTE') AND
+				(OWNERGROUP LIKE 'I-SDD%' OR OWNERGROUP LIKE 'I-DCS%' OR OWNERGROUP LIKE 'I-CLI%' OR OWNERGROUP LIKE 'I-EXT%') AND
+				UPPER(CLASSIFICATIONLEVEL1) NOT IN('POSIBLE INCIDENTE') AND 
+				UPPER(CLASSIFICATIONLEVEL2) NOT IN('LLAMADA CORTADA','LLAMADA EQUIVOCADA','LLAMADA DE PRUEBA','LLAMADA FUERA DEL ALCANCE','NO REQUIERE SOLUCIÓN','POSIBLE INCIDENTE')
+			GROUP BY 
+				OWNERGROUP
+			)
+		GROUP BY OWNERGROUP
+		ORDER BY 1 ASC
+	</select>
+	
+	<resultMap id="resultMaximoTicketsBacklog" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="idTicket" column="TICKETID"/>
+		<result property="ticketTitulo" column="DESCRIPTION"/>
+		<result property="ticketClass" column="STRCLASS"/>
+		<result property="ticketUsuarioVip" column="STRVIP"/>
+		<result property="ticketEstado" column="STATUS"/>
+		<result property="ticketCliente" column="NAMECLIENTE"/>
+		<result property="ticketIdCliente" column="PLUSCUSTOMER"/>
+		<result property="ticketIdLugar" column="LOCATION"/>
+		<result property="ticketClasificacionNivel2" column="CLASSIFICATIONLEVEL2"/>
+		<result property="ticketLugar" column="DESCRIPTIONLOCATION"/>
+		<result property="ticketITGrupoResolutor" column="ITDRESOLVERGROUP"/>
+		<result property="ticketGrupoResolutor" column="NAMEOWNER"/>
+		<result property="ticketIdGrupoResolutor" column="OWNERGROUP"/>
+		<result property="ticketFechaCreacion" column="CREATIONDATE"/>
+		<result property="ticketFechaFin" column="FINISHDATE"/>
+		<result property="ticketPersonaReportado" column="NAMEREPORTEDBY"/>
+		<result property="ticketEmailPersonaAfectada" column="EMAILAFFECTEDPERSON"/>
+		<result property="ticketPersonaAfectada" column="NAMEAFFECTEDPERSON"/>
+		<result property="ticketNumeroCI" column="CINUM"/>
+	</resultMap>
+	<select id="getMaximoTicketsBacklog" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultMaximoTicketsBacklog">
+	SELECT 
+		TICKETID,
+		DESCRIPTION,
+		STRCLASS,
+		STRVIP,
+		STATUS,
+		NAMECLIENTE,
+		PLUSCUSTOMER,
+		LOCATION,
+		CLASSIFICATIONLEVEL2,
+		DESCRIPTIONLOCATION,
+		ITDRESOLVERGROUP,
+		NAMEOWNER,
+		OWNERGROUP,
+		CASE WHEN CREATIONDATE = '' THEN '' ELSE VARCHAR_FORMAT(CREATIONDATE, 'DD-MM-YY HH24:MI') END CREATIONDATE,
+		CASE WHEN FINISHDATE = '' THEN '' ELSE VARCHAR_FORMAT(FINISHDATE, 'DD-MM-YY HH24:MI') END FINISHDATE,
+		NAMEREPORTEDBY,
+		EMAILAFFECTEDPERSON,
+		NAMEAFFECTEDPERSON,
+		CINUM FROM (
+			SELECT 
+				TICKETID,
+				DESCRIPTION,
+				STRCLASS,
+				(SELECT CASE WHEN COUNT(1)<![CDATA[>]]> 0 THEN 'VIP' ELSE '' END FROM OPERACION.OPTIONS WHERE VALOR1 = EMAILAFFECTEDPERSON) STRVIP,
+				STATUS,
+				NAMECLIENTE,
+				PLUSCUSTOMER,
+				LOCATION,
+				CLASSIFICATIONLEVEL2,
+				DESCRIPTIONLOCATION,
+				ITDRESOLVERGROUP,
+				NAMEOWNER,
+<!-- 				CASE WHEN OWNERGROUP = 'I-DCS-PE-VIR04-OSRT' THEN 'I-DCS-PE-VIR04-OS' WHEN OWNERGROUP = 'I-DCS-PE-VIR04-OSNR' THEN 'I-DCS-PE-VIR04-OS' ELSE OWNERGROUP END OWNERGROUP, -->
+				OWNERGROUP,
+				CREATIONDATE,
+				FINISHDATE,
+				NAMEREPORTEDBY,
+				EMAILAFFECTEDPERSON,
+				NAMEAFFECTEDPERSON,
+				CINUM
+			FROM
+				MOBILITY.TICKET_SRINC_BACKLOG
+			WHERE
+				CREATIONDATE IS NOT NULL
+				<if test="strValor1 != null">
+					AND PLUSCUSTOMER = '${strValor1}'
+				</if>
+				<if test="strValor4 != null">
+					AND RELATEDTOGLOBAL = '${strValor4}'
+				</if>
+				<if test="strValor2 != null">
+<!-- 					OWNERGROUP IN (CASE WHEN (SELECT COUNT(1) FROM OPERACION.OPTIONS WHERE DESCRIPCION IN (${strValor2}))<![CDATA[>]]> 0 THEN (SELECT VALOR1 FROM OPERACION.OPTIONS WHERE DESCRIPCION IN (${strValor2})) ELSE ${strValor2} END) AND -->
+					AND OWNERGROUP = (#{strValor2})
+				</if>
+				<if test="strValor3 != null">
+					AND EMAILAFFECTEDPERSON IN (${strValor3})
+				</if>
+				AND STATUS NOT IN('RESOLVED','RESOLVCONF','CLOSED','CANCELLED') AND
+				(OWNERGROUP LIKE 'I-SDD%' OR OWNERGROUP LIKE 'I-DCS%' OR OWNERGROUP LIKE 'I-CLI%' OR OWNERGROUP LIKE 'I-EXT%') AND 
+				UPPER(CLASSIFICATIONLEVEL1) NOT IN('POSIBLE INCIDENTE') AND 
+				UPPER(CLASSIFICATIONLEVEL2) NOT IN('LLAMADA CORTADA','LLAMADA EQUIVOCADA','LLAMADA DE PRUEBA','LLAMADA FUERA DEL ALCANCE','NO REQUIERE SOLUCIÓN','POSIBLE INCIDENTE')
+			)
+	</select>
+	
+	<resultMap id="resultMaximoTicketsResueltos" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="idTicket" column="TICKETID"/>
+		<result property="ticketTitulo" column="DESCRIPTION"/>
+		<result property="ticketClass" column="STRCLASS"/>
+		<result property="ticketUsuarioVip" column="STRVIP"/>
+		<result property="ticketEstado" column="STATUS"/>
+		<result property="ticketCliente" column="NAMECLIENTE"/>
+		<result property="ticketIdCliente" column="PLUSCUSTOMER"/>
+		<result property="ticketIdLugar" column="LOCATION"/>
+		<result property="ticketClasificacionNivel2" column="CLASSIFICATIONLEVEL2"/>
+		<result property="ticketLugar" column="DESCRIPTIONLOCATION"/>
+		<result property="ticketITGrupoResolutor" column="ITDRESOLVERGROUP"/>
+		<result property="ticketGrupoResolutor" column="NAMEOWNER"/>
+		<result property="ticketIdGrupoResolutor" column="OWNERGROUP"/>
+		<result property="ticketFechaCreacion" column="CREATIONDATE"/>
+		<result property="ticketFechaFin" column="FINISHDATE"/>
+		<result property="ticketPersonaReportado" column="NAMEREPORTEDBY"/>
+		<result property="ticketEmailPersonaAfectada" column="EMAILAFFECTEDPERSON"/>
+		<result property="ticketPersonaAfectada" column="NAMEAFFECTEDPERSON"/>
+		<result property="ticketNumeroCI" column="CINUM"/>
+	</resultMap>
+	<select id="getMaximoTicketsResueltos" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultMaximoTicketsResueltos">
+	SELECT 
+		TICKETID,
+		DESCRIPTION,
+		STRCLASS,
+		STRVIP,
+		STATUS,
+		NAMECLIENTE,
+		PLUSCUSTOMER,
+		LOCATION,
+		CLASSIFICATIONLEVEL2,
+		DESCRIPTIONLOCATION,
+		ITDRESOLVERGROUP,
+		NAMEOWNER,
+<!-- 		CASE WHEN OWNERGROUP = 'I-DCS-PE-VIR04-OSRT' THEN 'I-DCS-PE-VIR04-OS' WHEN OWNERGROUP = 'I-DCS-PE-VIR04-OSNR' THEN 'I-DCS-PE-VIR04-OS' ELSE OWNERGROUP END OWNERGROUP, -->
+		OWNERGROUP,
+		CASE WHEN CREATIONDATE = '' THEN '' ELSE VARCHAR_FORMAT(CREATIONDATE, 'DD-MM-YY HH24:MI') END CREATIONDATE,
+		CASE WHEN FINISHDATE = '' THEN '' ELSE VARCHAR_FORMAT(FINISHDATE, 'DD-MM-YY HH24:MI') END FINISHDATE,
+		NAMEREPORTEDBY,
+		EMAILAFFECTEDPERSON,
+		NAMEAFFECTEDPERSON,
+		CINUM
+		FROM (
+			SELECT 
+				TICKETID,
+				DESCRIPTION,
+				STRCLASS,
+				(SELECT CASE WHEN COUNT(1)<![CDATA[>]]> 0 THEN 'VIP' ELSE '' END FROM OPERACION.OPTIONS WHERE VALOR1 = EMAILAFFECTEDPERSON) STRVIP,
+				STATUS,
+				NAMECLIENTE,
+				PLUSCUSTOMER,
+				LOCATION,
+				CLASSIFICATIONLEVEL2,
+				DESCRIPTIONLOCATION,
+				ITDRESOLVERGROUP,
+				NAMEOWNER,
+<!-- 				CASE WHEN OWNERGROUP = 'I-DCS-PE-VIR04-OSRT' THEN 'I-DCS-PE-VIR04-OS' WHEN OWNERGROUP = 'I-DCS-PE-VIR04-OSNR' THEN 'I-DCS-PE-VIR04-OS' ELSE OWNERGROUP END OWNERGROUP, -->
+				OWNERGROUP,
+				CREATIONDATE,
+				FINISHDATE,
+				NAMEREPORTEDBY,
+				EMAILAFFECTEDPERSON,
+				NAMEAFFECTEDPERSON,
+				CINUM
+			FROM
+				(SELECT * FROM MOBILITY.TICKET_SRINC WHERE (OWNERGROUP LIKE 'I-SDD%' OR OWNERGROUP LIKE 'I-DCS%' OR OWNERGROUP LIKE 'I-CLI%' OR OWNERGROUP LIKE 'I-EXT%') 
+				UNION ALL
+				SELECT * FROM MOBILITY.TICKET_SRINC_BACKLOG WHERE (OWNERGROUP LIKE 'I-SDD%' OR OWNERGROUP LIKE 'I-DCS%' OR OWNERGROUP LIKE 'I-CLI%' OR OWNERGROUP LIKE 'I-EXT%')) A
+			WHERE
+				DATE(TIMESTAMP(CREATIONDATE)) BETWEEN DATE('${strdate1}') AND DATE('${strdate2}')
+				<if test="strValor1 != null">
+					AND PLUSCUSTOMER = '${strValor1}'
+				</if>
+				<if test="strValor4 != null">
+					AND RELATEDTOGLOBAL = '${strValor4}'
+				</if>
+				<if test="strValor2 != null">
+					AND OWNERGROUP = #{strValor2}
+				</if>
+				AND UPPER(CLASSIFICATIONLEVEL1) NOT IN('POSIBLE INCIDENTE') AND 
+				UPPER(CLASSIFICATIONLEVEL2) NOT IN('LLAMADA CORTADA','LLAMADA EQUIVOCADA','LLAMADA DE PRUEBA','LLAMADA FUERA DEL ALCANCE','NO REQUIERE SOLUCIÓN','POSIBLE INCIDENTE')
+			)
+	</select>
+	
+	<resultMap id="resultTablaBacklog" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketClass" column="STRCLASS" />
+		<result property="ticketGrupoResolutor" column="OWNERGROUP"/>
+		<result property="ticketEmailPersonaAfectada" column="EMAILAFFECTEDPERSON"/>
+		<result property="strValor1" column="MENOS5DIAS_"/>
+		<result property="strValor2" column="ENTRE5A10DIAS_"/>
+		<result property="strValor3" column="ENTRE11A15DIAS_"/>
+		<result property="strValor4" column="MAS15DIAS_"/>
+	</resultMap>
+	<select id="getTablaBacklog" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultTablaBacklog">
+		SELECT 
+			STRCLASS, 
+			OWNERGROUP,
+			EMAILAFFECTEDPERSON,
+			SUM(MENOS5DIAS) MENOS5DIAS_, 
+			SUM(ENTRE5A10DIAS) ENTRE5A10DIAS_, 
+			SUM(ENTRE11A15DIAS) ENTRE11A15DIAS_ ,
+			SUM(MAS15DIAS) MAS15DIAS_ 
+		FROM 
+			(
+			SELECT 
+				STRCLASS, 
+				OWNERGROUP,
+				EMAILAFFECTEDPERSON, 
+				<![CDATA[
+				CASE WHEN (CAST(DIAS AS INT)  <   5) THEN SUM(CANTIDAD) ELSE 0 END MENOS5DIAS, 
+				CASE WHEN (CAST(DIAS AS INT) >  4 and DIAS  <  11) THEN SUM(CANTIDAD) ELSE 0 END ENTRE5A10DIAS, 
+				CASE WHEN (CAST(DIAS AS INT)  >  10 and DIAS <  16) THEN SUM(CANTIDAD) ELSE 0 END ENTRE11A15DIAS, 
+				CASE WHEN (CAST(DIAS AS INT)  >   15) THEN SUM(CANTIDAD) ELSE 0 END MAS15DIAS 
+				]]> 
+			FROM 
+				(
+				SELECT 
+					STRCLASS, 
+<!-- 					CASE WHEN OWNERGROUP = 'I-DCS-PE-VIR04-OSRT' THEN 'I-DCS-PE-VIR04-OS' WHEN OWNERGROUP = 'I-DCS-PE-VIR04-OSNR' THEN 'I-DCS-PE-VIR04-OS' ELSE OWNERGROUP END OWNERGROUP, -->
+					OWNERGROUP,
+					EMAILAFFECTEDPERSON,
+					DIAS, 
+					COUNT(1) CANTIDAD 
+				FROM 
+					(
+					SELECT 
+						STRCLASS, 
+						COALESCE(OWNERGROUP,'UNKNOWN') OWNERGROUP, 
+						COALESCE(EMAILAFFECTEDPERSON,'UNKNOWN') EMAILAFFECTEDPERSON,
+						TIMESTAMPDIFF(16,CHAR(TIMESTAMP(CURRENT_TIMESTAMP) - TIMESTAMP(CREATIONDATE))) AS DIAS 
+					FROM 
+						MOBILITY.TICKET_SRINC_BACKLOG
+					WHERE
+						CREATIONDATE IS NOT NULL
+						
+						<if test="strValor1 != null">
+							AND PLUSCUSTOMER = '${strValor1}'
+						</if>
+						
+						<if test="strValor4 != null">
+							AND RELATEDTOGLOBAL = '${strValor4}'
+						</if>
+						<if test="strValor2 != null">
+							AND (
+							OWNERGROUP IN (SELECT VALOR1 FROM OPERACION.OPTIONS WHERE DESCRIPCION = '${strValor2}')
+							OR
+							OWNERGROUP = '${strValor2}'
+							)
+						</if>
+						<if test="strValor3 != null">
+							AND EMAILAFFECTEDPERSON IN (${strValor3})
+						</if>
+						AND (OWNERGROUP LIKE 'I-SDD%' OR OWNERGROUP LIKE 'I-DCS%' OR OWNERGROUP LIKE 'I-CLI%' OR OWNERGROUP LIKE 'I-EXT%') AND
+						STATUS NOT IN('RESOLVED','RESOLVCONF','CLOSED','CANCELLED') AND
+						UPPER(CLASSIFICATIONLEVEL1) NOT IN('POSIBLE INCIDENTE') AND 
+						UPPER(CLASSIFICATIONLEVEL2) NOT IN('LLAMADA CORTADA','LLAMADA EQUIVOCADA','LLAMADA DE PRUEBA','LLAMADA FUERA DEL ALCANCE','NO REQUIERE SOLUCIÓN','POSIBLE INCIDENTE')
+					)
+				GROUP BY
+					STRCLASS,
+					OWNERGROUP,
+					EMAILAFFECTEDPERSON,
+					DIAS
+				)
+			GROUP BY 
+				STRCLASS, 
+				OWNERGROUP,
+				EMAILAFFECTEDPERSON,
+				DIAS
+			)
+		GROUP BY 
+			STRCLASS, 
+			OWNERGROUP,
+			EMAILAFFECTEDPERSON
+		ORDER BY 1,2
+	
+	</select>
+
+	
+	<resultMap id="resultCiscoMesa" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="strValor1" column="tasaabandonodia" />
+		<result property="strValor2" column="tasaabandonomes"/>
+		<result property="strValor3" column="residente"/>
+		<result property="strValor4" column="noresidente"/>
+		<result property="strValor5" column="timedia"/>
+		<result property="strValor6" column="timemes"/>
+	</resultMap>
+	<select id="getCiscoMesa" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultCiscoMesa">
+	select
+		(
+		select TASABDIA from  SMARTDESK.RESULTADO where PERIODO = #{strdate1} AND IDPROYECTO = 26
+		) tasaabandonodia,
+		(
+		select TASABMES from  SMARTDESK.RESULTADO where PERIODO = #{strdate1} AND IDPROYECTO = 26
+		) tasaabandonomes,
+		(select 
+			VALORLETRA
+		from 
+			SMARTDESK.SLA_RESULTADO_MENSUAL 
+		WHERE 
+			ID_SLA = 54 AND VARCHAR_FORMAT(FECHA,'YYYYMM') = #{strdate2}
+			) residente,
+		(select 
+			VALORLETRA
+		from 
+			SMARTDESK.SLA_RESULTADO_MENSUAL 
+		WHERE 
+			ID_SLA = 55 AND VARCHAR_FORMAT(FECHA,'YYYYMM') = #{strdate2}
+			) noresidente,
+		(
+		select 
+			varchar_format(timestamp(date('1970-01-01'), time('00:00:00')) + COALESCE(AVG(TALKTIME),0) second,'HH24:MI:SS') 
+		from 
+			INFORMIX.LLAM_CONTESTADA 
+		where 
+			PROYECTO = 'CSQ_GS' AND VARCHAR_FORMAT(STARTDATETIME,'YYYYMMDD') = #{strdate3} AND TALKTIME IS NOT NULL
+			) timedia,
+		(
+		select 
+			varchar_format(timestamp(date('1970-01-01'), time('00:00:00')) + COALESCE(AVG(TALKTIME),0) second,'HH24:MI:SS') 
+		from 
+			INFORMIX.LLAM_CONTESTADA 
+		where 
+			PROYECTO = 'CSQ_GS' AND VARCHAR_FORMAT(STARTDATETIME,'YYYYMM') = #{strdate2} AND TALKTIME IS NOT NULL
+			)timemes
+		from sysibm.sysdummy1
+	</select>
+	
+	<resultMap id="resultTablaBacklogWO" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketGrupoPropietario" column="NOMBREGRESOLUTOR"/>
+		<result property="strValor1" column="BKLOG0A1DIA"/>
+		<result property="strValor2" column="BKLOG2A3DIAS"/>
+		<result property="strValor3" column="BKLOG4A5DIAS"/>
+		<result property="strValor4" column="BKLOG6A7DIAS"/>
+		<result property="strValor5" column="BKLOG8A12DIAS"/>
+		<result property="strValor6" column="BKLOG13A30DIAS"/>
+		<result property="strValor7" column="BKLOG1A3MESES"/>
+		<result property="strValor8" column="BKLOG4A6MESES"/>
+		<result property="strValor9" column="BKLOG7A12MESES"/>
+		<result property="strValor10" column="BKLOG1ANIO"/>
+		<result property="iCantidad" column="TOTAL"/>
+	</resultMap>
+	<select id="getTablaBacklogWO" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultTablaBacklogWO">
+		SELECT 
+		WO.NOMBRE_GRESOLUTOR AS NOMBREGRESOLUTOR,
+		COUNT (CASE WHEN TIMESTAMPDIFF(16,char((current date)-TIMESTAMP(WO.FECHA_INICIO))) BETWEEN 0 AND 1 THEN '1' ELSE NULL END) AS BKLOG0A1DIA,
+		COUNT (CASE WHEN TIMESTAMPDIFF(16,char((current date)-TIMESTAMP(WO.FECHA_INICIO))) BETWEEN 2 AND 3 THEN '1' ELSE NULL END) AS BKLOG2A3DIAS,
+		COUNT (CASE WHEN TIMESTAMPDIFF(16,char((current date)-TIMESTAMP(WO.FECHA_INICIO))) BETWEEN 4 AND 5 THEN '1' ELSE NULL END) AS BKLOG4A5DIAS,
+		COUNT (CASE WHEN TIMESTAMPDIFF(16,char((current date)-TIMESTAMP(WO.FECHA_INICIO))) BETWEEN 6 AND 7 THEN '1' ELSE NULL END) AS BKLOG6A7DIAS,
+		COUNT (CASE WHEN TIMESTAMPDIFF(16,char((current date)-TIMESTAMP(WO.FECHA_INICIO))) BETWEEN 8 AND 12 THEN '1' ELSE NULL END) AS BKLOG8A12DIAS,
+		COUNT (CASE WHEN TIMESTAMPDIFF(16,char((current date)-TIMESTAMP(WO.FECHA_INICIO))) BETWEEN 13 AND 30 THEN '1' ELSE NULL END) AS BKLOG13A30DIAS,
+		COUNT (CASE WHEN TIMESTAMPDIFF(16,char((current date)-TIMESTAMP(WO.FECHA_INICIO))) BETWEEN 31 AND 90 THEN '1' ELSE NULL END) AS BKLOG1A3MESES,
+		COUNT (CASE WHEN TIMESTAMPDIFF(16,char((current date)-TIMESTAMP(WO.FECHA_INICIO))) BETWEEN 91 AND 180 THEN '1' ELSE NULL END) AS BKLOG4A6MESES,
+		COUNT (CASE WHEN TIMESTAMPDIFF(16,char((current date)-TIMESTAMP(WO.FECHA_INICIO))) BETWEEN 181 AND 365 THEN '1' ELSE NULL END) AS BKLOG7A12MESES,
+		COUNT (CASE WHEN TIMESTAMPDIFF(16,char((current date)-TIMESTAMP(WO.FECHA_INICIO))) > 365 THEN '1' ELSE NULL END) AS BKLOG1ANIO,
+		COUNT (CASE WHEN TIMESTAMPDIFF(16,char((current date)-TIMESTAMP(WO.FECHA_INICIO))) >= 0 THEN '1' ELSE NULL END) AS TOTAL
+		FROM SMARTDESK.WOBACKLOG WO 
+		WHERE
+		WO.ESTADO IN ('INPRG') AND WO.TASK > 0
+		<if test="strValor1 != null">
+		AND UPPER(WO.CLIENTE) = UPPER('${strValor1}')
+		</if>
+		
+		GROUP BY (WO.NOMBRE_GRESOLUTOR)
+	</select>
+	
+	<resultMap id="resultMaximoTicketsBacklogWO" type="com.pe.ibm.bean.BeanMaximoWorkOrder">
+		<result property="idWorkOrder" column="ID"/>
+		<result property="ticketWOSRRelacionado" column="SR_RELACIONADO"/>
+		<result property="ticketWOPrincipal" column="NUM_WOPRINCIPAL"/>
+		<result property="ticketWORelacionada" column="NUM_WORELACIONADA"/>
+		<result property="ticketWOTarea" column="TASK"/>
+		<result property="ticketWODuracion" column="DURACION"/>
+		<result property="ticketWODescripcion" column="DESCRIPCION"/>
+		<result property="ticketWOCliente" column="CLIENTE"/>
+		<result property="ticketWOEstado" column="ESTADO"/>
+		<result property="ticketWOPrioridad" column="PRIORIDAD"/>
+		<result property="ticketWOFechaInicio" column="FECHA_INICIO"/>
+		<result property="ticketWOCI" column="CI"/>
+		<result property="ticketWOGrupoResolutor" column="GRUPO_RESOLUTOR"/>
+		<result property="ticketWONombreGResolutor" column="NOMBRE_GRESOLUTOR"/>
+		<result property="ticketWOPropietario" column="PROPIETARIO"/>
+		<result property="ticketWOFechaReportada" column="FECHA_REPORTADA"/>
+		<result property="ticketWOReportadoPor" column="REPORTADO_POR"/>
+		<result property="ticketWOUsuarioAfectado" column="USUARIO_AFEC"/>
+		<result property="ticketWOFechaFin" column="FECHA_FIN"/>
+		<result property="ticketWODiasBacklog" column="DIAS_BACKLOG"/>
+		<result property="ticketWORangoBancklog" column="ENBACKLOG"/>
+	</resultMap>
+	<select id="getMaximoTicketsBacklogWO" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultMaximoTicketsBacklogWO">
+		SELECT WO.ID,
+		WO.SR_RELACIONADO, 
+		WO.NUM_WOPRINCIPAL, 
+		WO.NUM_WORELACIONADA, 
+		WO.TASK, 
+		WO.DURACION, 
+		WO.DESCRIPCION, 
+		WO.CLIENTE, 
+		WO.ESTADO, 
+		WO.PRIORIDAD, 
+		WO.FECHA_INICIO, 
+		WO.CI, 
+		WO.GRUPO_RESOLUTOR, 
+		WO.NOMBRE_GRESOLUTOR,
+		WO.PROPIETARIO, 
+		WO.FECHA_REPORTADA, 
+		WO.REPORTADO_POR, 
+		WO.USUARIO_AFEC, 
+		WO.FECHA_FIN,
+		TIMESTAMPDIFF(16,char((current date)-TIMESTAMP(WO.FECHA_INICIO))) AS DIAS_BACKLOG, 
+		(CASE 
+		    WHEN (TIMESTAMPDIFF(16,char(current date-TIMESTAMP(WO.FECHA_INICIO)))) BETWEEN 0 AND 1 THEN '0 a 1 dias'
+		    WHEN (TIMESTAMPDIFF(16,char(current date-TIMESTAMP(WO.FECHA_INICIO)))) BETWEEN 2 AND 3 THEN '2 a 3 dias' 
+		    WHEN (TIMESTAMPDIFF(16,char(current date-TIMESTAMP(WO.FECHA_INICIO)))) BETWEEN 4 AND 5 THEN '4 a 5 dias' 
+		    WHEN (TIMESTAMPDIFF(16,char(current date-TIMESTAMP(WO.FECHA_INICIO)))) BETWEEN 6 AND 7 THEN '6 a 7 dias' 
+		    WHEN (TIMESTAMPDIFF(16,char(current date-TIMESTAMP(WO.FECHA_INICIO)))) BETWEEN 8 AND 12 THEN '8 a 12 dias' 
+		    WHEN (TIMESTAMPDIFF(16,char(current date-TIMESTAMP(WO.FECHA_INICIO)))) BETWEEN 13 AND 30 THEN '13 a 30 dias' 
+		    WHEN (TIMESTAMPDIFF(16,char(current date-TIMESTAMP(WO.FECHA_INICIO)))) BETWEEN 31 AND 90 THEN '1 a 3 meses' 
+		    WHEN (TIMESTAMPDIFF(16,char(current date-TIMESTAMP(WO.FECHA_INICIO)))) BETWEEN 91 AND 180 THEN '4 a 6 meses' 
+		    WHEN (TIMESTAMPDIFF(16,char(current date-TIMESTAMP(WO.FECHA_INICIO)))) BETWEEN 181 AND 365 THEN '7 a 12 meses' 
+		    WHEN (TIMESTAMPDIFF(16,char(current date-TIMESTAMP(WO.FECHA_INICIO)))) > 365 THEN '>1 año' 
+		    ELSE '' 
+		    END) as ENBACKLOG, 
+		WO.FECHA_FIN 
+		FROM SMARTDESK.WOBACKLOG WO 
+		WHERE
+		ID IS NOT NULL
+		<if test="strValor1 != null">
+		AND UPPER(WO.CLIENTE) = UPPER('${strValor1}')
+		</if>
+		<if test="strValor2 != null">
+		AND UPPER(WO.ESTADO) = UPPER('${strValor2}')
+		</if>
+		<if test="strValor3 != null">
+		AND UPPER(WO.NOMBRE_GRESOLUTOR) = UPPER('${strValor3}')
+		AND WO.TASK > 0
+		</if>
+		ORDER BY WO.NUM_WORELACIONADA, WO.NOMBRE_GRESOLUTOR ASC 
+	</select>
+	
+	<resultMap id="resultMaximoTicketsBacklogWOTareas" type="com.pe.ibm.bean.BeanMaximoWorkOrder">
+		<result property="idWorkOrder" column="ID"/>
+		<result property="ticketWODescripcion" column="DESCRIPCION_WOPRINCIPAL"/>
+		<result property="ticketWORelacionada" column="NUM_WORELACIONADA"/>
+		<result property="ticketWODescripcion1" column="DESCRIPCION_WORELACIONADA"/>
+		<result property="ticketWOFechaReportada" column="FECHA_REPORTADA"/>
+		<result property="ticketWONombreGResolutor" column="NOMBRE_GRESOLUTOR"/>
+		<result property="ticketWOPropietario" column="PROPIETARIO"/>
+		<result property="ticketWODiasBacklog" column="DIAS_BACKLOG"/>
+		<result property="ticketWORangoBancklog" column="ENBACKLOG"/>
+		<result property="ticketWOSRRelacionado" column="SR_RELACIONADO"/>
+		<result property="ticketWOPrincipal" column="NUM_WOPRINCIPAL"/>
+		<result property="ticketWOTarea" column="TASK"/>
+		<result property="ticketWODuracion" column="DURACION"/>
+		<result property="ticketWOCliente" column="CLIENTE"/>
+		<result property="ticketWOEstado" column="ESTADO"/>
+		<result property="ticketWOPrioridad" column="PRIORIDAD"/>
+		<result property="ticketWOFechaInicio" column="FECHA_INICIO"/>
+		<result property="ticketWOCI" column="CI"/>
+		<result property="ticketWOGrupoResolutor" column="GRUPO_RESOLUTOR"/>
+		<result property="ticketWOReportadoPor" column="REPORTADO_POR"/>
+		<result property="ticketWOUsuarioAfectado" column="USUARIO_AFEC"/>
+		<result property="ticketWOFechaFin" column="FECHA_FIN"/>
+	</resultMap>
+	<select id="getMaximoTicketsBacklogWOTareas" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultMaximoTicketsBacklogWOTareas">
+		SELECT 
+		WO.ID,
+		(SELECT WO1.SR_RELACIONADO || ' - ' || WO1.NUM_WOPRINCIPAL  || ' - ' || WO1.DESCRIPCION FROM SMARTDESK.WOBACKLOG WO1 WHERE WO1.TASK = 0 AND WO1.NUM_WOPRINCIPAL = WO.NUM_WOPRINCIPAL) AS DESCRIPCION_WOPRINCIPAL,
+		WO.NUM_WORELACIONADA, 
+		WO.DESCRIPCION AS DESCRIPCION_WORELACIONADA, 
+		(SELECT WO1.FECHA_REPORTADA FROM SMARTDESK.WOBACKLOG WO1 WHERE WO1.TASK = 0 AND WO1.NUM_WOPRINCIPAL = WO.NUM_WOPRINCIPAL) AS FECHA_REPORTADA,  
+		WO.NOMBRE_GRESOLUTOR, 
+		WO.PROPIETARIO, 
+		WO.DIAS_BACKLOG, 
+		WO.ENBACKLOG,
+		(SELECT WO1.SR_RELACIONADO FROM SMARTDESK.WOBACKLOG WO1 WHERE WO1.TASK = 0 AND WO1.NUM_WOPRINCIPAL = WO.NUM_WOPRINCIPAL) AS SR_RELACIONADO,
+		WO.NUM_WOPRINCIPAL,
+		WO.TASK,
+		WO.DURACION,
+		WO.CLIENTE,
+		WO.ESTADO,
+		WO.PRIORIDAD,
+		WO.FECHA_INICIO,
+		WO.CI,
+		WO.GRUPO_RESOLUTOR,
+		WO.REPORTADO_POR,
+		WO.USUARIO_AFEC,
+		WO.FECHA_FIN
+		FROM SMARTDESK.WOBACKLOG WO 
+		WHERE
+		WO.TASK > 0
+		<if test="strValor1 != null">
+		AND UPPER(WO.CLIENTE) = UPPER('${strValor1}')
+		</if>
+		<if test="strValor2 != null">
+		AND UPPER(WO.ESTADO) = UPPER('${strValor2}')
+		</if>
+		<if test="strValor3 != null">
+		AND UPPER(WO.SR_RELACIONADO || ' - ' || WO.NUM_WOPRINCIPAL  || ' - ' || WO.DESCRIPCION) = UPPER('${strValor3}')
+		</if>
+		ORDER BY(WO.DIAS_BACKLOG)
+	</select>
+	
+	
+	<resultMap id="resultSlaMDADiario" type="com.pe.ibm.bean.BeanSlaMDA">
+		<result property="id" column="ID"/>
+		<result property="idProyecto" column="IDPROYECTO"/>
+		<result property="fechaSla" column="FECHASLA"/>
+		<result property="cont" column="CONTDIA"/>
+		<result property="ab" column="ABDIA"/>
+		<result property="totLlam" column="TOTLLAMDIA"/>
+		<result property="tasAb" column="TASABDIA"/>
+		<result property="promLlam" column="PROMLLAMDIA"/>
+		<result property="correoRecibido" column="CORREORECIBIDO"/>
+		<result property="abUm" column="ABUMDIA"/>
+	</resultMap>
+	<select id="getSlaMDADiario" parameterType="com.pe.ibm.bean.BeanSlaMDA" resultMap="resultSlaMDADiario">
+		SELECT 
+		RD.ID,
+		RD.IDPROYECTO,
+		RD.FECHASLA,
+		RD.CONTDIA,
+		RD.ABDIA,
+		RD.TOTLLAMDIA,
+		RD.TASABDIA,
+		RD.PROMLLAMDIA,
+		RD.CORREORECIBIDO,
+		RD.ABUMDIA
+		FROM SMARTDESK.RESULTADO_DIARIO RD
+		WHERE
+		RD.IDPROYECTO = #{idProyecto}
+		AND
+		TO_CHAR(RD.FECHASLA,'MMYYYY') = TO_CHAR(DATE(#{strFechaSla}),'MMYYYY')
+		ORDER BY(RD.FECHASLA)
+	</select>
+	
+	<resultMap id="resultSlaMDAMensual" type="com.pe.ibm.bean.BeanSlaMDA">
+		<result property="idProyecto" column="IDPROYECTO"/>
+		<result property="cont" column="CONTMES"/>
+		<result property="ab" column="ABMES"/>
+		<result property="abUm" column="ABUMMES"/>
+		<result property="totLlam" column="TOTLLAMMES"/>
+		<result property="tasAb" column="TASABMES"/>
+		<result property="promLlam" column="PROMLLAMMES"/>
+		<result property="periodo" column="PERIODO"/>
+		<result property="idColor" column="IDCOLORABMES"/>
+		<result property="correoRecibido" column="CORREO"/>
+	</resultMap>
+	
+	<select id="getSlaMDAMensual" parameterType="com.pe.ibm.bean.BeanSlaMDA" resultMap="resultSlaMDAMensual">
+		SELECT 
+		RE.IDPROYECTO,
+		RE.CONTMES,
+		RE.ABMES,
+		RE.ABUMMES,
+		RE.TOTLLAMMES,
+		RE.TASABMES,
+		RE.PROMLLAMMES,
+		RE.PERIODO,
+		RE.IDCOLORABMES,
+		(SELECT SUM(RD.CORREORECIBIDO) FROM SMARTDESK.RESULTADO_DIARIO RD WHERE RD.IDPROYECTO = #{idProyecto} AND 
+		TO_CHAR(RD.FECHASLA,'MMYYYY') = TO_CHAR(DATE(#{strFechaSla}),'MMYYYY')) AS CORREO
+		FROM SMARTDESK.RESULTADO RE
+		WHERE
+		RE.IDPROYECTO = #{idProyecto} AND RE.PERIODO = TO_CHAR(DATE(#{strFechaSla}),'MMYYYY')
+	</select>
+	
+	<resultMap id="resultAllAnswered" type="com.pe.ibm.bean.BeanReporteLlamadas">
+	    <result property="codigo" column="SESSIONID"/>
+	    <result property="fechainicio" column="STARTDATETIME"/>
+	    <result property="tiempocola" column="TCOLA"/>
+	    <result property="tiempoconversacion" column="TALKTIME"/>
+	    <result property="agente" column="AGENT"/>
+	    <result property="analista" column="ANALISTA"/>
+	    <result property="central" column="CENTRAL"/>
+	    <result property="cliente" column="NOMBRE"/>
+
+	</resultMap>
+
+    <select id="getAnsweredByProjectByMonth" parameterType="com.pe.ibm.bean.BeanReporteLlamadas" resultMap="resultAllAnswered">
+	SELECT 	SESSIONID,STARTDATETIME,TCOLA,TALKTIME,AGENT, ANALISTA, CENTRAL, SMARTDESK.PROYECTO.NOMBRE
+	FROM INFORMIX.LLAM_CONTESTADA 
+	LEFT JOIN SMARTDESK.PROYECTO ON SMARTDESK.PROYECTO.CISCO = INFORMIX.LLAM_CONTESTADA.PROYECTO
+	WHERE 
+	SMARTDESK.PROYECTO.IDPROYECTO=#{idProyecto} 
+	<if test="tipoVista == 0">
+	AND TO_CHAR(DATE(INFORMIX.LLAM_CONTESTADA.STARTDATETIME),'MM-YYYY') = TO_CHAR(DATE(#{str1}),'MM-YYYY')
+	</if>
+	<if test="tipoVista == 1">
+	AND TO_CHAR(DATE(INFORMIX.LLAM_CONTESTADA.STARTDATETIME),'MM-YYYY') = TO_CHAR(DATE(#{str1}),'MM-YYYY')
+	</if>
+	<if test="tipoVista == 2">
+	AND (CAST((WEEK_ISO(INFORMIX.LLAM_CONTESTADA.STARTDATETIME)) AS INTEGER) = CAST(#{semana} AS INTEGER))
+	AND (CAST (VARCHAR_FORMAT(INFORMIX.LLAM_CONTESTADA.STARTDATETIME,'YYYY') AS INTEGER) = CAST(VARCHAR_FORMAT(#{str1} ,'YYYY') AS INTEGER)) 
+	</if>
+	
+	ORDER BY(INFORMIX.LLAM_CONTESTADA.STARTDATETIME)
+    </select>
+    
+    <resultMap id="resultAllNoAnswered" type="com.pe.ibm.bean.BeanReporteLlamadas">
+	    <result property="codigo" column="SESSIONID"/>
+	    <result property="fechainicio" column="STARTDATETIME"/>
+	    <result property="tiempocola" column="QUEUETIME"/>
+	    <result property="slacola" column="TABANDUMBRAL"/>
+	    <result property="cliente" column="NOMBRE"/>
+	</resultMap>
+	
+    <select id="getNoAnsweredByProjectbyMonth" parameterType="com.pe.ibm.bean.BeanReporteLlamadas" resultMap="resultAllNoAnswered">
+	SELECT 	SESSIONID,STARTDATETIME,QUEUETIME, SMARTDESK.SLA_HISTORICO.TABANDUMBRAL, SMARTDESK.PROYECTO.NOMBRE
+	FROM INFORMIX.LLAM_NOCONTESTADA
+	LEFT JOIN SMARTDESK.PROYECTO ON SMARTDESK.PROYECTO.CISCO = INFORMIX.LLAM_NOCONTESTADA.PROYECTO
+	LEFT JOIN SMARTDESK.SLA_HISTORICO  ON SMARTDESK.SLA_HISTORICO.IDPROYECTO = SMARTDESK.PROYECTO.IDPROYECTO
+	WHERE  SMARTDESK.PROYECTO.IDPROYECTO=#{idProyecto} 
+	<if test="tipoVista == 0">
+	AND TO_CHAR(DATE(INFORMIX.LLAM_NOCONTESTADA.STARTDATETIME),'MM-YYYY') = TO_CHAR(DATE(#{str1}),'MM-YYYY')
+	</if>
+	<if test="tipoVista == 1">
+	AND TO_CHAR(DATE(INFORMIX.LLAM_NOCONTESTADA.STARTDATETIME),'MM-YYYY') = TO_CHAR(DATE(#{str1}),'MM-YYYY')
+	</if>
+	<if test="tipoVista == 2">
+	AND (CAST((WEEK_ISO(INFORMIX.LLAM_NOCONTESTADA.STARTDATETIME)) AS INTEGER) = CAST(#{semana} AS INTEGER))
+	AND (CAST (VARCHAR_FORMAT(INFORMIX.LLAM_NOCONTESTADA.STARTDATETIME,'YYYY') AS INTEGER) = CAST(VARCHAR_FORMAT(#{str1} ,'YYYY') AS INTEGER)) 
+	</if>
+	
+	ORDER BY(INFORMIX.LLAM_NOCONTESTADA.STARTDATETIME)
+    </select>
+    
+    <resultMap id="resultadoTicketsSRINC" type="com.pe.ibm.bean.BeanTicketSRINC">
+	
+		 <result property="ticketid" column="TICKETID"/>
+		 <result property="woch" column="WOCH"/>
+		 <result property="strclass" column="STRCLASS"/>
+		 <result property="status" column="STATUS"/>
+		 <result property="internalpriority" column="INTERNALPRIORITY"/>
+		 <result property="externalsystem" column="EXTERNALSYSTEM"/>
+		 <result property="idcallmng" column="IDCALLMNG"/>
+		 <result property="service" column="SERVICE"/>
+		 <result property="serviceline" column="SERVICELINE"/>
+		 <result property="pluscustomer" column="PLUSCUSTOMER"/>
+		 <result property="namecliente" column="NAMECLIENTE"/>
+		 <result property="location" column="LOCATION"/>
+		 <result property="descriptionlocation" column="DESCRIPTIONLOCATION"/>
+		 <result property="creationdate" column="CREATIONDATE"/>
+		 <result property="itdchcreatedbygroup" column="ITDCHCREATEDBYGROUP"/>
+		 <result property="emailcreatedby" column="EMAILCREATEDBY"/>
+		 <result property="namecreatedby" column="NAMECREATEDBY"/>
+		 <result property="emailreportedby" column="EMAILREPORTEDBY"/>
+		 <result property="namereportedby" column="NAMEREPORTEDBY"/>
+		 <result property="emailaffectedperson" column="EMAILAFFECTEDPERSON"/>
+		 <result property="nameaffectedperson" column="NAMEAFFECTEDPERSON"/>
+		 <result property="ownergroup" column="OWNERGROUP"/>
+		 <result property="itdresolvergroup" column="ITDRESOLVERGROUP"/>
+		 <result property="emailowner" column="EMAILOWNER"/>
+		 <result property="nameowner" column="NAMEOWNER"/>
+		 <result property="finishdate" column="FINISHDATE"/>
+		 <result property="classificationid" column="CLASSIFICATIONID"/>
+		 <result property="classification" column="CLASIFICACION"/>
+		 <result property="classstructureid" column="CLASSSTRUCTUREID"/>
+		 <result property="classificationlevel1" column="CLASSIFICATIONLEVEL1"/>
+		 <result property="classificationlevel2" column="CLASSIFICATIONLEVEL2"/>
+		 <result property="classificationlevel3" column="CLASSIFICATIONLEVEL3"/>
+		 <result property="classificationlevel4" column="CLASSIFICATIONLEVEL4"/>
+		 <result property="cinum" column="CINUM"/>
+		 <result property="cinumdesc" column="CINUMDESC"/>
+		 <result property="fcr" column="FCR"/>
+		 <result property="isglobal" column="ISGLOBAL"/>
+		 <result property="globalticketclass" column="GLOBALTICKETCLASS"/>
+		 <result property="globalticketid" column="GLOBALTICKETID"/>
+		 <result property="itdclosurecode" column="ITDCLOSURECODE"/>
+		 <result property="itdmajorincident" column="ITDMAJORINCIDENT"/>
+		 <result property="origrecordclass" column="ORIGRECORDCLASS"/>
+		 <result property="origrecordid" column="ORIGRECORDID"/>
+		 <result property="relatedtoglobal" column="RELATEDTOGLOBAL"/>
+		 <result property="description" column="DESCRIPTION"/>
+		 <result property="detail" column="DETAIL"/>
+		 <result property="sintoma" column="SINTOMA"/>
+		 <result property="causa" column="CAUSA"/>
+		 <result property="solucion" column="SOLUCION"/> 
+		 <result property="changeby_tkweb" column="CHANGEBY_TKWEB"/>
+		 <result property="changedate_tkweb" column="CHANGEDATE_TKWEB"/>
+		 <result property="tiempoescalamiento" column="TIEMPO_ESCALAMIENTO"/>	
+		 <result property="tiemporespuesta" column="TIEMPO_RESPUESTA"/>	 
+		 <result property="tiemposolucion" column="TIEMPO_SOLUCION"/>
+		 <result property="strtiempoescalamiento" column="TIEMPO_ESCALAMIENTO"/>	
+		 <result property="strtiemporespuesta" column="TIEMPO_RESPUESTA"/>	 
+		 <result property="strtiemposolucion" column="TIEMPO_SOLUCION"/>
+		 <result property="tkreabierto" column="TKREABIERTO"/>
+		 <result property="gestionweb" column="GESTIONWEB"/>
+		 <result property="fecha_encuesta" column="FECHA_ENCUESTA"/>
+		 <result property="pregunta_encuesta" column="PREGUNTA_ENCUESTA"/>
+		 <result property="respuesta_encuesta" column="RESPUESTA_ENCUESTA"/>
+		 <result property="comentario_encuesta" column="COMENTARIO_ENCUESTA"/>
+		 <result property="atencion_masiva" column="ATENCION_MASIVA"/>
+	</resultMap>
+    
+    <select id="getTicketsSRINCfull" parameterType="com.pe.ibm.bean.BeanTicketSRINC" resultMap="resultadoTicketsSRINC">
+    SELECT TK.TICKETID, TK.STRCLASS, TK.STATUS, TK.INTERNALPRIORITY, TK.EXTERNALSYSTEM, TK.IDCALLMNG, TK.SERVICE, TK.SERVICELINE, TK.PLUSCUSTOMER, TK.NAMECLIENTE,
+	TK.LOCATION, TK.DESCRIPTIONLOCATION, TK.CREATIONDATE, TK.ITDCHCREATEDBYGROUP, TK.EMAILCREATEDBY, TK.NAMECREATEDBY, TK.EMAILREPORTEDBY, TK.NAMEREPORTEDBY, TK.EMAILAFFECTEDPERSON,
+	TK.NAMEAFFECTEDPERSON, TK.OWNERGROUP, TK.ITDRESOLVERGROUP, TK.EMAILOWNER, TK.NAMEOWNER, TK.FINISHDATE, TK.CLASSIFICATIONID, TK.CLASSSTRUCTUREID, TK.CLASSIFICATIONLEVEL1,
+	TK.CLASSIFICATIONLEVEL2, TK.CLASSIFICATIONLEVEL3, TK.CLASSIFICATIONLEVEL4, TK.CINUM, TK.FCR, TK.ISGLOBAL, TK.GLOBALTICKETCLASS, TK.GLOBALTICKETID, TK.ITDCLOSURECODE,
+	TK.ITDMAJORINCIDENT, TK.ORIGRECORDCLASS, TK.ORIGRECORDID, TK.RELATEDTOGLOBAL, TK.DESCRIPTION, TK.DETAIL ,TK.TIEMPO_RESPUESTA ,TK.TIEMPO_SOLUCION , TK.SINTOMA , TK.CAUSA,
+	TK.SOLUCION, TK.WOCH, TK.CLASIFICACION, TK.CINUMDESC, TK.CHANGEBY_TKWEB, TK.CHANGEDATE_TKWEB, TK.TIEMPO_ESCALAMIENTO, TK.TKREABIERTO, TK.GESTIONWEB, TK.FECHA_ENCUESTA,
+	TK.PREGUNTA_ENCUESTA, TK.RESPUESTA_ENCUESTA, TK.COMENTARIO_ENCUESTA, TK.ATENCION_MASIVA
+	FROM
+	SMARTDESK.TICKET_SR_INC TK		
+	WHERE 
+	TK.PLUSCUSTOMER = (SELECT P.PLUSCUSTOMER FROM SMARTDESK.PROYECTO P WHERE P.IDPROYECTO = #{proyectoid})    
+	AND
+	((CAST (VARCHAR_FORMAT(TK.CREATIONDATE,'MMYYYY') AS INTEGER) = CAST(VARCHAR_FORMAT(DATE(#{fechaPeriodo}) ,'MMYYYY') AS INTEGER))
+	OR  (CAST (VARCHAR_FORMAT(TK.FINISHDATE,'MMYYYY') AS INTEGER) = CAST(VARCHAR_FORMAT(DATE(#{fechaPeriodo}) ,'MMYYYY') AS INTEGER)) 
+	OR  (CAST (VARCHAR_FORMAT(TK.FECHA_ENCUESTA,'MMYYYY') AS INTEGER) = CAST(VARCHAR_FORMAT(DATE(#{fechaPeriodo}) ,'MMYYYY') AS INTEGER)) )
+	AND (TK.STATUS NOT IN ('CANCELLED','DRAFT','NEW'))
+	AND TK.EXTERNALSYSTEM  IN ('TELEFONO','REQUERIMIENTOADICIONAL','CORREO','AUTOSERVICIO','CHAT','RELLAM','Correo-Req. Adicional','Telefono-Req. Adicional')
+	AND (TK.CLASSSTRUCTUREID NOT IN (SELECT C.CLASSSTRUCTUREID  FROM SMARTDESK.TICKET_EXCLUIR AS C WHERE C.IDPROYECTO = #{proyectoid} AND C.ESTADO = 1))
+	UNION ALL
+	SELECT TK.TICKETID, TK.STRCLASS, TK.STATUS, TK.INTERNALPRIORITY, TK.EXTERNALSYSTEM, TK.IDCALLMNG, TK.SERVICE, TK.SERVICELINE, TK.PLUSCUSTOMER, TK.NAMECLIENTE,
+	TK.LOCATION, TK.DESCRIPTIONLOCATION, TK.CREATIONDATE, TK.ITDCHCREATEDBYGROUP, TK.EMAILCREATEDBY, TK.NAMECREATEDBY, TK.EMAILREPORTEDBY, TK.NAMEREPORTEDBY, TK.EMAILAFFECTEDPERSON,
+	TK.NAMEAFFECTEDPERSON, TK.OWNERGROUP, TK.ITDRESOLVERGROUP, TK.EMAILOWNER, TK.NAMEOWNER, TK.FINISHDATE, TK.CLASSIFICATIONID, TK.CLASSSTRUCTUREID, TK.CLASSIFICATIONLEVEL1,
+	TK.CLASSIFICATIONLEVEL2, TK.CLASSIFICATIONLEVEL3, TK.CLASSIFICATIONLEVEL4, TK.CINUM, TK.FCR, TK.ISGLOBAL, TK.GLOBALTICKETCLASS, TK.GLOBALTICKETID, TK.ITDCLOSURECODE,
+	TK.ITDMAJORINCIDENT, TK.ORIGRECORDCLASS, TK.ORIGRECORDID, TK.RELATEDTOGLOBAL, TK.DESCRIPTION, TK.DETAIL ,TK.TIEMPO_RESPUESTA ,TK.TIEMPO_SOLUCION , TK.SINTOMA , TK.CAUSA,
+	TK.SOLUCION, TK.WOCH, TK.CLASIFICACION, TK.CINUMDESC, TK.CHANGEBY_TKWEB, TK.CHANGEDATE_TKWEB, TK.TIEMPO_ESCALAMIENTO, TK.TKREABIERTO, TK.GESTIONWEB, TK.FECHA_ENCUESTA,
+	TK.PREGUNTA_ENCUESTA, TK.RESPUESTA_ENCUESTA, TK.COMENTARIO_ENCUESTA, TK.ATENCION_MASIVA
+	FROM
+	SMARTDESK.TICKET_SR_INC TK		
+	WHERE 
+	TK.PLUSCUSTOMER = (SELECT P.PLUSCUSTOMER FROM SMARTDESK.PROYECTO P WHERE P.IDPROYECTO = #{proyectoid})    
+	AND
+	((CAST (VARCHAR_FORMAT(TK.CREATIONDATE,'MMYYYY') AS INTEGER) = CAST(VARCHAR_FORMAT(DATE(#{fechaPeriodo}) ,'MMYYYY') AS INTEGER))
+	OR  (CAST (VARCHAR_FORMAT(TK.FINISHDATE,'MMYYYY') AS INTEGER) = CAST(VARCHAR_FORMAT(DATE(#{fechaPeriodo}) ,'MMYYYY') AS INTEGER)) 
+	OR  (CAST (VARCHAR_FORMAT(TK.FECHA_ENCUESTA,'MMYYYY') AS INTEGER) = CAST(VARCHAR_FORMAT(DATE(#{fechaPeriodo}) ,'MMYYYY') AS INTEGER)) )
+	AND (TK.STATUS NOT IN ('CANCELLED','DRAFT','NEW'))
+	AND TK.EXTERNALSYSTEM  IN ('CATALOGO')
+	AND (TK.CLASSSTRUCTUREID NOT IN (SELECT C.CLASSSTRUCTUREID  FROM SMARTDESK.TICKET_EXCLUIR AS C WHERE C.IDPROYECTO = #{proyectoid} AND C.ESTADO = 1))
+	AND (TK.CHANGEBY_TKWEB IS NOT NULL OR TK.CHANGEBY_TKWEB != '')
+	ORDER BY CREATIONDATE
+    </select>
+    
+<!--     <resultMap id="resultadoTasaResolucionDiaria" type="com.pe.ibm.bean.BeanTasaResolucion"> -->
+<!-- 		 <result property="strFecha" column="STRDATE"/> -->
+<!-- 		 <result property="totalTicket" column="TOTALTICKET"/> -->
+<!-- 		 <result property="ticketPrimerNivel" column="TICKETPRIMERNIVEL"/> -->
+<!-- 	</resultMap> -->
+	
+<!--     <select id="getTasaResoluciónDiaria" resultMap="resultadoTasaResolucionDiaria">  -->
+<!--     SELECT  TO_CHAR(DATE(TK.CREATIONDATE),'YYYY-MM-DD') AS STRDATE,  -->
+<!--         COUNT(TK.TICKETID) AS TOTALTICKET, -->
+<!--         (SELECT COUNT(TK1.TICKETID) -->
+<!--                 FROM -->
+<!--                 SMARTDESK.TICKET_SR_INC TK1 -->
+<!--                 LEFT JOIN SMARTDESK.PROYECTO PROY1 ON PROY1.PLUSCUSTOMER = TK1.PLUSCUSTOMER -->
+<!--                 WHERE     -->
+<!--                 PROY1.IDPROYECTO = #{idProyecto} -->
+<!--                 AND -->
+<!--                 TO_CHAR(DATE(TK1.CREATIONDATE),'YYYY-MM-DD') = TO_CHAR(DATE(TK.CREATIONDATE),'YYYY-MM-DD') -->
+<!--                 AND -->
+<!--                 TK1.OWNERGROUP = 'I-SDD-PE-VIR03-BCP-MS') AS TICKETPRIMERNIVEL        -->
+<!-- 	FROM  -->
+<!-- 		SMARTDESK.TICKET_SR_INC TK -->
+<!-- 		LEFT JOIN SMARTDESK.PROYECTO PROY ON PROY.PLUSCUSTOMER = TK.PLUSCUSTOMER -->
+<!-- 		WHERE     -->
+<!-- 		PROY.IDPROYECTO = #{idProyecto} -->
+<!-- 		AND -->
+<!-- 		TO_CHAR(DATE(TK.CREATIONDATE),'MM-YYYY') = TO_CHAR(DATE(#{fechaPeriodo}),'MM-YYYY')  -->
+<!-- 		GROUP BY(TO_CHAR(DATE(TK.CREATIONDATE),'YYYY-MM-DD')) -->
+<!-- 	</select> -->
+    
+	<update id="actualizarCorreo" parameterType="com.pe.ibm.bean.BeanSlaMDA">
+    UPDATE 	SMARTDESK.RESULTADO_DIARIO
+	SET
+	CORREORECIBIDO = #{correoRecibido}
+	WHERE
+	IDPROYECTO = #{idProyecto} 
+	AND
+	TO_CHAR(FECHASLA,'YYYY-MM-DD') = #{strFechaSla}
+    </update>
+    
+    
+    <resultMap id="resultTasaResolucionDiario" type="com.pe.ibm.bean.BeanSlaMDA">
+	    <result property="strFechaSla" column="STRDATE"/>
+	    <result property="totalTicket" column="TOTALTICKET"/>
+	    <result property="ticketPrimerNivel" column="TICKETPRIMERNIVEL"/>
+	    <result property="ticketOtroNivel" column="TICKETOTRONIVEL"/>
+	    <result property="tasaResolucion" column="TASARESOLUCION"/>
+	</resultMap>
+	
+    <select id="getTasaResolucionDiario" parameterType="com.pe.ibm.bean.BeanSlaMDA" resultMap="resultTasaResolucionDiario">
+	SELECT  TO_CHAR(DATE(TK.CREATIONDATE),'YYYY-MM-DD') AS STRDATE, 
+        COUNT(TK.TICKETID) AS TOTALTICKET,
+        COUNT(CASE WHEN (TK.OWNERGROUP = 'I-SDD-PE-VIR03-BCP-MS') THEN '1' ELSE NULL END) TICKETPRIMERNIVEL,
+        COUNT(CASE WHEN (TK.OWNERGROUP != 'I-SDD-PE-VIR03-BCP-MS') THEN '1' ELSE NULL END) TICKETOTRONIVEL,
+        ((COUNT(CASE WHEN (TK.OWNERGROUP = 'I-SDD-PE-VIR03-BCP-MS') THEN '1' ELSE NULL END) * 1.0) / COUNT(TK.TICKETID)) as TASARESOLUCION   
+	FROM 
+		SMARTDESK.TICKET_SR_INC TK
+		LEFT JOIN SMARTDESK.PROYECTO PROY ON PROY.PLUSCUSTOMER = TK.PLUSCUSTOMER
+	WHERE    
+		PROY.IDPROYECTO = #{idProyecto}
+		AND
+		TO_CHAR(DATE(TK.CREATIONDATE),'MM-YYYY') = TO_CHAR(DATE(#{strFechaSla}),'MM-YYYY') 
+		AND 
+		(TK.CLASSSTRUCTUREID NOT IN ('100024294', '100024293', '100024291')) 
+		GROUP BY(TO_CHAR(DATE(TK.CREATIONDATE),'YYYY-MM-DD'))
+    </select>
+
+	<resultMap id="resultTasaResolucionMensual" type="com.pe.ibm.bean.BeanSlaMDA">
+	    <result property="strFechaSla" column="STRDATE"/>
+	    <result property="totalTicket" column="TOTALTICKET"/>
+	    <result property="ticketPrimerNivel" column="TICKETPRIMERNIVEL"/>
+	    <result property="ticketOtroNivel" column="TICKETOTRONIVEL"/>
+	    <result property="tasaResolucion" column="TASARESOLUCION"/>
+	</resultMap>
+	
+    <select id="getTasaResolucionMensual" parameterType="com.pe.ibm.bean.BeanSlaMDA" resultMap="resultTasaResolucionMensual">
+    <![CDATA[ 
+	SELECT  TO_CHAR(DATE(TK.CREATIONDATE),'YYYY-MM') AS STRDATE, 
+        COUNT(TK.TICKETID) AS TOTALTICKET,
+        COUNT(CASE WHEN (TK.OWNERGROUP = 'I-SDD-PE-VIR03-BCP-MS') THEN '1' ELSE NULL END) TICKETPRIMERNIVEL,
+        COUNT(CASE WHEN (TK.OWNERGROUP != 'I-SDD-PE-VIR03-BCP-MS') THEN '1' ELSE NULL END) TICKETOTRONIVEL,
+        ((COUNT(CASE WHEN (TK.OWNERGROUP = 'I-SDD-PE-VIR03-BCP-MS') THEN '1' ELSE NULL END) * 1.0) / COUNT(TK.TICKETID)) as TASARESOLUCION   
+	FROM 
+		SMARTDESK.TICKET_SR_INC TK
+		LEFT JOIN SMARTDESK.PROYECTO PROY ON PROY.PLUSCUSTOMER = TK.PLUSCUSTOMER
+	WHERE    
+		PROY.IDPROYECTO = #{idProyecto}
+		AND
+		TO_CHAR(DATE(TK.CREATIONDATE),'MM-YYYY') = TO_CHAR(DATE(#{strFechaSla}),'MM-YYYY') 
+		AND
+		(TK.CLASSSTRUCTUREID NOT IN ('100024294', '100024293', '100024291', '100033753')) 
+		GROUP BY(TO_CHAR(DATE(TK.CREATIONDATE),'YYYY-MM'))
+	]]>
+    </select>
+	
+</mapper>

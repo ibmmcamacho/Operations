@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="com.pe.ibm.access.MapperActividad">
+<!--   RUD_ACTIVIDAD -> V2 -->
+   <insert  id="Insert_Update" parameterType="com.pe.ibm.bean.BeanActividad" statementType="CALLABLE">
+     {call SCHEDULE.RUD_ACTIVIDAD_V2(
+        #{idActividad,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{horaEjecucion,javaType=java.sql.Time,jdbcType=TIME,mode=IN},
+      	#{descripcion,javaType=String,jdbcType=VARCHAR,mode=IN},
+      	#{horaTermino,javaType=java.sql.Time,jdbcType=TIME,mode=IN},
+      	#{idPlataforma,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{idTipoRespaldo,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{idPeriodo,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{idSede,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{idProcedimiento,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{idServidor,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{idCliente,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{estado,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{duracion,javaType=java.sql.Time,jdbcType=TIME,mode=IN},
+      	#{jobStream,javaType=String,jdbcType=VARCHAR,mode=IN},
+      	#{comentario,javaType=String,jdbcType=VARCHAR,mode=IN},
+      	#{ventanaMax,javaType=java.sql.Time,jdbcType=TIME,mode=IN},
+      	#{accion,javaType=String,jdbcType=VARCHAR,mode=IN},
+      	#{tws,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{idTipoActividad,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{idturno,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{operacion,javaType=String,jdbcType=VARCHAR,mode=IN},
+      	#{userMod,javaType=String,jdbcType=VARCHAR,mode=IN},
+      	#{team,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{motivo,javaType=String,jdbcType=VARCHAR,mode=IN},
+      	#{resultado,javaType=Integer,jdbcType=INTEGER,mode=OUT}
+     )}
+	</insert>
+
+<!-- 	SELECT_ACTIVIDAD -> V2 -->
+	<resultMap id = "result" type = "com.pe.ibm.bean.BeanActividad">
+      <result property = "idActividad" column = "IDACTIVIDAD"/>
+      <result property = "idturno" column = "IDTURNO"/>
+      <result property = "descripcionTurno" column = "TURNODESCRIPCION"/>
+      <result property = "idSede" column = "IDSEDE"/>
+      <result property = "descripcionSede" column = "SEDEDESCRIPCION"/>
+      <result property = "horaEjecucion" column = "HORAEJECUCION"/>
+      <result property = "descripcion" column = "DESCRIPCION"/>
+      <result property = "horaTermino" column = "HORARIOTERMINO"/>
+      <result property = "idPeriodo" column = "IDPERIODO"/>
+      <result property = "descripcionPeriodo" column = "PERIODODESCRIPCION"/>
+      <result property = "idPlataforma" column = "IDPLATAFORMA"/>
+      <result property = "descripcionPlataforma" column = "PLATAFORMADESCRIPCION"/>
+      <result property = "idProcedimiento" column = "IDPROCEDIMIENTO"/>     
+      <result property = "descripcionProcedimiento" column = "PROCEDIMIENTODESCRIPCION"/>  
+      <result property = "idServidor" column = "IDSERVIDOR"/>
+      <result property = "descripcionServidor" column = "SERVIDORDESCRIPCION"/>
+      <result property = "idCliente" column = "IDCLIENTE"/>     
+      <result property = "descripcionCliente" column = "CLIENTEDESCRIPCION"/> 
+      <result property = "jobStream" column = "JOBSTREAM"/>
+      <result property = "idTipoActividad" column = "IDTIPOACTIVIDAD"/>
+      <result property = "descripcionTipoActividad" column = "TIPOACTIVIDADDESCRIPCION"/>
+      <result property = "estado" column = "ESTADO"/>
+      <result property = "idTipoRespaldo" column = "IDTIPORESPALDO"/>
+      <result property = "descripcionTipoRespaldo" column = "TIPORESPALDODESCRIPCION"/>
+      <result property = "duracion" column = "DURACION"/>
+      <result property = "comentario" column = "COMENTARIO"/>
+      <result property = "ventanaMax" column = "VENTANAMAX"/>
+      <result property = "accion" column = "ACCION"/>
+      <result property = "tws" column = "TWS"/>
+      <result property = "descripcionTeam" column = "TEAM"/>
+   	</resultMap>   
+   
+    <select id = "listar" resultMap = "result" parameterType = "com.pe.ibm.bean.BeanEmpleado" statementType = "CALLABLE">
+      {call SCHEDULE.SELECT_ACTIVIDAD_V2(
+       #{iTeam,javaType=Integer,jdbcType=INTEGER,mode=IN}
+      )}
+    </select> 
+    
+<!--     SELECT_ACTIVIDAD_POR_ID -> V2 -->
+    <select id = "listarPorID" resultMap = "result" parameterType = "com.pe.ibm.bean.BeanActividad"  statementType = "CALLABLE">
+      {call SCHEDULE.SELECT_ACTIVIDAD_POR_ID_V2(
+      #{idActividad,javaType=Integer,jdbcType=INTEGER,mode=IN}
+      )}
+    </select> 
+    
+    <resultMap id = "resultHistorial" type = "com.pe.ibm.bean.BeanActividad">
+      <result property = "idActividad" column = "IDACTIVIDAD"/>
+      <result property = "idturno" column = "IDTURNO"/>
+      <result property = "descripcionTurno" column = "TURNODESCRIPCION"/>
+      <result property = "idSede" column = "IDSEDE"/>
+      <result property = "descripcionSede" column = "SEDEDESCRIPCION"/>
+      <result property = "horaEjecucion" column = "HORAEJECUCION"/>
+      <result property = "descripcion" column = "DESCRIPCION"/>
+      <result property = "horaTermino" column = "HORARIOTERMINO"/>
+      <result property = "idPeriodo" column = "IDPERIODO"/>
+      <result property = "descripcionPeriodo" column = "PERIODODESCRIPCION"/>
+      <result property = "idPlataforma" column = "IDPLATAFORMA"/>
+      <result property = "descripcionPlataforma" column = "PLATAFORMADESCRIPCION"/>
+      <result property = "idProcedimiento" column = "IDPROCEDIMIENTO"/>     
+      <result property = "descripcionProcedimiento" column = "PROCEDIMIENTODESCRIPCION"/>  
+      <result property = "idServidor" column = "IDSERVIDOR"/>
+      <result property = "descripcionServidor" column = "SERVIDORDESCRIPCION"/>
+      <result property = "idCliente" column = "IDCLIENTE"/>     
+      <result property = "descripcionCliente" column = "CLIENTEDESCRIPCION"/> 
+      <result property = "jobStream" column = "JOBSTREAM"/>
+      <result property = "idTipoActividad" column = "IDTIPOACTIVIDAD"/>
+      <result property = "descripcionTipoActividad" column = "TIPOACTIVIDADDESCRIPCION"/>
+      <result property = "estado" column = "ESTADO"/>
+      <result property = "idTipoRespaldo" column = "IDTIPORESPALDO"/>
+      <result property = "descripcionTipoRespaldo" column = "TIPORESPALDODESCRIPCION"/>
+      <result property = "duracion" column = "DURACION"/>
+      <result property = "comentario" column = "COMENTARIO"/>
+      <result property = "ventanaMax" column = "VENTANAMAX"/>
+      <result property = "accion" column = "ACCION"/>
+      <result property = "tws" column = "TWS"/>
+      <result property = "userMod" column = "USERMOD"/>
+      <result property = "fechaMod" column = "FECHAMOD"/>
+      <result property = "tipoMod" column = "TIPOMOD"/>
+      <result property = "motivo" column = "MOTIVO"/>
+   	</resultMap>   
+   
+<!--    SELECT_AUDITORIA_ACTIVIDAD -> V2 -->
+    <select id = "listarHistorial" resultMap = "resultHistorial"  parameterType = "com.pe.ibm.bean.BeanActividad"  statementType = "CALLABLE">
+      {call SCHEDULE.SELECT_AUDITORIA_ACTIVIDAD_V2(
+      #{idActividad,javaType=Integer,jdbcType=INTEGER,mode=IN}
+      )}
+    </select> 
+    
+
+
+</mapper>

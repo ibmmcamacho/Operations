@@ -1,0 +1,124 @@
+@charset "ISO-8859-1";
+
+.dataTables_filter{
+	display: none;
+}
+
+.quickView h3, .quickView p{
+	text-shadow: 0.5px 1px #5a5a5a99;
+}
+
+.small-box p {
+    font-family: "Source Sans pro";
+}
+
+h4{
+	font-weight: 500;
+    font-size: x-large;
+}
+
+table.dataTable thead th {font-weight:400}
+table.dataTable tbody {font-weight:100}
+
+#tblReportes tr.odd:nth-child(1) > td:nth-child(5),
+#tblReportes tr.even:nth-child(2) > td:nth-child(5),
+#tblReportes tr.odd:nth-child(3) > td:nth-child(5),
+#tblReportes tr.even:nth-child(4) > td:nth-child(5),
+#tblReportes tr.odd:nth-child(5) > td:nth-child(5),
+#tblReportes tr.even:nth-child(6) > td:nth-child(5){
+	background: aliceblue;
+}
+
+#tblReportes th.sorting_disabled:nth-child(2){
+	background-color: rgb(243, 156, 18);
+}
+
+#tblReportes th.sorting_disabled:nth-child(3){
+	background-color:  rgb(221, 75, 57);
+}
+#tblReportes th.sorting_disabled:nth-child(4){
+	background-color: rgb(0, 166, 90);
+}
+
+#tblReportes table.dataTable thead th, table.dataTable.no-footer {
+    border-bottom: 1px solid  #f4f4f4;;
+}
+#tblReportes tbody>tr:last-child td{ 
+	background:aliceblue; 
+}
+/* .table-bordered > thead > tr > th, */
+.table-bordered > tbody > tr > th, .table-bordered > tfoot > tr > th, .table-bordered > thead > tr > td, .table-bordered > tbody > tr > td, .table-bordered > tfoot > tr > td {
+    border: 1px dotted #939393;
+    
+}
+
+table.dataTable tfoot th, table.dataTable tfoot td {
+   padding: 8px 10px 6px 10px;
+}
+
+table > tfoot > tr > th > input{
+	width: 100% !important;
+}
+
+/*
+@media only screen and (max-width: 1000px) {
+    #dtResultados{
+		table-layout: fixed;	
+	}
+}
+#dtResultados, #dtInCriteria{
+	table-layout: fixed;	
+}*/
+
+fieldset.scheduler-border {
+    border: 1px groove #ddd !important;
+    margin: 0 0 1.5em 0 !important;
+    padding: 15px 13px;
+    padding-top: 6px;
+    -webkit-box-shadow:  0px 0px 0px 0px #000;
+            box-shadow:  0px 0px 0px 0px #000;
+}
+
+legend.scheduler-border {
+    font-size: 1.2em !important;
+    font-weight: bold !important;
+    text-align: left !important;
+    width:auto;
+    padding:0 10px;
+    border-bottom:none;
+    margin-bottom: 2px;
+    
+}
+
+.icon{
+	top: 10px !important;	
+}
+
+/* Loading */
+.loader {
+  height: 7px;
+  margin: 5px 0px;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  background-color: #ddd;
+}
+.loader:before{
+  display: block;
+  position: absolute;
+  content: "";
+  left: -200px;
+  width: 200px;
+  height: 7px;
+  background-color: #2980b9;
+  animation: loading 2s linear infinite;
+}
+
+@keyframes loading {
+    from {left: -200px; width: 30%;}
+    50% {width: 30%;}
+    70% {width: 70%;}
+    80% { left: 50%;}
+    95% {left: 120%;}
+    to {left: 100%;}
+}

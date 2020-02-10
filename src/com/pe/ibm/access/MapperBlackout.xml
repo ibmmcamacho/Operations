@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="com.pe.ibm.access.MapperBlackout">
+	<resultMap id = "result" type = "com.pe.ibm.bean.BeanBlackout">
+	  <result property = "tipo" column = "TIPO"/>
+	  <result property = "inicio" column = "INICIO"/>
+	  <result property = "suppressend" column = "SUPPRESSEND"/>
+	  <result property = "changenumber" column = "CHANGENUMBER"/>
+	  <result property = "description" column = "DESCRIPTION"/>
+	  <result property = "customercode" column = "CUSTOMERCODE"/>
+	  <result property = "duration" column = "DURATION"/>
+	  <result property = "originator" column = "ORIGINATOR"/>
+	  <result property = "resourceid" column = "RESOURCEID"/>
+	  <result property = "component" column = "COMPONENT"/>
+	  <result property = "componenttype" column = "COMPONENTTYPE"/>
+	  <result property = "applid" column = "APPLID"/>
+	  <result property = "instanceid" column = "INSTANCEID"/>
+   	</resultMap>
+     
+    <select id = "listblackout" resultMap = "result" parameterType = "com.pe.ibm.bean.BeanBlackout">     
+    <![CDATA[Select case when type = '0' then 'Scheduled' 
+	when type = '1' then 'Recurring'
+	when type = '2' then 'Immediate'
+	else 'NO TIENE' end as tipo,
+(suppressend - duration minute) as Inicio,suppressend ,changenumber,trim(description), customercode,duration,originator,resourceid,
+component,componenttype,applid,instanceid
+from db2lds.blackout]]>
+    </select>
+        
+</mapper>

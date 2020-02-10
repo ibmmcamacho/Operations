@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration
+PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<environments default="development">
+		<environment id="development">
+			<transactionManager type="JDBC" />
+			<dataSource type="POOLED">
+				<property name="driver" value="com.ibm.db2.jcc.DB2Driver" />
+				
+				<!--  BlueMix -->
+<!-- 				<property name="url" value="jdbc:db2://cap-sg-prd-3.integration.ibmcloud.com:16342/CONSUMOS" /> -->
+<!-- 				<property name="username" value="dynmgt" /> -->
+<!-- 				<property name="password" value="N4yl1m0n" /> -->
+				
+				<!--  Server WH -->
+				<property name="url" value="jdbc:db2://129.39.179.202:50000/CONSUMOS" />
+				<property name="username" value="dynmgt" />
+				<property name="password" value="N4yl1m0n" />
+				
+				<property name="poolMaximumActiveConnections" value="2"></property>
+				<property name="poolMaximumIdleConnections" value="2"></property>
+				<property name="poolPingQuery" value="true" />
+				<property name="poolTimeToWait" value="1000"/>
+				<property name="poolMaximumCheckoutTime" value="3000"/>
+			</dataSource>
+		</environment>
+	</environments>
+	
+	<mappers>
+		<mapper resource="com/pe/ibm/access/MapperMaximoWH.xml" />
+		<mapper resource="com/pe/ibm/access/MapperSla.xml" />
+		<mapper resource="com/pe/ibm/access/MapperReporteDispatch.xml" />
+		<mapper resource="com/pe/ibm/access/MapperTablero.xml" />
+		<mapper resource="com/pe/ibm/access/MapperMaximoView.xml" /><!--Added by BG001 -->
+		<mapper resource="com/pe/ibm/access/MapperReportes.xml"/>
+	</mappers>
+	
+</configuration>

@@ -1,0 +1,28 @@
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.pe.ibm.access.MapperMaximoOPER">
+
+	<!-- 	R E T U R N S -->
+	<resultMap id="result" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="strValor1" column="IDEMPLEADO" />
+		<result property="strValor2" column="NOMBRE" />
+		<result property="strValor3" column="AP_PATERNO" />
+		<result property="strValor4" column="IDTEAM" />
+		<result property="ticketEmailPropietario" column="EMAIL" />
+	</resultMap>
+<!-- 	Sirve tambien para el count .size or .length -->
+	<select id="ownersTicketsAssistance" resultMap="result" parameterType = "com.pe.ibm.bean.BeanMaximo" >
+		SELECT  
+		R.IDEMPLEADO, 
+		E.NOMBRE,
+		E.AP_PATERNO,
+		E.EMAIL,
+		E.IDTEAM 
+		FROM OPERACION.REG AS R 
+		INNER JOIN OPERACION.EMPLEADO AS E 
+		ON E.IDEMPLEADO = R.IDEMPLEADO 
+		WHERE FECHA_S IS NULL 
+		AND R.IDTEAM IN (${strValor1})
+	</select>
+</mapper>

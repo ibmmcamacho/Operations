@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="com.pe.ibm.access.MapperTicketWO">
+
+	<resultMap id="resultadoWorkOrder" type="com.pe.ibm.bean.WorkOrder">
+		 <result property="id" column="ID"/>
+		 <result property="wogroupwa" column="WOGROUPWA"/>
+		 <result property="taskidwa" column="TASKIDWA"/>
+		 <result property="descriptionwa" column="DESCRIPTIONWA"/>
+		 <result property="pluspcustomerwa" column="PLUSPCUSTOMERWA"/>
+		 <result property="estadowa" column="ESTADOWA"/>
+		 <result property="woprioritywa" column="WOPRIORITYWA"/>
+		 <result property="actstartwa" column="ACTSTARTWA"/>
+		 <result property="changebywa" column="CHANGEBYWA"/>	
+		 <result property="cinum" column="CINUM"/>	
+		 <result property="serviceline" column="SERVICELINE"/>	
+		 <result property="ownerwa" column="OWNERWA"/>	
+		 <result property="ownergroupwa" column="OWNERGROUPWA"/>	
+		 <result property="reportdatewa" column="REPORTDATEWA"/>	
+		 <result property="reportedbywa" column="REPORTEDBYWA"/>	
+		 <result property="statusdatewa" column="STATUSDATEWA"/>	
+		 <result property="woclasswa" column="WOCLASSWA"/>	
+		 <result property="jpnum" column="JPNUM"/>	
+		 <result property="jpdescription" column="JPDESCRIPTION"/>
+		 <result property="woactualfin" column="WOACTUALFIN"/>
+		 <result property="actfinish" column="ACTFINISH"/>
+		 <result property="wonumwa" column="WONUMWA"/>
+		 <result property="habPuestoTrabajo" column="HABPUESTOTRABAJO"/>
+		 <result property="strhabPuestoTrabajo" column="HABPUESTOTRABAJO"/>
+		 <result property="wo_acta" column="WO_ACTA"/>
+	</resultMap>
+	
+	
+    
+    <select id="servicedeskobtenerWorkOrder" parameterType="String" resultMap="resultadoWorkOrder" >
+	SELECT WO.WOGROUPWA,    
+	 WO.TASKIDWA,    
+	 WO.DESCRIPTIONWA,    
+	 WO.PLUSPCUSTOMERWA,    
+	 WO.ESTADOWA,    
+	 WO.WOPRIORITYWA,    
+	 WO.ACTSTARTWA,    
+	 WO.CHANGEBYWA,    
+	 WO.CINUM,    
+	 WO.SERVICELINE,
+	 WO.OWNERWA,  
+	 WO.OWNERGROUPWA,
+	 WO.REPORTDATEWA,    
+	 WO.REPORTEDBYWA,    
+	 WO.STATUSDATEWA, 
+	 WO.WOCLASSWA,   
+	 WO.JPNUM,
+	 WO.JPDESCRIPTION,
+	 WO.WOACTUALFIN,    
+	 WO.ACTFINISH,
+	 WO.WONUMWA,
+	 WO.HABPUESTOTRABAJO,
+	 WO.WO_ACTA  
+	 FROM SMARTDESK.WORKORDER WO    
+	 WHERE    
+	 (WO.PLUSPCUSTOMERWA LIKE (SELECT P.PLUSCUSTOMER FROM SMARTDESK.PROYECTO P WHERE P.IDPROYECTO = #{idproyecto})   )    
+	 AND WO.WOCLASSWA IN ('ACTIVITY','WORKORDER')    
+	 AND WO.WOGROUPWA NOT LIKE 'CH%'    
+	 AND WO.ESTADOWA IN ('COMP','NOTREQ')  
+	 AND (CAST (VARCHAR_FORMAT(WO.WOACTUALFIN,'MMYYYY') AS INTEGER) = CAST(VARCHAR_FORMAT(#{fechaInicio}  ,'MMYYYY') AS INTEGER)) 
+	 ORDER BY WO.ACTFINISH  
+    </select>
+
+    
+	<select id="servicedeskbuscarWorkOrder" parameterType="com.pe.ibm.bean.WorkOrder" resultMap="resultadoWorkOrder" >
+
+	 SELECT 
+	 WONUMWA
+	 FROM SMARTDESK.WORKORDER 
+	 WHERE 
+	 WONUMWA = #{wonumwa} 
+    </select>
+    
+    
+    <select id="servicedeskWOHabPuestoTrabajoTiempoNull" parameterType="String" resultMap="resultadoWorkOrder" >
+
+	SELECT 
+	WOGROUPWA, TASKIDWA, DESCRIPTIONWA, PLUSPCUSTOMERWA, ESTADOWA, WOPRIORITYWA, ACTSTARTWA, CHANGEBYWA, CINUM, SERVICELINE,  OWNERWA, OWNERGROUPWA,  REPORTDATEWA,    
+    REPORTEDBYWA, STATUSDATEWA, WOCLASSWA, JPNUM,  JPDESCRIPTION, WOACTUALFIN,  ACTFINISH, WONUMWA 
+	FROM
+	SMARTDESK.WORKORDER
+	WHERE
+	ESTADOWA LIKE 'COMP'
+	AND (UPPER(JPDESCRIPTION) IN (UPPER('Alta personal Rimac') , UPPER('Alta personal Externo')))
+	AND (OWNERGROUPWA IN ('I-DCS-PE-VIR10-RIMAC-OSNR','I-DCS-PE-VIR10-RIMAC-OSRT','I-DCS-PE-VIR10-RIMAC-VIP','I-DCS-PE-VIR10-RIMAC-OSPRV' ))
+	AND (UPPER(DESCRIPTIONWA) LIKE '%ENTREGA%')
+	AND (CAST (VARCHAR_FORMAT(WOACTUALFIN,'MMYYYY') AS INTEGER) = CAST(VARCHAR_FORMAT(#{fechaFin} ,'MMYYYY') AS INTEGER)) 
+	AND (HABPUESTOTRABAJO IS NULL)
+    </select>
+    
+    <select id="servicedeskWOHabPuestoTrabajo" parameterType="String" resultMap="resultadoWorkOrder" >
+
+	SELECT 
+	WOGROUPWA, TASKIDWA, DESCRIPTIONWA, PLUSPCUSTOMERWA, ESTADOWA, WOPRIORITYWA, ACTSTARTWA, CHANGEBYWA, CINUM, SERVICELINE,  OWNERWA, OWNERGROUPWA,  REPORTDATEWA,    
+    REPORTEDBYWA, STATUSDATEWA, WOCLASSWA, JPNUM,  JPDESCRIPTION, WOACTUALFIN,  ACTFINISH, WONUMWA, HABPUESTOTRABAJO
+	FROM
+	SMARTDESK.WORKORDER
+	WHERE
+	ESTADOWA LIKE 'COMP'
+	AND (UPPER(JPDESCRIPTION) LIKE (UPPER('%Alta personal%')))
+	AND (OWNERGROUPWA IN (#{idgruporesolutor},#{idgruporesolutorVip}))
+	AND (UPPER(DESCRIPTIONWA) LIKE '%ENTREGA%')
+	AND (CAST (VARCHAR_FORMAT(WOACTUALFIN,'MMYYYY') AS INTEGER) = CAST(VARCHAR_FORMAT(#{fechaFin} ,'MMYYYY') AS INTEGER)) 
+	AND PLUSPCUSTOMERWA LIKE #{pluscustomer}
+	AND (HABPUESTOTRABAJO IS NOT NULL)
+    </select>
+    
+    
+    <select id="WOOSLIMA" parameterType="com.pe.ibm.bean.BeanBusqueda" resultMap="resultadoWorkOrder" >
+
+	SELECT 
+	WOGROUPWA, TASKIDWA, DESCRIPTIONWA, PLUSPCUSTOMERWA, ESTADOWA, WOPRIORITYWA, ACTSTARTWA, CHANGEBYWA, CINUM, SERVICELINE,  OWNERWA, OWNERGROUPWA,  REPORTDATEWA,    
+    REPORTEDBYWA, STATUSDATEWA, WOCLASSWA, JPNUM,  JPDESCRIPTION, WOACTUALFIN,  ACTFINISH, WONUMWA, HABPUESTOTRABAJO
+	FROM
+	SMARTDESK.WORKORDER
+	WHERE
+	ESTADOWA LIKE 'COMP'
+	AND (OWNERGROUPWA LIKE 'I-DCS-PE-%' AND OWNERGROUPWA NOT LIKE '%OSPRV')
+	AND ((UPPER(DESCRIPTIONWA) NOT LIKE 'ENTREGA%') AND (UPPER(DESCRIPTIONWA) NOT LIKE '%RECUPERA%') AND (UPPER(DESCRIPTIONWA) NOT LIKE 'CARGA DE%'))
+    AND (CAST (VARCHAR_FORMAT(WOACTUALFIN,'MMYYYY') AS INTEGER) = CAST(VARCHAR_FORMAT(#{fechaInicio} ,'MMYYYY') AS INTEGER)) 
+    AND PLUSPCUSTOMERWA LIKE #{pluscustomer}
+    </select>
+    
+      <select id="WOOSPROV" parameterType="com.pe.ibm.bean.BeanBusqueda" resultMap="resultadoWorkOrder" >
+
+	SELECT 
+	WOGROUPWA, TASKIDWA, DESCRIPTIONWA, PLUSPCUSTOMERWA, ESTADOWA, WOPRIORITYWA, ACTSTARTWA, CHANGEBYWA, CINUM, SERVICELINE,  OWNERWA, OWNERGROUPWA,  REPORTDATEWA,    
+    REPORTEDBYWA, STATUSDATEWA, WOCLASSWA, JPNUM,  JPDESCRIPTION, WOACTUALFIN,  ACTFINISH, WONUMWA, HABPUESTOTRABAJO
+	FROM
+	SMARTDESK.WORKORDER
+	WHERE
+	ESTADOWA LIKE 'COMP'
+	AND (OWNERGROUPWA LIKE 'I-DCS-PE-%' AND OWNERGROUPWA LIKE '%OSPRV')
+	AND ((UPPER(DESCRIPTIONWA) NOT LIKE 'ENTREGA%') AND (UPPER(DESCRIPTIONWA) NOT LIKE '%RECUPERA%') AND (UPPER(DESCRIPTIONWA) NOT LIKE 'CARGA DE%'))
+    AND (CAST (VARCHAR_FORMAT(WOACTUALFIN,'MMYYYY') AS INTEGER) = CAST(VARCHAR_FORMAT(#{fechaInicio} ,'MMYYYY') AS INTEGER)) 
+    AND PLUSPCUSTOMERWA LIKE #{pluscustomer}
+    </select>
+    
+    <select id="WOIMACOSLIMA" parameterType="com.pe.ibm.bean.BeanBusqueda" resultMap="resultadoWorkOrder" >
+
+	SELECT 
+	WOGROUPWA, TASKIDWA, DESCRIPTIONWA, PLUSPCUSTOMERWA, ESTADOWA, WOPRIORITYWA, ACTSTARTWA, CHANGEBYWA, CINUM, SERVICELINE,  OWNERWA, OWNERGROUPWA,  REPORTDATEWA,    
+    REPORTEDBYWA, STATUSDATEWA, WOCLASSWA, JPNUM,  JPDESCRIPTION, WOACTUALFIN,  ACTFINISH, WONUMWA, HABPUESTOTRABAJO
+	FROM
+	SMARTDESK.WORKORDER
+	WHERE
+	ESTADOWA LIKE 'COMP'
+	AND (OWNERGROUPWA LIKE 'I-DCS-PE-%' AND OWNERGROUPWA NOT LIKE '%OSPRV')
+	AND ((UPPER(DESCRIPTIONWA) LIKE 'ENTREGA%') OR (UPPER(DESCRIPTIONWA) LIKE '%RECUPERA%'))
+    AND (CAST (VARCHAR_FORMAT(WOACTUALFIN,'MMYYYY') AS INTEGER) = CAST(VARCHAR_FORMAT(#{fechaInicio} ,'MMYYYY') AS INTEGER)) 
+    AND PLUSPCUSTOMERWA LIKE #{pluscustomer}
+    </select>
+    
+    <select id="WOIMACOSPROV" parameterType="com.pe.ibm.bean.BeanBusqueda" resultMap="resultadoWorkOrder" >
+
+	SELECT 
+	WOGROUPWA, TASKIDWA, DESCRIPTIONWA, PLUSPCUSTOMERWA, ESTADOWA, WOPRIORITYWA, ACTSTARTWA, CHANGEBYWA, CINUM, SERVICELINE,  OWNERWA, OWNERGROUPWA,  REPORTDATEWA,    
+    REPORTEDBYWA, STATUSDATEWA, WOCLASSWA, JPNUM,  JPDESCRIPTION, WOACTUALFIN,  ACTFINISH, WONUMWA, HABPUESTOTRABAJO
+	FROM
+	SMARTDESK.WORKORDER
+	WHERE
+	ESTADOWA LIKE 'COMP'
+	AND (OWNERGROUPWA LIKE 'I-DCS-PE-%' AND OWNERGROUPWA LIKE '%OSPRV')
+	AND ((UPPER(DESCRIPTIONWA) LIKE 'ENTREGA%') OR (UPPER(DESCRIPTIONWA) LIKE '%RECUPERA%'))
+    AND (CAST (VARCHAR_FORMAT(WOACTUALFIN,'MMYYYY') AS INTEGER) = CAST(VARCHAR_FORMAT(#{fechaInicio} ,'MMYYYY') AS INTEGER)) 
+    AND PLUSPCUSTOMERWA LIKE #{pluscustomer} 
+    </select>
+    
+    <select id="WOVDIOSLIMA" parameterType="com.pe.ibm.bean.BeanBusqueda" resultMap="resultadoWorkOrder" >
+
+	SELECT 
+	WOGROUPWA, TASKIDWA, DESCRIPTIONWA, PLUSPCUSTOMERWA, ESTADOWA, WOPRIORITYWA, ACTSTARTWA, CHANGEBYWA, CINUM, SERVICELINE,  OWNERWA, OWNERGROUPWA,  REPORTDATEWA,    
+    REPORTEDBYWA, STATUSDATEWA, WOCLASSWA, JPNUM,  JPDESCRIPTION, WOACTUALFIN,  ACTFINISH, WONUMWA, HABPUESTOTRABAJO
+	FROM
+	SMARTDESK.WORKORDER
+	WHERE
+	ESTADOWA LIKE 'COMP'
+	AND ((UPPER(DESCRIPTIONWA) LIKE '%VDI%'))   
+    AND (CAST (VARCHAR_FORMAT(WOACTUALFIN,'MMYYYY') AS INTEGER) = CAST(VARCHAR_FORMAT(#{fechaInicio} ,'MMYYYY') AS INTEGER)) 
+    AND PLUSPCUSTOMERWA LIKE #{pluscustomer}
+    </select>
+    
+    <select id="WOACTOSLIMA" parameterType="com.pe.ibm.bean.BeanBusqueda" resultMap="resultadoWorkOrder" >
+	SELECT 
+	A.WOGROUPWA, A.TASKIDWA, A.DESCRIPTIONWA, A.PLUSPCUSTOMERWA, A.ESTADOWA, A.WOPRIORITYWA, A.ACTSTARTWA, A.CHANGEBYWA, A.CINUM, 
+	A.SERVICELINE,  A.OWNERWA, A.OWNERGROUPWA,  A.REPORTDATEWA,    
+    A.REPORTEDBYWA, A.STATUSDATEWA, A.WOCLASSWA, A.JPNUM,  A.JPDESCRIPTION, A.WOACTUALFIN,  A.ACTFINISH, A.WONUMWA, A.HABPUESTOTRABAJO
+	FROM
+    SMARTDESK.WORKORDER A
+    WHERE
+    A.ESTADOWA LIKE 'COMP'
+    AND A.PLUSPCUSTOMERWA LIKE #{pluscustomer}
+    AND (CAST (VARCHAR_FORMAT(A.WOACTUALFIN,'MMYYYY') AS INTEGER) = CAST(VARCHAR_FORMAT(#{fechaInicio} ,'MMYYYY') AS INTEGER)) 
+    AND (A.OWNERGROUPWA LIKE 'I-DCS-PE-%')
+    AND (UPPER(A.DESCRIPTIONWA) LIKE '%ACTA%') 
+<!--     AND ((UPPER(A.DESCRIPTIONWA) NOT LIKE 'RECUPERA%' AND  UPPER(A.DESCRIPTIONWA) NOT LIKE 'ENTREGA%' AND UPPER(A.DESCRIPTIONWA) NOT LIKE 'INSTALAC%')  -->
+<!--         OR (UPPER(A.JPDESCRIPTION) LIKE UPPER('Actividades de Mudanza en la sede') AND UPPER(A.DESCRIPTIONWA) LIKE 'DESCONEX%') -->
+<!--         OR (UPPER(A.JPDESCRIPTION) NOT LIKE UPPER('Actividades de Mudanza en la sede') AND UPPER(A.DESCRIPTIONWA) NOT LIKE 'CONEXIÓN%') -->
+<!--         OR (UPPER(A.JPDESCRIPTION) NOT LIKE UPPER('Actividades de Mudanza entre sedes') AND UPPER(A.DESCRIPTIONWA) NOT LIKE 'DESCONEX%') -->
+<!--         OR (UPPER(A.JPDESCRIPTION) NOT LIKE UPPER('Actividades de Mudanza entre sedes') AND UPPER(A.DESCRIPTIONWA) NOT LIKE 'CONEXIÓN%') -->
+<!--     ) -->
+    AND (A.WO_ACTA LIKE 'APLICA')
+    </select>
+    
+    <select id="servicedeskEvaluarWOACTA" parameterType="com.pe.ibm.bean.BeanBusqueda" resultMap="resultadoWorkOrder" >
+	SELECT 
+	A.WOGROUPWA, A.TASKIDWA, A.DESCRIPTIONWA, A.PLUSPCUSTOMERWA, A.ESTADOWA, A.WOPRIORITYWA, A.ACTSTARTWA, A.CHANGEBYWA, A.CINUM, 
+	A.SERVICELINE,  A.OWNERWA, A.OWNERGROUPWA,  A.REPORTDATEWA,    
+    A.REPORTEDBYWA, A.STATUSDATEWA, A.WOCLASSWA, A.JPNUM,  A.JPDESCRIPTION, A.WOACTUALFIN,  A.ACTFINISH, A.WONUMWA, A.HABPUESTOTRABAJO
+	FROM
+	SMARTDESK.WORKORDER A
+	WHERE 
+  	A.ESTADOWA LIKE 'COMP'
+    AND PLUSPCUSTOMERWA LIKE #{pluscustomer}
+    AND (CAST (VARCHAR_FORMAT(WOACTUALFIN,'MMYYYY') AS INTEGER) = CAST(VARCHAR_FORMAT(#{fechaInicio} ,'MMYYYY') AS INTEGER)) 
+    AND (A.OWNERGROUPWA LIKE 'I-DCS-PE-%' AND A.OWNERGROUPWA NOT LIKE '%OSPRV')
+    AND (UPPER(A.DESCRIPTIONWA) LIKE '%ACTA%') 
+    AND ((UPPER(A.DESCRIPTIONWA) NOT LIKE 'RECUPERA%' AND  UPPER(A.DESCRIPTIONWA) NOT LIKE 'ENTREGA%' AND UPPER(A.DESCRIPTIONWA) NOT LIKE 'INSTALAC%') 
+        OR (UPPER(A.JPDESCRIPTION) LIKE UPPER('Actividades de Mudanza en la sede') AND UPPER(A.DESCRIPTIONWA) LIKE 'DESCONEX%')
+        OR (UPPER(A.JPDESCRIPTION) NOT LIKE UPPER('Actividades de Mudanza en la sede') AND UPPER(A.DESCRIPTIONWA) NOT LIKE 'CONEXIÓN%')
+        OR (UPPER(A.JPDESCRIPTION) NOT LIKE UPPER('Actividades de Mudanza entre sedes') AND UPPER(A.DESCRIPTIONWA) NOT LIKE 'DESCONEX%')
+        OR (UPPER(A.JPDESCRIPTION) NOT LIKE UPPER('Actividades de Mudanza entre sedes') AND UPPER(A.DESCRIPTIONWA) NOT LIKE 'CONEXIÓN%')
+    )
+    AND (A.WO_ACTA IS NULL OR A.WO_ACTA NOT LIKE 'APLICA')
+    </select>
+    
+    <select id="maximoValidaWOACTAOS" parameterType="com.pe.ibm.bean.WorkOrder" resultMap="resultadoWorkOrder" >
+	 SELECT 
+  	 WA.WOGROUP AS WOGROUPWA, 
+  	 WA.TASKID AS TASKIDWA, 
+  	 WA.DESCRIPTION AS DESCRIPTIONWA,
+  	 WA.OWNER AS OWNERWA, 
+  	 WA.OWNERGROUP AS OWNERGROUPWA, 
+  	 WA.STATUS AS ESTADOWA
+ 	 FROM MAXIMO.WOACTIVITY WA 
+ 	 WHERE 
+  	 WA.WOGROUP LIKE #{wogroupwa} AND WA.OWNERGROUP LIKE 'I-DCS-PE-%' AND WA.OWNERGROUP NOT LIKE '%OSPRV'
+     AND WA.TASKID = (SELECT W.TASKID FROM MAXIMO.WOACTIVITY W 
+                    WHERE  (W.WOGROUP LIKE WA.WOGROUP)  
+                    AND (UPPER(W.DESCRIPTION) LIKE 'ENTREGA%' OR UPPER(W.DESCRIPTION) LIKE 'RECUPERA%') 
+                    AND (W.OWNERGROUP LIKE 'I-DCS-PE-%') AND (W.STATUS LIKE 'NOTREQ') 
+                     FETCH FIRST 1 ROWS ONLY)  
+    </select>
+    
+               
+	<delete id="deleteWoBacklog">
+  	DELETE FROM SMARTDESK.WOBACKLOG
+	</delete>
+	
+	<insert id="serviceDeskInsertarWorkOrder" parameterType="com.pe.ibm.bean.WorkOrder"> 
+    	INSERT INTO SMARTDESK.WORKORDER (
+    	WOGROUPWA, TASKIDWA, DESCRIPTIONWA, PLUSPCUSTOMERWA, ESTADOWA, WOPRIORITYWA, ACTSTARTWA, CHANGEBYWA, CINUM, SERVICELINE,  OWNERWA, OWNERGROUPWA,  REPORTDATEWA,    
+    	REPORTEDBYWA, STATUSDATEWA, WOCLASSWA, JPNUM,  JPDESCRIPTION, WOACTUALFIN,  ACTFINISH, WONUMWA )
+       
+        VALUES 
+       
+       (#{wogroupwa},
+		#{taskidwa},
+		#{descriptionwa},
+		#{pluspcustomerwa},
+		#{estadowa},
+		#{woprioritywa},
+		#{actstartwa},
+		#{changebywa},
+		#{cinum},
+		#{serviceline},
+		#{ownerwa},
+		#{ownergroupwa},
+		#{reportdatewa},
+		#{reportedbywa},
+		#{statusdatewa},
+		#{woclasswa},
+		#{jpnum},
+		#{jpdescription},
+		#{woactualfin},
+		#{actfinish},
+		#{wonumwa}
+       )
+     </insert>
+     
+      <update id="serviceDeskActualizarWorkOrder" parameterType="com.pe.ibm.bean.WorkOrder" > 
+    	UPDATE SMARTDESK.WORKORDER  
+    	
+		SET  
+       	WOGROUPWA = #{wogroupwa}, 
+       	TASKIDWA = #{taskidwa}, 
+       	DESCRIPTIONWA = #{descriptionwa}, 
+       	PLUSPCUSTOMERWA = #{pluspcustomerwa}, 
+       	ESTADOWA = #{estadowa}, 
+       	WOPRIORITYWA = #{woprioritywa}, 
+       	ACTSTARTWA = #{actstartwa}, 
+       	CHANGEBYWA = #{changebywa}, 
+       	CINUM = #{cinum}, 
+       	SERVICELINE = #{serviceline},  
+       	OWNERWA = #{ownerwa}, 
+       	OWNERGROUPWA = #{ownergroupwa},
+       	REPORTDATEWA = #{reportdatewa},    
+    	REPORTEDBYWA = #{reportedbywa}, 
+    	STATUSDATEWA = #{statusdatewa}, 
+    	WOCLASSWA = #{woclasswa}, 
+    	JPNUM = #{jpnum},  
+    	JPDESCRIPTION = #{jpdescription}, 
+    	WOACTUALFIN = #{woactualfin},  
+    	ACTFINISH = #{actfinish}
+		
+    	WHERE 
+    	
+    	WONUMWA = #{wonumwa} 
+      
+        </update> 
+        
+        <update id="serviceDeskActualizarWorkOrderPuestoTrabajo" parameterType="com.pe.ibm.bean.WorkOrder" > 
+    	UPDATE SMARTDESK.WORKORDER  
+    	
+		SET  
+       	
+    	HABPUESTOTRABAJO = #{habPuestoTrabajo}
+	
+    	WHERE 
+    	
+    	WONUMWA = #{wonumwa} 
+      
+        </update> 
+        
+        <update id="serviceDeskActualizarWorkOrderACTA" parameterType="com.pe.ibm.bean.WorkOrder" > 
+    	UPDATE SMARTDESK.WORKORDER  
+    	
+		SET  
+    	WO_ACTA = 'APLICA'
+	
+    	WHERE 
+    	WONUMWA = #{wonumwa} 
+      
+        </update> 
+
+</mapper>

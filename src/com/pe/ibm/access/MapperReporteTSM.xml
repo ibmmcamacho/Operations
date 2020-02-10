@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="reportsTSM">
+	
+	<resultMap id="resultBackupGrafico" type="com.pe.ibm.bean.BeanReporteTSM">
+		<result property="cliente" column="CLIENTE"/>
+		<result property="fecha" column="FECHA"/>
+		<result property="cantidad" column="CANTIDAD"/>
+	</resultMap>
+	
+	<select id="getBackupGrafico" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultBackupGrafico">
+	SELECT 
+		SUBSTR(DOMAIN_NAME,4,LENGTH(DOMAIN_NAME)) CLIENTE, 
+		DATE(SCHEDULED_START) FECHA, 
+		COUNT(1) CANTIDAD 
+	FROM 
+		TSM.EVENTS 
+	WHERE 
+		DOMAIN_NAME != '' AND 
+		<if test="strValor1 != null">
+			UPPER(STATUS) = #{strValor1} AND
+		</if>
+		DATE(SUBSTR(SCHEDULED_START,1,10)) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2})
+	GROUP BY 
+		DOMAIN_NAME, DATE(SCHEDULED_START) ORDER BY 1 ASC, 2 ASC
+	</select>
+	
+	<resultMap id="resultBackupFallido" type="com.pe.ibm.bean.BeanReporteTSM">
+		<result property="nombretsm" column="NOMBRETSM"/>
+		<result property="datescheduled" column="DATESCHEDULED"/>
+		<result property="timescheduled" column="TIMESCHEDULED"/>
+		<result property="datestart" column="DATESTART"/>
+		<result property="timestart" column="TIMESTART"/>
+		<result property="schedule_name" column="SCHEDULE_NAME"/>
+		<result property="node_name" column="NODE_NAME"/>
+		<result property="status" column="STATUS"/>
+		<result property="result" column="RESULT"/>
+		<result property="reason" column="REASON"/>
+		<result property="datecompleted" column="DATECOMPLETED"/>
+		<result property="timecompleted" column="TIMECOMPLETED"/>
+	</resultMap>
+	
+	<select id="getBackupFallido" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultBackupFallido">
+	SELECT NOMBRETSM, 
+		CASE WHEN LENGTH(SCHEDULED_START) > 0 THEN VARCHAR_FORMAT(SCHEDULED_START,'YYYY-MM-DD') ELSE SCHEDULED_START END DATESCHEDULED, 
+		CASE WHEN LENGTH(SCHEDULED_START) > 0 THEN VARCHAR_FORMAT(SCHEDULED_START,'HH24:MI:SS') ELSE SCHEDULED_START END TIMESCHEDULED, 
+		CASE WHEN LENGTH(ACTUAL_START) > 0 THEN VARCHAR_FORMAT(ACTUAL_START,'YYYY-MM-DD') ELSE ACTUAL_START END DATESTART, 
+		CASE WHEN LENGTH(ACTUAL_START) > 0 THEN VARCHAR_FORMAT(ACTUAL_START,'HH24:MI:SS') ELSE ACTUAL_START END TIMESTART, 
+		SCHEDULE_NAME, NODE_NAME,STATUS,RESULT,REASON,
+		CASE WHEN LENGTH(COMPLETED) > 0 THEN VARCHAR_FORMAT(COMPLETED,'YYYY-MM-DD') ELSE COMPLETED END DATECOMPLETED, 
+		CASE WHEN LENGTH(COMPLETED) > 0 THEN VARCHAR_FORMAT(COMPLETED,'HH24:MI:SS') ELSE COMPLETED END TIMECOMPLETED
+	FROM 
+		TSM.EVENTS WHERE DOMAIN_NAME != '' AND STATUS = 'Failed' AND DATE(SCHEDULED_START) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2})
+	</select>
+	
+	
+	<resultMap id="resultBackupCompleto" type="com.pe.ibm.bean.BeanReporteTSM">
+		<result property="nombretsm" column="NOMBRETSM"/>
+		<result property="datescheduled" column="DATESCHEDULED"/>
+		<result property="timescheduled" column="TIMESCHEDULED"/>
+		<result property="datestart" column="DATESTART"/>
+		<result property="timestart" column="TIMESTART"/>
+		<result property="schedule_name" column="SCHEDULE_NAME"/>
+		<result property="node_name" column="NODE_NAME"/>
+		<result property="status" column="STATUS"/>
+		<result property="result" column="RESULT"/>
+		<result property="reason" column="REASON"/>
+		<result property="datecompleted" column="DATECOMPLETED"/>
+		<result property="timecompleted" column="TIMECOMPLETED"/>
+	</resultMap>
+	
+	<select id="getBackupCompleto" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultBackupCompleto">
+	SELECT NOMBRETSM,
+		CASE WHEN LENGTH(SCHEDULED_START) > 0 THEN VARCHAR_FORMAT(SCHEDULED_START,'YYYY-MM-DD') ELSE SCHEDULED_START END DATESCHEDULED, 
+		CASE WHEN LENGTH(SCHEDULED_START) > 0 THEN VARCHAR_FORMAT(SCHEDULED_START,'HH24:MI:SS') ELSE SCHEDULED_START END TIMESCHEDULED, 
+		CASE WHEN LENGTH(ACTUAL_START) > 0 THEN VARCHAR_FORMAT(ACTUAL_START,'YYYY-MM-DD') ELSE ACTUAL_START END DATESTART, 
+		CASE WHEN LENGTH(ACTUAL_START) > 0 THEN VARCHAR_FORMAT(ACTUAL_START,'HH24:MI:SS') ELSE ACTUAL_START END TIMESTART, 
+		SCHEDULE_NAME, NODE_NAME,STATUS,RESULT,REASON,
+		CASE WHEN LENGTH(COMPLETED) > 0 THEN VARCHAR_FORMAT(COMPLETED,'YYYY-MM-DD') ELSE COMPLETED END DATECOMPLETED, 
+		CASE WHEN LENGTH(COMPLETED) > 0 THEN VARCHAR_FORMAT(COMPLETED,'HH24:MI:SS') ELSE COMPLETED END TIMECOMPLETED
+	FROM 
+		TSM.EVENTS WHERE DOMAIN_NAME != '' AND STATUS = 'Completed' AND DATE(SCHEDULED_START) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2})
+	</select>
+	
+	
+	<resultMap id="resultBackupTotal" type="com.pe.ibm.bean.BeanReporteTSM">
+		<result property="nombretsm" column="NOMBRETSM"/>
+		<result property="datescheduled" column="DATESCHEDULED"/>
+		<result property="timescheduled" column="TIMESCHEDULED"/>
+		<result property="datestart" column="DATESTART"/>
+		<result property="timestart" column="TIMESTART"/>
+		<result property="schedule_name" column="SCHEDULE_NAME"/>
+		<result property="node_name" column="NODE_NAME"/>
+		<result property="status" column="STATUS"/>
+		<result property="result" column="RESULT"/>
+		<result property="reason" column="REASON"/>
+		<result property="datecompleted" column="DATECOMPLETED"/>
+		<result property="timecompleted" column="TIMECOMPLETED"/>
+	</resultMap>
+	
+	<select id="getBackupTotal" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultBackupTotal">
+	SELECT NOMBRETSM,
+		CASE WHEN LENGTH(SCHEDULED_START) > 0 THEN VARCHAR_FORMAT(SCHEDULED_START,'YYYY-MM-DD') ELSE SCHEDULED_START END DATESCHEDULED, 
+		CASE WHEN LENGTH(SCHEDULED_START) > 0 THEN VARCHAR_FORMAT(SCHEDULED_START,'HH24:MI:SS') ELSE SCHEDULED_START END TIMESCHEDULED, 
+		CASE WHEN LENGTH(ACTUAL_START) > 0 THEN VARCHAR_FORMAT(ACTUAL_START,'YYYY-MM-DD') ELSE ACTUAL_START END DATESTART, 
+		CASE WHEN LENGTH(ACTUAL_START) > 0 THEN VARCHAR_FORMAT(ACTUAL_START,'HH24:MI:SS') ELSE ACTUAL_START END TIMESTART, 
+		SCHEDULE_NAME, NODE_NAME,STATUS,RESULT,REASON,
+		CASE WHEN LENGTH(COMPLETED) > 0 THEN VARCHAR_FORMAT(COMPLETED,'YYYY-MM-DD') ELSE COMPLETED END DATECOMPLETED, 
+		CASE WHEN LENGTH(COMPLETED) > 0 THEN VARCHAR_FORMAT(COMPLETED,'HH24:MI:SS') ELSE COMPLETED END TIMECOMPLETED
+	FROM 
+		TSM.EVENTS WHERE DOMAIN_NAME != '' AND DATE(SCHEDULED_START) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2})
+	</select>
+	
+</mapper>

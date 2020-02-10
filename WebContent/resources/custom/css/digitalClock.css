@@ -1,0 +1,30 @@
+.tabBlock {
+	background-color: #57574f;
+	border: solid 0px #FFA54F;
+	border-radius: 5px;
+	-moz-border-radius: 5px;
+	-webkit-border-radius: 5px;
+	max-width: 300px;
+	width: 100%;
+	overflow: hidden;
+	display: block;
+}
+
+.clock {
+	vertical-align: middle;
+	font-family: Orbitron;
+	font-size: 160px;
+	font-weight: normal;
+	color: #FFF;
+	padding: 0 10px;
+	text-shadow:3px 3px 3px #000;
+}
+
+.clocklg {
+	vertical-align: middle;
+	font-family: Orbitron;
+	font-size: 80px;
+	font-weight: normal;
+	color: #FFF;
+	text-shadow:3px 3px 3px #000;
+}

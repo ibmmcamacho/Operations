@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="auditoria">
+	
+	<insert id="saveAuditoria" parameterType="com.pe.ibm.bean.BeanAuditoria">
+		INSERT INTO OPERACION.AUDITORIA(HOSTNAME,URL,IP,SO,BROWSER,USUARIO,IDUSUARIO,MODULO,ACCION,RESULTADOS,BEAN)VALUES(
+		#{hostname},#{url},#{ip},#{so},#{browser},#{usuario},#{idUsuario},#{modulo},#{accion},#{resultado},#{bean}
+		)
+	</insert>
+
+	<insert id="saveErr" parameterType="com.pe.ibm.bean.BeanControlErrores">
+		INSERT INTO OPERACION.CONTROLERRORES(MODULO,IDUSUARIO,USUARIO,MENSAJE,CAUSA,CLASS,METODO,ARCHIVO,NUMLINEA,STACKTRACE) VALUES(
+		#{strModulo},#{iIdUsuario},#{strUsuario},#{strMensaje},#{strCausa},#{strClass},#{strMetodo},#{strArchivo},#{iNumLinea},#{strStackTrace}
+		)
+	</insert>
+	
+</mapper>

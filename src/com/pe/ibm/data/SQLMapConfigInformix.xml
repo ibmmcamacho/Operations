@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration
+PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<environments default="development">
+		<environment id="development">
+			<transactionManager type="JDBC" />
+			<dataSource type="POOLED">
+				<property name="driver" value="com.informix.jdbc.IfxDriver" />
+				<!--  local -->
+<!-- 				<property name="url" value="jdbc:informix-sqli://129.39.163.195:1504/db_cra:informixserver=ipcclm_active_uccx" /> -->
+<!-- 				<property name="username" value="uccxhruser" /> -->
+<!-- 				<property name="password" value="ciscosmi" /> -->
+
+				<!--  BlueMix -->
+<!-- 				<property name="url" value="jdbc:db2://cap-sg-prd-3.integration.ibmcloud.com:16824/SISTOPER:securityMechanism=13;" /> -->
+<!-- 				<property name="username" value="db2inst1" /> -->
+<!-- 				<property name="password" value="p4ssw0rd" /> -->
+
+				<!--  Server Test -->
+<!-- 				<property name="url" value="jdbc:db2://129.39.179.204:50000/SISTOPER:securityMechanism=13;" /> -->
+<!-- 				<property name="username" value="db2inst1" /> -->
+<!-- 				<property name="password" value="_M3f$345m" /> -->
+
+				<!--  Server PRD -->
+<!-- 				<property name="url" value="jdbc:db2://129.39.179.15:50000/SISTOPER:securityMechanism=13;" /> -->
+<!-- 				<property name="username" value="db2inst1" /> -->
+<!-- 				<property name="password" value="p4ssw0rd" /> -->
+			</dataSource>
+		</environment>
+	</environments>
+
+	<mappers>
+		<mapper resource="com/pe/ibm/access/MapperInformix.xml" />
+	</mappers>
+
+</configuration>

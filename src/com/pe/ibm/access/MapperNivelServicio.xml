@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="com.pe.ibm.access.MapperNivelServicio">
+  
+	<resultMap id="resultAll" type="com.pe.ibm.bean.BeanNivelServicio">
+		
+		<result property="idNS" column="ID_SLA"/>
+		<result property="idproyecto" column="ID_PROYECTO"/>
+	    <result property="nombre_proyecto" column="NOMBRE"/>
+	    <result property="id_sl" column="ID_SL"/>
+	    <result property="nombre_sl" column="DESCRIPCION_SL"/>
+	    <result property="id_tipo" column="ID_TIPO"/>
+	    <result property="nombre_tipo" column="DESCRIPCION_VISTA"/>
+	    <result property="titulo" column="TITULO"/>
+	    <result property="descripcion" column="DESCRIPCION"/>
+	    <result property="valornum" column="VALOR_NUMERICO"/>
+	    <result property="valorletra" column="VALOR_LETRAS"/>
+	    <result property="comentario" column="COMENTARIO"/>
+	    <result property="icono" column="ICONO"/>
+	    <result property="color" column="COLOR"/>
+	    <result property="red_color" column="RED_COLOR"/>
+	    <result property="red_inicio" column="RED_INICIO"/>
+	    <result property="red_fin" column="RED_FIN"/>
+	    <result property="yellow_color" column="YELLOW_COLOR"/>
+	    <result property="yellow_inicio" column="YELLOW_INICIO"/>
+	    <result property="yellow_fin" column="YELLOW_FIN"/>
+	    <result property="green_color" column="GREEN_COLOR"/>
+	    <result property="green_inicio" column="GREEN_INICIO"/>
+	    <result property="green_fin" column="GREEN_FIN"/>
+	    <result property="nombre_grafico_live" column="GRAFICOL"/>
+	    <result property="nombre_grafico_historico" column="GRAFICOH"/>
+	    <result property="nombre_cvs" column="NOMBRE_CVS"/>
+	    <result property="unidad" column="UNIDAD"/> 
+	    <result property="str1" column="STR1"/>  
+	    <result property="str2" column="STR2"/>    
+	    <result property="idtendencia" column="IDTENDENCIA"/> 
+	</resultMap>
+  
+    <select id="getAllNSByProject" parameterType="String" resultMap="resultAll">
+	SELECT 
+	
+	ID_SLA,SMARTDESK.SLA_CLIENTE.ID_PROYECTO,SMARTDESK.SLA_CLIENTE.ID_SL,SMARTDESK.SLA_CLIENTE.ID_TIPO,  
+	SMARTDESK.PROYECTO.NOMBRE,SMARTDESK.SERVICE_LINE.DESCRIPCION_SL,SMARTDESK.TIPO_VISTA.DESCRIPCION_VISTA,
+	TITULO, DESCRIPCION, VALOR_NUMERICO, VALOR_LETRAS, COMENTARIO, SMARTDESK.SLA_CLIENTE.ICONO, COLOR,
+	C.NOMBREHEXMES as RED_COLOR, RED_INICIO, RED_FIN, D.NOMBREHEXMES as YELLOW_COLOR, YELLOW_INICIO, YELLOW_FIN, 
+	E.NOMBREHEXMES as GREEN_COLOR, GREEN_INICIO, GREEN_FIN, NOMBRE_CVS, UNIDAD, A.NOMBRE_GRAFICO as GRAFICOL, B.NOMBRE_GRAFICO as GRAFICOH,
+	STR1, STR2, IDTENDENCIA,
+	(CASE WHEN(SMARTDESK.SLA_CLIENTE.ID_TIPO = 3 OR SMARTDESK.SLA_CLIENTE.ID_TIPO = 1 ) THEN '1' ELSE '2' END) ORDEN 
+	
+	FROM SMARTDESK.SLA_CLIENTE 
+	
+	LEFT JOIN SMARTDESK.PROYECTO ON SMARTDESK.SLA_CLIENTE.ID_PROYECTO=SMARTDESK.PROYECTO.IDPROYECTO 
+	LEFT JOIN SMARTDESK.SERVICE_LINE ON SMARTDESK.SLA_CLIENTE.ID_SL=SMARTDESK.SERVICE_LINE.ID_SL
+	LEFT JOIN SMARTDESK.TIPO_VISTA ON SMARTDESK.SLA_CLIENTE.ID_TIPO=SMARTDESK.TIPO_VISTA.ID_VISTA 
+	LEFT JOIN SMARTDESK.GRAFICO_DETALLE as A ON SMARTDESK.SLA_CLIENTE.ID_GRAFICO_LIVE=A.ID_GRAFICO 
+	LEFT JOIN SMARTDESK.GRAFICO_DETALLE as B ON SMARTDESK.SLA_CLIENTE.ID_GRAFICO_HISTORICO=B.ID_GRAFICO 
+	LEFT JOIN SMARTDESK.SLA_MES_COLOR as C ON SMARTDESK.SLA_CLIENTE.RED_COLOR=C.ID_COLORMES
+	LEFT JOIN SMARTDESK.SLA_MES_COLOR as D ON SMARTDESK.SLA_CLIENTE.YELLOW_COLOR=D.ID_COLORMES
+	LEFT JOIN SMARTDESK.SLA_MES_COLOR as E ON SMARTDESK.SLA_CLIENTE.GREEN_COLOR=E.ID_COLORMES
+	 
+	WHERE SMARTDESK.SLA_CLIENTE.ID_ESTADO=1 
+	AND UPPER(SMARTDESK.PROYECTO.NOMBRE) = UPPER(#{nombreProyecto})
+	ORDER BY SMARTDESK.SLA_CLIENTE.ID_SL ASC, ORDEN ASC
+	
+    </select>
+    
+    <resultMap id="resultNSByProject" type="com.pe.ibm.bean.BeanResultadoMensualNivelServicio">
+	    <result property="id_resultado" column="ID_RESULTADO_SLA"/>
+	    <result property="id_sla" column="ID_SLA"/>
+	    <result property="valornum" column="VALORNUM"/>
+	    <result property="valorletra" column="VALORLETRA"/>
+  		<result property="colormes" column="NOMBREHEXMES"/>
+  		<result property="mes" column="MES"/>
+  		<result property="anio" column="ANIO"/>
+  		<result property="id_colormes" column="ID_COLORMES"/>
+  		<result property="valor1" column="VALOR1"/>
+  		<result property="valor2" column="VALOR2"/>
+  		<result property="icono" column="ICONO"/>
+  		
+	</resultMap>
+  
+    <select id="getResultNSByProject" parameterType="String" resultMap="resultNSByProject">
+	SELECT RE.ID_RESULTADO_SLA, RE.ID_SLA , RE.VALORNUM, RE.VALORLETRA, MESCO.NOMBREHEXMES, RE.MES, RE.ANIO, RE.ID_COLORMES, MESCO.ICONO
+	
+	FROM SMARTDESK.SLA_RESULTADO_MENSUAL RE
+	
+	LEFT JOIN SMARTDESK.SLA_CLIENTE SLACLI ON RE.ID_SLA = SLACLI.ID_SLA
+	LEFT JOIN SMARTDESK.SLA_MES_COLOR  MESCO ON RE.ID_COLORMES= MESCO.ID_COLORMES
+	 
+	WHERE SLACLI.ID_SLA=#{id_sla}
+	AND RE.SLA_RESULTADO_MENSUAL.MES=#{mes}
+	AND RE.SLA_RESULTADO_MENSUAL.ANIO=#{anio}
+	
+    </select>
+    
+     <select id="getListResultNSByProject" parameterType="String" resultMap="resultNSByProject">
+    SELECT 
+	
+	RE.ID_SLA, RE.ID_RESULTADO_SLA, RE.ID_SLA , RE.VALORNUM, RE.VALORLETRA, MESCO.NOMBREHEXMES, RE.MES, RE.ANIO, RE.ID_COLORMES,
+	RE.VALOR1, RE.VALOR2, MESCO.ICONO
+	
+	FROM SMARTDESK.SLA_RESULTADO_MENSUAL RE
+	
+	LEFT JOIN SMARTDESK.SLA_CLIENTE SLACLI ON RE.ID_SLA = SLACLI.ID_SLA
+	LEFT JOIN SMARTDESK.PROYECTO PROY ON SLACLI.ID_PROYECTO = PROY.IDPROYECTO 
+	LEFT JOIN SMARTDESK.SLA_MES_COLOR  MESCO ON RE.ID_COLORMES= MESCO.ID_COLORMES
+	 
+	WHERE 
+	RE.MES= CAST(CAST(#{mes} AS INTEGER) AS VARCHAR(2))
+	AND RE.ANIO= #{anio}
+	AND PROY.IDPROYECTO= #{nombre_proyecto}
+	ORDER BY RE.ID_SLA
+	
+    </select>
+    
+    <select id="getListResultHistoricalNSByIdSla" parameterType="String" resultMap="resultNSByProject">
+    SELECT 
+	RE.ID_SLA, RE.ID_RESULTADO_SLA, RE.ID_SLA , RE.VALORNUM, RE.VALORLETRA, MESCO.NOMBREHEXMES, RE.MES, RE.ANIO, RE.ID_COLORMES,
+	RE.VALOR1, RE.VALOR2, MESCO.ICONO
+	FROM SMARTDESK.SLA_RESULTADO_MENSUAL RE
+	LEFT JOIN SMARTDESK.SLA_CLIENTE SLACLI ON RE.ID_SLA = SLACLI.ID_SLA
+	LEFT JOIN SMARTDESK.SLA_MES_COLOR  MESCO ON RE.ID_COLORMES= MESCO.ID_COLORMES
+	WHERE 
+	RE.ID_SLA = #{id_sla}
+	AND (DATE(CAST(RE.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(RE.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') <![CDATA[<=]]> DATE(#{fechaInicio}) )
+	AND (DATE(CAST(RE.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(RE.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') > DATE(#{fechaInicio}) - 12 MONTHS )
+	ORDER BY CAST(RE.ANIO AS INTEGER) ASC, CAST(RE.MES AS INTEGER) ASC 
+    </select>
+    
+    <resultMap id="resultHistorical" type="com.pe.ibm.bean.BeanResultadoMensualNivelServicio">
+	    <result property="id_sla" column="ID_SLA"/>
+	    <result property="descripcion" column="DESCRIPCION"/>
+	    <result property="lineaBase" column="VALOR_NUMERICO"/>
+	    <result property="valorMes1" column="MES1"/>
+	    <result property="valorMes2" column="MES2"/>
+  		<result property="valorMes3" column="MES3"/>
+  		<result property="valorMes4" column="MES4"/>
+  		<result property="valorMes5" column="MES5"/>
+  		<result property="valorMes6" column="MES6"/>
+  		<result property="strMes1" column="STRMES1"/>
+	    <result property="strMes2" column="STRMES2"/>
+  		<result property="strMes3" column="STRMES3"/>
+  		<result property="strMes4" column="STRMES4"/>
+  		<result property="strMes5" column="STRMES5"/>
+  		<result property="strMes6" column="STRMES6"/>
+  		
+	</resultMap>
+	
+    <select id="getListResultHistoricalLineaBaseOnSite" parameterType="String" resultMap="resultHistorical">
+
+	SELECT 
+	RE.ID_SLA, SLACLI.DESCRIPCION, SLACLI.DESCRIPCION, SLACLI.VALOR_NUMERICO,
+	(SELECT M1.VALORNUM FROM SMARTDESK.SLA_RESULTADO_MENSUAL M1 WHERE  M1.ID_SLA = RE.ID_SLA 
+	AND (DATE(CAST(M1.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(M1.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio}) - 5 MONTHS)
+	) MES1,
+	(SELECT M2.VALORNUM FROM SMARTDESK.SLA_RESULTADO_MENSUAL M2 WHERE  M2.ID_SLA = RE.ID_SLA 
+	AND (DATE(CAST(M2.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(M2.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio}) - 4 MONTHS)
+	) MES2,
+	(SELECT M3.VALORNUM FROM SMARTDESK.SLA_RESULTADO_MENSUAL M3 WHERE  M3.ID_SLA = RE.ID_SLA 
+	AND (DATE(CAST(M3.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(M3.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio}) - 3 MONTHS)
+	) MES3,
+	(SELECT M4.VALORNUM FROM SMARTDESK.SLA_RESULTADO_MENSUAL M4 WHERE  M4.ID_SLA = RE.ID_SLA 
+	AND (DATE(CAST(M4.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(M4.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio}) - 2 MONTHS)
+	) MES4,
+	(SELECT M5.VALORNUM FROM SMARTDESK.SLA_RESULTADO_MENSUAL M5 WHERE  M5.ID_SLA = RE.ID_SLA 
+	AND (DATE(CAST(M5.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(M5.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio}) - 1 MONTHS)
+	) MES5,
+	(SELECT M6.VALORNUM FROM SMARTDESK.SLA_RESULTADO_MENSUAL M6 WHERE  M6.ID_SLA = RE.ID_SLA 
+	AND (DATE(CAST(M6.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(M6.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio})) 
+	) MES6,
+	(SELECT CAST(STRM1.ANIO AS VARCHAR)||'-'||CAST(STRM1.MES AS VARCHAR)  FROM SMARTDESK.SLA_RESULTADO_MENSUAL STRM1 WHERE  STRM1.ID_SLA = RE.ID_SLA 
+	AND (DATE(CAST(STRM1.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(STRM1.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio}) - 5 MONTHS)
+	) STRMES1,
+	(SELECT CAST(STRM2.ANIO AS VARCHAR)||'-'||CAST(STRM2.MES AS VARCHAR)  FROM SMARTDESK.SLA_RESULTADO_MENSUAL STRM2 WHERE  STRM2.ID_SLA = RE.ID_SLA 
+	AND (DATE(CAST(STRM2.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(STRM2.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio}) - 4 MONTHS)
+	) STRMES2,
+	(SELECT CAST(STRM3.ANIO AS VARCHAR)||'-'||CAST(STRM3.MES AS VARCHAR)  FROM SMARTDESK.SLA_RESULTADO_MENSUAL STRM3 WHERE  STRM3.ID_SLA = RE.ID_SLA 
+	AND (DATE(CAST(STRM3.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(STRM3.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio}) - 3 MONTHS)
+	) STRMES3,
+	(SELECT CAST(STRM4.ANIO AS VARCHAR)||'-'||CAST(STRM4.MES AS VARCHAR)  FROM SMARTDESK.SLA_RESULTADO_MENSUAL STRM4 WHERE  STRM4.ID_SLA = RE.ID_SLA 
+	AND (DATE(CAST(STRM4.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(STRM4.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio}) - 2 MONTHS)
+	) STRMES4,
+	(SELECT CAST(STRM5.ANIO AS VARCHAR)||'-'||CAST(STRM5.MES AS VARCHAR)   FROM SMARTDESK.SLA_RESULTADO_MENSUAL STRM5 WHERE  STRM5.ID_SLA = RE.ID_SLA 
+	AND (DATE(CAST(STRM5.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(STRM5.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio}) - 1 MONTHS)
+	) STRMES5,
+	(SELECT CAST(STRM6.ANIO AS VARCHAR)||'-'||CAST(STRM6.MES AS VARCHAR) FROM SMARTDESK.SLA_RESULTADO_MENSUAL STRM6 WHERE  STRM6.ID_SLA = RE.ID_SLA 
+	AND (DATE(CAST(STRM6.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(STRM6.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio})) 
+	) STRMES6
+	FROM SMARTDESK.SLA_RESULTADO_MENSUAL RE
+	LEFT JOIN SMARTDESK.SLA_CLIENTE SLACLI ON RE.ID_SLA = SLACLI.ID_SLA
+	LEFT JOIN SMARTDESK.PROYECTO PROY ON SLACLI.ID_PROYECTO = PROY.IDPROYECTO 
+	LEFT JOIN SMARTDESK.SLA_MES_COLOR  MESCO ON RE.ID_COLORMES= MESCO.ID_COLORMES
+	WHERE 
+	SLACLI.ID_SL =  2
+	AND PROY.IDPROYECTO =  #{idproyecto}
+	AND (SLACLI.ID_TIPO = 1 OR SLACLI.ID_TIPO = 3)
+	AND (DATE(CAST(RE.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(RE.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio}) )
+	ORDER BY CAST(SLACLI.ID_SL AS INTEGER) DESC
+    </select>
+    
+    <select id="getListResultHistoricalNSOnSite" parameterType="String" resultMap="resultHistorical">
+
+	SELECT 
+	RE.ID_SLA, SLACLI.DESCRIPCION, SLACLI.VALOR_NUMERICO,
+	(SELECT M1.VALORNUM FROM SMARTDESK.SLA_RESULTADO_MENSUAL M1 WHERE  M1.ID_SLA = RE.ID_SLA 
+	AND (DATE(CAST(M1.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(M1.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio}) - 5 MONTHS)
+	) MES1,
+	(SELECT M2.VALORNUM FROM SMARTDESK.SLA_RESULTADO_MENSUAL M2 WHERE  M2.ID_SLA = RE.ID_SLA 
+	AND (DATE(CAST(M2.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(M2.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio}) - 4 MONTHS)
+	) MES2,
+	(SELECT M3.VALORNUM FROM SMARTDESK.SLA_RESULTADO_MENSUAL M3 WHERE  M3.ID_SLA = RE.ID_SLA 
+	AND (DATE(CAST(M3.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(M3.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio}) - 3 MONTHS)
+	) MES3,
+	(SELECT M4.VALORNUM FROM SMARTDESK.SLA_RESULTADO_MENSUAL M4 WHERE  M4.ID_SLA = RE.ID_SLA 
+	AND (DATE(CAST(M4.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(M4.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio}) - 2 MONTHS)
+	) MES4,
+	(SELECT M5.VALORNUM FROM SMARTDESK.SLA_RESULTADO_MENSUAL M5 WHERE  M5.ID_SLA = RE.ID_SLA 
+	AND (DATE(CAST(M5.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(M5.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio}) - 1 MONTHS)
+	) MES5,
+	(SELECT M6.VALORNUM FROM SMARTDESK.SLA_RESULTADO_MENSUAL M6 WHERE  M6.ID_SLA = RE.ID_SLA 
+	AND (DATE(CAST(M6.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(M6.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio})) 
+	) MES6,
+	(SELECT CAST(STRM1.ANIO AS VARCHAR)||'-'||CAST(STRM1.MES AS VARCHAR)  FROM SMARTDESK.SLA_RESULTADO_MENSUAL STRM1 WHERE  STRM1.ID_SLA = RE.ID_SLA 
+	AND (DATE(CAST(STRM1.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(STRM1.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio}) - 5 MONTHS)
+	) STRMES1,
+	(SELECT CAST(STRM2.ANIO AS VARCHAR)||'-'||CAST(STRM2.MES AS VARCHAR)  FROM SMARTDESK.SLA_RESULTADO_MENSUAL STRM2 WHERE  STRM2.ID_SLA = RE.ID_SLA 
+	AND (DATE(CAST(STRM2.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(STRM2.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio}) - 4 MONTHS)
+	) STRMES2,
+	(SELECT CAST(STRM3.ANIO AS VARCHAR)||'-'||CAST(STRM3.MES AS VARCHAR)  FROM SMARTDESK.SLA_RESULTADO_MENSUAL STRM3 WHERE  STRM3.ID_SLA = RE.ID_SLA 
+	AND (DATE(CAST(STRM3.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(STRM3.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio}) - 3 MONTHS)
+	) STRMES3,
+	(SELECT CAST(STRM4.ANIO AS VARCHAR)||'-'||CAST(STRM4.MES AS VARCHAR)  FROM SMARTDESK.SLA_RESULTADO_MENSUAL STRM4 WHERE  STRM4.ID_SLA = RE.ID_SLA 
+	AND (DATE(CAST(STRM4.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(STRM4.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio}) - 2 MONTHS)
+	) STRMES4,
+	(SELECT CAST(STRM5.ANIO AS VARCHAR)||'-'||CAST(STRM5.MES AS VARCHAR)   FROM SMARTDESK.SLA_RESULTADO_MENSUAL STRM5 WHERE  STRM5.ID_SLA = RE.ID_SLA 
+	AND (DATE(CAST(STRM5.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(STRM5.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio}) - 1 MONTHS)
+	) STRMES5,
+	(SELECT CAST(STRM6.ANIO AS VARCHAR)||'-'||CAST(STRM6.MES AS VARCHAR) FROM SMARTDESK.SLA_RESULTADO_MENSUAL STRM6 WHERE  STRM6.ID_SLA = RE.ID_SLA 
+	AND (DATE(CAST(STRM6.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(STRM6.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio})) 
+	) STRMES6
+	FROM SMARTDESK.SLA_RESULTADO_MENSUAL RE
+	LEFT JOIN SMARTDESK.SLA_CLIENTE SLACLI ON RE.ID_SLA = SLACLI.ID_SLA
+	LEFT JOIN SMARTDESK.PROYECTO PROY ON SLACLI.ID_PROYECTO = PROY.IDPROYECTO 
+	LEFT JOIN SMARTDESK.SLA_MES_COLOR  MESCO ON RE.ID_COLORMES= MESCO.ID_COLORMES
+	WHERE 
+	SLACLI.ID_SL =  2
+	AND PROY.IDPROYECTO =  #{idproyecto}
+	AND (SLACLI.ID_TIPO = 2)
+	AND (DATE(CAST(RE.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(RE.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio}) )
+	ORDER BY (SLACLI.DESCRIPCION) DESC
+    </select>
+<!--      <resultMap id="historicalResultNSByProject" type="com.pe.ibm.bean.BeanResultadoMensualNivelServicio"> -->
+<!-- 	    <result property="valornum" column="VALORNUM"/> -->
+<!-- 	    <result property="valorletra" column="VALORLETRA"/> -->
+<!--   		<result property="mesletra" column="NOMBRE"/> -->
+  		
+<!-- 	</resultMap> -->
+
+<!--     <select id="gehistoricaltResultNSByProject" parameterType="String" resultMap="historicalResultNSByProject"> -->
+<!-- 	SELECT VALORNUM, VALORLETRA, MES_DETALLE.NOMBRE -->
+	
+<!-- 	FROM SMARTDESK.SLA_RESULTADO_MENSUAL -->
+	
+<!-- 	LEFT JOIN SMARTDESK.SLA_CLIENTE ON SMARTDESK.SLA_RESULTADO_MENSUAL.ID_SLA=SMARTDESK.SLA_CLIENTE.ID_SLA -->
+<!-- 	LEFT JOIN SMARTDESK.MES_DETALLE ON SMARTDESK.SLA_RESULTADO_MENSUAL.MES=SMARTDESK.MES_DETALLE.ID_MES -->
+	 
+<!-- 	WHERE  SMARTDESK.SLA_RESULTADO_MENSUAL.ID_SLA=#{id_sla} -->
+<!-- 	AND (SMARTDESK.SLA_RESULTADO_MENSUAL.FECHA BETWEEN #{fechaInicio} AND #{fechaFin}) -->
+<!-- 	ORDER BY SMARTDESK.SLA_RESULTADO_MENSUAL.FECHA ASC -->
+
+<!--     </select> -->
+    
+    <resultMap id="resultadoDetalleNivelServicioOnsite" type="com.pe.ibm.bean.BeanSLATiempoOnsiteResultado">
+	    <result property="id_sla_resultado_mensual" column="ID_SLA_RESULTADO_MENSUAL"/>
+	    <result property="id_sla" column="ID_SLA"/>
+	    <result property="descripcion" column="DESCRIPCION"/>
+	    <result property="lineaBase" column="VALOR_NUMERICO"/>
+	    <result property="vip_cant" column="VIP_CANT"/>
+  		<result property="vip_en_sla" column="VIP_EN_SLA"/>
+  		<result property="vip_res_sla" column="VIP_RES_SLA"/>
+  		<result property="alta_cant" column="ALTA_CANT"/>
+  		<result property="alta_en_sla" column="ALTA_EN_SLA"/>
+  		<result property="alta_res_sla" column="ALTA_RES_SLA"/>
+  		<result property="media_cant" column="MEDIA_CANT"/>
+  		<result property="media_en_sla" column="MEDIA_EN_SLA"/>
+  		<result property="media_res_sla" column="MEDIA_RES_SLA"/>
+  		<result property="baja_cant" column="BAJA_CANT"/>
+  		<result property="baja_en_sla" column="BAJA_EN_SLA"/>
+  		<result property="baja_res_sla" column="BAJA_RES_SLA"/>
+  		<result property="ptrabajo_cant" column="PTRABAJO_CANT"/>
+  		<result property="ptrabajo_en_sla" column="PTRABAJO_EN_SLA"/>
+  		<result property="ptrabajo_res_sla" column="PTRABAJO_RES_SLA"/>
+  		<result property="usuarioVip" column="USUARIOVIP"/>
+  		<result property="prioridadAlta" column="PRIORIDAD_ALTA"/>
+  		<result property="prioridadMedia" column="PRIORIDAD_MEDIA"/>
+  		<result property="prioridadBaja" column="PRIORIDAD_BAJA"/>
+  		<result property="habilitacionPuestoTrabajo" column="HABILITACION_PUESTO_TRABAJO"/>
+	</resultMap>
+
+    <select id="obtenerListaDetalleNivelServicioOnsite" parameterType="com.pe.ibm.bean.BeanBusqueda" resultMap="resultadoDetalleNivelServicioOnsite">
+    SELECT 
+	TI.ID_SLA_RESULTADO_MENSUAL,
+	RES.ID_SLA, SLACLI.DESCRIPCION, SLACLI.VALOR_NUMERICO,
+	TI.VIP_CANT, TI.VIP_EN_SLA, TI.VIP_RES_SLA,
+	TI.ALTA_CANT, TI.ALTA_EN_SLA, TI.ALTA_RES_SLA,
+	TI.MEDIA_CANT, TI.MEDIA_EN_SLA, TI.MEDIA_RES_SLA,
+	TI.BAJA_CANT, TI.BAJA_EN_SLA, TI.BAJA_RES_SLA,
+	TI.PTRABAJO_CANT, TI.PTRABAJO_EN_SLA, TI.PTRABAJO_RES_SLA,
+	SLATI.USUARIOVIP,SLATI.PRIORIDAD_ALTA,SLATI.PRIORIDAD_MEDIA,
+	SLATI.PRIORIDAD_BAJA,SLATI.HABILITACION_PUESTO_TRABAJO
+	FROM SMARTDESK.SLA_TIEMPO_ONSITE_RESULTADO TI
+	LEFT JOIN SMARTDESK.SLA_RESULTADO_MENSUAL RES ON TI.ID_SLA_RESULTADO_MENSUAL = RES.ID_RESULTADO_SLA
+	LEFT JOIN SMARTDESK.SLA_CLIENTE SLACLI ON RES.ID_SLA = SLACLI.ID_SLA
+	LEFT JOIN SMARTDESK.PROYECTO PROY ON SLACLI.ID_PROYECTO = PROY.IDPROYECTO 
+	LEFT JOIN SMARTDESK.SLA_TIEMPO_ONSITE SLATI ON SLACLI.ID_SLA = SLATI.IDSLA 
+	WHERE
+	(DATE(CAST(RES.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(RES.ID_RESULTADO_SLA,17,2) AS VARCHAR)||'-01') = DATE(#{fechaInicio}) )
+	AND SLACLI.ID_SL =  2
+	AND PROY.IDPROYECTO =  #{idproyecto}
+	AND (SLACLI.ID_TIPO = 2 )
+	ORDER BY (SLACLI.DESCRIPCION) DESC
+    </select>
+    
+     <select id="obtenerDetalleNivelServicioOnsite" parameterType="com.pe.ibm.bean.BeanResultadoMensualNivelServicio" resultMap="resultadoDetalleNivelServicioOnsite">
+    
+     SELECT 
+	TI.ID_SLA_RESULTADO_MENSUAL,
+	TI.VIP_CANT, TI.VIP_EN_SLA, TI.VIP_RES_SLA,
+	TI.ALTA_CANT, TI.ALTA_EN_SLA, TI.ALTA_RES_SLA,
+	TI.MEDIA_CANT, TI.MEDIA_EN_SLA, TI.MEDIA_RES_SLA,
+	TI.BAJA_CANT, TI.BAJA_EN_SLA, TI.BAJA_RES_SLA,
+	TI.PTRABAJO_CANT, TI.PTRABAJO_EN_SLA, TI.PTRABAJO_RES_SLA
+	FROM SMARTDESK.SLA_TIEMPO_ONSITE_RESULTADO TI
+	WHERE
+	TI.ID_SLA_RESULTADO_MENSUAL LIKE (SELECT T.ID_RESULTADO_SLA FROM SMARTDESK.SLA_RESULTADO_MENSUAL T
+	WHERE T.ID_SLA = #{id_sla} AND T.MES = CAST (#{mes} AS INTEGER) AND T.ANIO = #{anio}  )
+    
+	</select>
+    
+ 
+    
+</mapper>

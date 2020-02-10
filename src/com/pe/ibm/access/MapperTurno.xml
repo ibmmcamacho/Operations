@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="com.pe.ibm.access.MapperTurno">
+  
+   <insert  id="Insert_Update" parameterType="com.pe.ibm.bean.BeanTurno" statementType="CALLABLE">
+     {call SCHEDULE.RUD_TURNO(
+        #{idTurno,javaType=Integer,jdbcType=INTEGER,mode=IN},
+        #{descripcion,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{horaInicio,javaType=java.sql.Time,jdbcType=TIME,mode=IN},
+        #{horaFin,javaType=java.sql.Time,jdbcType=TIME,mode=IN},
+        #{estado,javaType=Integer,jdbcType=INTEGER,mode=IN},
+        #{operacion,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{resultado,javaType=Integer,jdbcType=INTEGER,mode=OUT}
+     )}
+	</insert>
+
+	<resultMap id = "result" type = "com.pe.ibm.bean.BeanTurno">
+      <result property = "idTurno" column = "IDTURNO"/>
+      <result property = "descripcion" column = "DESCRIPCION"/>
+      <result property = "horaInicio" column = "HORAINICIO"/>
+      <result property = "horaFin" column = "HORAFIN"/>
+      <result property = "estado" column = "ESTADO"/>
+   	</resultMap>   
+   
+    <select id = "listar" resultMap = "result" statementType = "CALLABLE">
+      {call SCHEDULE.SELECT_TURNO()}
+    </select>
+    
+<!--     Nuevo listado de Turnos V2 -->
+    <resultMap id="resultTurnos" type="com.pe.ibm.bean.BeanTurno">
+		<result property="idTurno" column="IDTURNO" />
+		<result property="descripcion" column="DESCRIPCION" />
+		<result property="horaInicio" column="HORAINICIO" />
+		<result property="horaFin" column="HORAFIN" />
+		<result property="gturnos" column="GTURNOS" />
+		<result property="team" column="IDTEAM" />
+		<result property="opcion" column="IDOPTION" />
+		<result property="estado" column="ESTADO" />
+		<result property="vfecha" column = "VFECHA"/>
+	</resultMap>
+	
+	<select id="listTurnosByTeam" parameterType="com.pe.ibm.bean.BeanTurno" resultMap="resultTurnos">
+		SELECT
+			IDTURNO, 
+			DESCRIPCION,
+			HORAINICIO,
+			HORAFIN,
+			GTURNOS,
+			IDTEAM,
+			IDOPTION,
+			ESTADO,
+			VFECHA
+		FROM 
+			SCHEDULE.TURNO_V2
+		WHERE 
+			ESTADO = 1 AND 
+			IDTEAM = #{team}
+	</select>
+	
+	<insert id="saveTurno" parameterType="com.pe.ibm.bean.BeanTurno">
+		INSERT INTO SCHEDULE.TURNO_V2(DESCRIPCION,HORAINICIO,HORAFIN,GTURNOS,IDTEAM,IDOPTION,ESTADO,VFECHA)
+		VALUES(#{descripcion},#{horaInicio},#{horaFin},#{gturnos},#{team},#{opcion},#{estado},#{vfecha})
+	</insert>
+	
+	<update id="updateTurno" parameterType="com.pe.ibm.bean.BeanTurno">
+		UPDATE SCHEDULE.TURNO_V2 SET 
+			DESCRIPCION = #{descripcion},
+			HORAINICIO = #{horaInicio},
+			HORAFIN = #{horaFin},
+			GTURNOS = #{gturnos},
+			IDTEAM = #{team},
+			IDOPTION = #{opcion},
+			VFECHA = #{vfecha}
+		WHERE 
+			IDTURNO = #{idTurno}
+	</update>
+	
+	<update id="updateTurnoEstado" parameterType="com.pe.ibm.bean.BeanTurno">
+		UPDATE SCHEDULE.TURNO_V2 SET 
+			ESTADO = 0
+		WHERE 
+			IDTURNO = #{idTurno}
+	</update>
+    
+</mapper>
+

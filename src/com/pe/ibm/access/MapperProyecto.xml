@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="com.pe.ibm.access.MapperProyecto">
+  
+	<resultMap id="resultAllProjects" type="com.pe.ibm.bean.BeanProyecto">
+	    <result property="nombreProyecto" column="NOMBRE"/>
+	    <result property="cisco" column="CISCO"/>
+	      
+	</resultMap>
+  
+    <select id="getAllProject" parameterType="String" resultMap="resultAllProjects">
+	SELECT 
+	SMARTDESK.PROYECTO.NOMBRE, SMARTDESK.PROYECTO.CISCO
+	FROM SMARTDESK.USUARIO_PROYECTO
+	LEFT JOIN SMARTDESK.PROYECTO ON SMARTDESK.USUARIO_PROYECTO.IDPROYECTO=SMARTDESK.PROYECTO.IDPROYECTO 
+	LEFT JOIN SMARTDESK.USUARIO ON SMARTDESK.USUARIO_PROYECTO.IDUSUARIO=SMARTDESK.USUARIO.IDUSUARIO
+	WHERE SMARTDESK.PROYECTO.ESTADO=1 AND SMARTDESK.USUARIO.USUARIO=#{usuario}
+    </select>
+    
+    
+    <resultMap id="resultProyectos" type="com.pe.ibm.bean.BeanProyecto">
+	    <result property="idproyecto" column="IDPROYECTO"/>
+	    <result property="nombreProyecto" column="NOMBRE"/>
+	    <result property="estadoProyecto" column="ESTADO"/>
+	      
+	</resultMap>
+  
+    <select id="getProyectos" parameterType="String" resultMap="resultProyectos">
+	SELECT 
+	IDPROYECTO, NOMBRE,  ESTADO
+	FROM SMARTDESK.PROYECTO
+	WHERE ESTADO = 1
+	ORDER BY NOMBRE 
+    </select>
+    
+    
+    <update id="actualizaEstadoProyecto" parameterType="com.pe.ibm.bean.BeanProyecto" >
+    	UPDATE SMARTDESK.PROYECTO  
+    	SET ESTADO = #{estadoProyecto}
+  		WHERE IDPROYECTO = #{idproyecto}     
+     </update>  
+     
+     <update id="actualizaEstadoSLA_CLIENTE" parameterType="com.pe.ibm.bean.BeanProyecto" >
+    	UPDATE SMARTDESK.SLA_CLIENTE  
+    	SET ID_ESTADO = #{estadoProyecto}
+  		WHERE ID_PROYECTO = #{idproyecto}     
+     </update>  
+     
+     <update id="actualizaEstadoSLA_HISTORICO" parameterType="com.pe.ibm.bean.BeanProyecto" >
+    	UPDATE SMARTDESK.SLA_HISTORICO  
+    	SET ESTADO = #{estadoProyecto}
+  		WHERE IDPROYECTO = #{idproyecto}     
+     </update>  
+     
+ 
+  
+    
+</mapper>

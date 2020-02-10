@@ -1,0 +1,657 @@
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd"> 
+<mapper namespace="com.pe.ibm.access.MapperTablero">
+
+		
+	
+	<resultMap id="resultSelectTribu" type="com.pe.ibm.bean.BeanTablero">		
+		<result property="Tribu" column="TRIBE" />
+	</resultMap>
+	<select id="cboTribu" resultMap="resultSelectTribu" parameterType = "com.pe.ibm.bean.BeanTablero" >
+		SELECT DISTINCT 
+			TRIBE 
+		FROM  
+		
+			(SELECT TRIBE
+	    	FROM CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 
+    		
+    			<!-- UNION ALL
+    			
+			 SELECT TRIBE 
+			 FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS  -->
+			 
+			 	UNION ALL
+			 		
+			 SELECT TRIBE 
+			 FROM CONSUMOS.V_SAB_SCCD_WORKORDER_BACKLOG 			 
+			 
+			 )
+			 
+		WHERE 
+			TRIBE NOT IN ('NULL','')
+	</select>
+	
+
+
+	<resultMap id="resultSelectSquad" type="com.pe.ibm.bean.BeanTablero">		
+		<result property="Squad" column="ACCOUNT_CLASSIFICATION" />
+	</resultMap>
+	<select id="cboSquad" resultMap="resultSelectSquad" parameterType = "com.pe.ibm.bean.BeanTablero" >
+		SELECT DISTINCT 
+			ACCOUNT_CLASSIFICATION 
+		FROM  
+			
+			(SELECT  ACCOUNT_CLASSIFICATION,TRIBE
+	    	FROM CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 
+    		
+    			<!-- UNION ALL
+    			
+			 SELECT  ACCOUNT_CLASSIFICATION,TRIBE
+			 FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS  -->
+			 
+			 	UNION ALL
+			 		
+			 SELECT  ACCOUNT_CLASSIFICATION,TRIBE
+			 FROM CONSUMOS.V_SAB_SCCD_WORKORDER_BACKLOG 			 
+			 
+			 )
+			
+		WHERE 
+			ACCOUNT_CLASSIFICATION NOT IN ('NULL','')
+			
+			<if test="Tribu != null">
+		AND 
+			TRIBE IN (${Tribu})
+    	</if>		
+		
+	</select>
+	
+	
+	<resultMap id="resultSelectTeam" type="com.pe.ibm.bean.BeanTablero">
+		<result property="Team" column="TEAM" />
+		
+	</resultMap>
+	
+	<select id="cboTeam" resultMap="resultSelectTeam" parameterType = "com.pe.ibm.bean.BeanTablero" >
+		
+		SELECT DISTINCT 
+			TEAM 
+			
+		FROM 
+			
+			(SELECT TEAM,ACCOUNT_CLASSIFICATION,RES_COUNTRY 
+	    	FROM CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 
+	    	WHERE RES_COUNTRY IN ('Peru')
+	    	<if test="Squad != null">AND ACCOUNT_CLASSIFICATION IN (${Squad})</if>
+    		
+    			<!-- UNION ALL
+    			
+			 SELECT TEAM,ACCOUNT_CLASSIFICATION,RES_COUNTRY
+			 FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS
+			 WHERE RES_COUNTRY IN ('Peru') 
+			 <if test="Squad != null">AND ACCOUNT_CLASSIFICATION IN (${Squad})</if> -->
+			 
+			 	UNION ALL
+			 		
+			 SELECT TEAM,ACCOUNT_CLASSIFICATION ,RES_COUNTRY
+			 FROM CONSUMOS.V_SAB_SCCD_WORKORDER_BACKLOG 
+			 WHERE RES_COUNTRY IN ('Peru')
+			 <if test="Squad != null">AND ACCOUNT_CLASSIFICATION IN (${Squad})</if>			 
+			 
+			 )
+		WHERE 
+			TEAM NOT IN ('Unknown', 'NULL')
+		
+		
+	</select>
+	
+	
+	<resultMap id="resultSelectGroupOwner" type="com.pe.ibm.bean.BeanTablero">
+		<result property="idGrupoOwner" column="OWNER_GROUP_ID" />
+		<result property="GrupoOwner" column="OWNER_GROUP" />
+	</resultMap>
+	
+	<select id="cboGroupOwner" resultMap="resultSelectGroupOwner" parameterType = "com.pe.ibm.bean.BeanTablero" >
+		
+		SELECT DISTINCT 
+			OWNER_GROUP_ID,OWNER_GROUP
+		FROM 
+			
+			(SELECT OWNER_GROUP_ID,OWNER_GROUP ,TEAM,RES_COUNTRY
+	    	FROM CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2
+	    	WHERE RES_COUNTRY IN ('Peru')<if test="Team != null"> AND TEAM IN (${Team})</if> 
+    		
+    			UNION ALL
+    			
+			<!--  SELECT OWNER_GROUP_ID,OWNER_GROUP ,TEAM,RES_COUNTRY
+			 FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			 WHERE RES_COUNTRY IN ('Peru')<if test="Team != null"> AND TEAM IN (${Team})</if> 
+			 
+			 	UNION ALL
+			 		 -->
+			 SELECT OWNER_GROUP_ID,OWNER_GROUP ,TEAM,RES_COUNTRY
+			 FROM CONSUMOS.V_SAB_SCCD_WORKORDER_BACKLOG 	
+			 WHERE RES_COUNTRY IN ('Peru')<if test="Team != null"> AND TEAM IN (${Team})</if> 		 
+			 
+			 )
+		WHERE 
+			OWNER_GROUP_ID NOT IN ('Unknown', 'NULL')
+		
+		
+	</select>
+	
+	
+	<resultMap id="resultSelectOwner" type="com.pe.ibm.bean.BeanTablero">
+		<result property="idOwner" column="OWNER_ID" />
+		<result property="Owner" column="OWNER" />
+	</resultMap>
+	
+	<select id="cboOwner" resultMap="resultSelectOwner" parameterType = "com.pe.ibm.bean.BeanTablero" >
+		
+		SELECT DISTINCT 
+			OWNER_ID,OWNER
+		FROM 
+			
+			(SELECT OWNER_ID,OWNER ,OWNER_GROUP_ID,RES_COUNTRY
+	    	FROM CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 
+	    	WHERE RES_COUNTRY IN ('Peru')<if test="Team != null"> AND TEAM IN (${Team})</if>
+    		
+    			<!-- UNION ALL
+    			
+			 SELECT OWNER_ID,OWNER ,OWNER_GROUP_ID,RES_COUNTRY
+			 FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			 WHERE RES_COUNTRY IN ('Peru')<if test="idGrupoOwner != null"> AND OWNER_GROUP_ID IN (${idGrupoOwner})</if>
+			  -->
+			 	UNION ALL
+			 		
+			 SELECT OWNER_ID,OWNER ,OWNER_GROUP_ID,RES_COUNTRY
+			 FROM CONSUMOS.V_SAB_SCCD_WORKORDER_BACKLOG 
+			 WHERE RES_COUNTRY IN ('Peru')<if test="Team != null"> AND TEAM IN (${Team})</if>			 
+			 
+			 )
+
+		WHERE 
+			OWNER_ID NOT IN ('Unknown', 'NULL')
+		
+			
+		
+	</select>
+	
+	
+	<resultMap id="resultSelectTipoTicket" type="com.pe.ibm.bean.BeanTablero">
+		<result property="TipoTicket" column="CLASS" />
+		
+	</resultMap>
+	
+	<select id="cboClassTicket" resultMap="resultSelectTipoTicket" parameterType = "com.pe.ibm.bean.BeanTablero" >
+		
+	
+ 	 SELECT 
+ 	 		CLASS FROM (
+ 	 
+		 	SELECT DISTINCT CLASS FROM	CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 <!--  UNION
+		 	SELECT DISTINCT CLASS FROM	CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS  --> UNION ALL
+		 	SELECT DISTINCT CLASS FROM	CONSUMOS.V_SAB_SCCD_WORKORDER_BACKLOG ) 
+ 	
+	</select>
+	
+	
+	<resultMap id="resultSelectStatus" type="com.pe.ibm.bean.BeanTablero">
+		<result property="Status" column="STATUS" />
+		
+	</resultMap>
+	
+	<select id="cboSelectStatus" resultMap="resultSelectStatus" parameterType = "com.pe.ibm.bean.BeanTablero" >
+		
+		 SELECT DISTINCT STATUS
+ 	 FROM CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 
+ 	 WHERE STATUS NOT IN ('Unknown','NULL')
+ 	 AND     RES_COUNTRY IN ('Peru')    
+ 	 
+ 	 
+	</select>
+	
+	
+	
+	
+	<resultMap id="resultTabla1" type="com.pe.ibm.bean.BeanTablero">
+		
+		<result property="Squad" column="ACCOUNT_CLASSIFICATION" />
+		<result property="idOwner" column="OWNER" />
+		<result property="Team" column="TEAM" />
+		<result property="Backlog" column="BACKLOG" />		
+		<result property="InProgress" column="INPROGRESS" />
+		<result property="Pending" column="PENDING" />
+		<result property="Queued" column="QUEUED" />
+		<result property="Rcacomp" column="RCACOMP" />
+		<result property="SlaHold" column="SLAHOLD" />		
+		<result property="Resolved" column="RESOLVED" />
+		
+		
+	</resultMap>
+	
+	<select id="listReportT1" resultMap="resultTabla1" parameterType = "com.pe.ibm.bean.BeanTablero" >
+		
+		SELECT 
+				('GRAND TOTAL') AS ACCOUNT_CLASSIFICATION,('-') AS OWNER,('-') AS TEAM,
+				COUNT(CASE WHEN STATUS IN ('INPROG','PENDING','QUEUED','RCACOMP','SLAHOLD') THEN 1 END) BACKLOG,
+				COUNT(CASE WHEN STATUS = 'INPROG' THEN 1 END) INPROG,
+				COUNT(CASE WHEN STATUS = 'PENDING' THEN 1 END) PENDING,
+				COUNT(CASE WHEN STATUS = 'QUEUED' THEN 1 END) QUEUED,
+				COUNT(CASE WHEN STATUS = 'RCACOMP' THEN 1 END) RCACOMP,
+				COUNT(CASE WHEN STATUS = 'SLAHOLD' THEN 1 END) SLAHOLD,
+				COUNT(CASE WHEN STATUS IN ('CLOSED','RESOLVE','RESOLVCONF') THEN 1 END) RESOLVED 
+		 FROM ( 
+		 
+				(SELECT ACCOUNT_CLASSIFICATION, OWNER, TEAM, RES_COUNTRY ,
+				PARENT_CLIENT_ID, TRIBE, OWNER_GROUP_ID, STATUS, OWNER_ID, CLASS,
+				CASE WHEN SUBSTR(OWNER_GROUP,1,4) = 'Petr' OR OWNER_GROUP IN ('Data Management Petroperu') THEN 'Petroperu' 
+				WHEN SUBSTR(OWNER_GROUP,1,4) = 'IBM-' THEN 'Interbank' ELSE 'Campus' END AS OWNERGROUP
+				
+				FROM CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 
+				WHERE 
+				RES_COUNTRY IN ('Peru')				
+				<if test="Squad != null"> AND ACCOUNT_CLASSIFICATION IN (${Squad}) </if>
+				<if test="Team != null"> AND TEAM IN (${Team})</if>
+				<!-- <if test="idOwner != null"> AND OWNER_ID IN (${idOwner}) </if> -->
+				<if test="fechainicio != null || fechafin != null">AND ACTUAL_FINISH BETWEEN ${fechainicio} AND ${fechafin}</if>
+				<if test="TipoTicket != null"> AND CLASS IN (${TipoTicket})</if>
+				
+				)
+				
+				UNION ALL 
+				
+				(SELECT ACCOUNT_CLASSIFICATION, OWNER, TEAM, RES_COUNTRY ,
+				PARENT_CLIENT_ID, TRIBE, OWNER_GROUP_ID,STATUS, OWNER_ID, CLASS ,
+				CASE WHEN SUBSTR(OWNER_GROUP,1,4) = 'Petr' OR OWNER_GROUP IN ('Data Management Petroperu') THEN 'Petroperu' 
+				WHEN SUBSTR(OWNER_GROUP,1,4) = 'IBM-' THEN 'Interbank' ELSE 'Campus' END AS OWNERGROUP
+				
+				FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS
+				WHERE 
+				RES_COUNTRY IN ('Peru')				
+				<if test="Squad != null"> AND ACCOUNT_CLASSIFICATION IN (${Squad}) </if>
+				<!-- <if test="idOwner != null"> AND OWNER_ID IN (${idOwner}) </if> -->
+				<if test="fechainicio != null || fechafin != null">AND ACTUAL_FINISH BETWEEN ${fechainicio} AND ${fechafin}</if>
+				<if test="TipoTicket != null"> AND CLASS IN (${TipoTicket})</if>
+				<if test="Team != null"> AND TEAM IN (${Team})</if>
+					
+				)
+				
+			)
+			
+		<if test="Site != null"> WHERE OWNERGROUP IN (${Site})</if>	
+	
+		
+	 UNION ALL
+	 
+	 
+		 SELECT 
+				ACCOUNT_CLASSIFICATION,OWNER, TEAM,
+				COUNT(CASE WHEN STATUS IN ('INPROG','PENDING','QUEUED','RCACOMP','SLAHOLD') THEN 1 END) BACKLOG,
+				COUNT(CASE WHEN STATUS = 'INPROG' THEN 1 END) INPROG,
+				COUNT(CASE WHEN STATUS = 'PENDING' THEN 1 END) PENDING,
+				COUNT(CASE WHEN STATUS = 'QUEUED' THEN 1 END) QUEUED,
+				COUNT(CASE WHEN STATUS = 'RCACOMP' THEN 1 END) RCACOMP,
+				COUNT(CASE WHEN STATUS = 'SLAHOLD' THEN 1 END) SLAHOLD,
+				COUNT(CASE WHEN STATUS IN ('CLOSED','RESOLVE','RESOLVCONF') THEN 1 END) RESOLVED 
+		 FROM ( 
+		 
+				(SELECT ACCOUNT_CLASSIFICATION, OWNER, TEAM, RES_COUNTRY ,
+				PARENT_CLIENT_ID, TRIBE, OWNER_GROUP_ID, STATUS, OWNER_ID, CLASS,
+				CASE WHEN SUBSTR(OWNER_GROUP,1,4) = 'Petr' OR OWNER_GROUP IN ('Data Management Petroperu') THEN 'Petroperu' 
+				WHEN SUBSTR(OWNER_GROUP,1,4) = 'IBM-' THEN 'Interbank' ELSE 'Campus' END AS OWNERGROUP
+				
+				FROM CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 
+				WHERE 
+				RES_COUNTRY IN ('Peru')				
+				<if test="Squad != null"> AND ACCOUNT_CLASSIFICATION IN (${Squad}) </if>
+				<if test="Team != null"> AND TEAM IN (${Team})</if>
+				<!-- <if test="idOwner != null"> AND OWNER_ID IN (${idOwner}) </if> -->
+				<if test="fechainicio != null || fechafin != null">AND ACTUAL_FINISH BETWEEN ${fechainicio} AND ${fechafin}</if>
+				<if test="TipoTicket != null"> AND CLASS IN (${TipoTicket})</if>
+				
+				)
+				
+				UNION ALL 
+				
+				(SELECT ACCOUNT_CLASSIFICATION, OWNER, TEAM, RES_COUNTRY ,
+				PARENT_CLIENT_ID, TRIBE, OWNER_GROUP_ID,STATUS, OWNER_ID, CLASS ,
+				CASE WHEN SUBSTR(OWNER_GROUP,1,4) = 'Petr' OR OWNER_GROUP IN ('Data Management Petroperu') THEN 'Petroperu' 
+				WHEN SUBSTR(OWNER_GROUP,1,4) = 'IBM-' THEN 'Interbank' ELSE 'Campus' END AS OWNERGROUP
+				
+				FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS
+				WHERE 
+				RES_COUNTRY IN ('Peru')				
+				<if test="Squad != null"> AND ACCOUNT_CLASSIFICATION IN (${Squad}) </if>
+				<!-- <if test="idOwner != null"> AND OWNER_ID IN (${idOwner}) </if> -->
+				<if test="fechainicio != null || fechafin != null">AND ACTUAL_FINISH BETWEEN ${fechainicio} AND ${fechafin}</if>
+				<if test="TipoTicket != null"> AND CLASS IN (${TipoTicket})</if>
+				<if test="Team != null"> AND TEAM IN (${Team})</if>
+					
+				)
+				
+			)
+			
+		<if test="Site != null"> WHERE OWNERGROUP IN (${Site})</if>	
+		
+		GROUP BY ACCOUNT_CLASSIFICATION, OWNER, TEAM 
+						 
+ 	 
+	</select> 
+	
+	
+	<resultMap id="resultTabla2" type="com.pe.ibm.bean.BeanTablero">
+		<result property="idOwner" column="OWNER_ID" />
+		<result property="Owner" column="OWNER" />
+		<result property="Team" column="TEAM" />
+		<result property="Queued" column="QUEUED" />
+		<result property="Planned" column="PLANNED" />
+		<result property="InProgress" column="INPROGRESS" />
+		<result property="Pending" column="PENDING" />
+		<result property="SlaHold" column="SLAHOLD" />
+		<result property="Done" column="CLOSED" />
+		<result property="Resolved" column="RESOLVED" />
+		<result property="Total" column="TOTAL" />
+		
+	</resultMap>
+	
+	<select id="listReportT2" resultMap="resultTabla2" parameterType = "com.pe.ibm.bean.BeanTablero" >
+		
+		
+		SELECT          
+	 		 ('GRAND TOTAL') AS OWNER_ID,('-') AS  OWNER, ('-') AS TEAM,        
+			 SUM(CASE WHEN STATUS IN ('QUEUED')THEN 1 ELSE 0 END) QUEUED,          
+			 SUM(CASE WHEN STATUS IN ('PLANNED')THEN 1 ELSE 0 END) PLANNED,          
+			 SUM(CASE WHEN STATUS IN ('INPROG')THEN 1 ELSE 0 END) INPROGRESS,          
+			 SUM(CASE WHEN STATUS IN ('PENDING')THEN 1 ELSE 0 END) PENDING,          
+			 SUM(CASE WHEN STATUS IN ('SLAHOLD')THEN 1 ELSE 0 END) SLAHOLD,    
+			 SUM(CASE WHEN STATUS IN ('CLOSED')THEN 1 ELSE 0 END) CLOSED,
+			 SUM(CASE WHEN STATUS IN ('RESOLVED')THEN 1 ELSE 0 END) RESOLVED,       
+			 SUM(CASE WHEN STATUS IN ('QUEUED','PLANNED','INPROG','PENDING','SLAHOLD','CLOSED','RESOLVED')THEN 1 ELSE 0 END) TOTAL   
+	   
+	    FROM 
+	              
+	    	(SELECT OWNER_ID,OWNER,OWNER_GROUP,OWNER_GROUP_ID,CLASS,STATUS,PARENT_CLIENT_ID,RES_COUNTRY,TEAM,TRIBE,ACCOUNT_CLASSIFICATION,
+	    					CASE WHEN SUBSTR(OWNER_GROUP,1,4) = 'Petr' OR OWNER_GROUP IN ('Data Management Petroperu') THEN 'Petroperu' 
+ 	   						WHEN SUBSTR(OWNER_GROUP,1,4) = 'IBM-' THEN 'Interbank' ELSE 'Campus' END AS OWNERGROUP
+ 	   						 
+	    	FROM CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2
+	    	 WHERE  	RES_COUNTRY IN ('Peru')  
+	    	
+	    	  <if test="Tribu != null"> AND TRIBE IN (${Tribu})</if>			 		
+		 	  <if test="Squad != null"> AND ACCOUNT_CLASSIFICATION IN (${Squad}) </if>			 		
+			  <if test="Team != null"> AND TEAM IN (${Team})</if>			 	
+		      <if test="TipoTicket != null"> AND CLASS IN (${TipoTicket})</if>
+		      <if test="fechainicio != null || fechafin != null">AND ACTUAL_FINISH BETWEEN ${fechainicio} AND ${fechafin}</if>
+		      
+    		
+    			 UNION  ALL
+    			
+			 SELECT OWNER_ID,OWNER,OWNER_GROUP,OWNER_GROUP_ID,CLASS,STATUS,PARENT_CLIENT_ID,RES_COUNTRY,TEAM,TRIBE ,ACCOUNT_CLASSIFICATION,
+							CASE WHEN SUBSTR(OWNER_GROUP,1,4) = 'Petr' OR OWNER_GROUP IN ('Data Management Petroperu') THEN 'Petroperu' 
+ 	   						WHEN SUBSTR(OWNER_GROUP,1,4) = 'IBM-' THEN 'Interbank' ELSE 'Campus' END AS OWNERGROUP
+ 	   						
+ 	   						
+			 FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			 WHERE  	RES_COUNTRY IN ('Peru')
+			 
+			  <if test="Tribu != null"> AND TRIBE IN (${Tribu})</if>			 		
+		 	  <if test="Squad != null"> AND ACCOUNT_CLASSIFICATION IN (${Squad}) </if>			 		
+			  <if test="Team != null"> AND TEAM IN (${Team})</if>			 	
+		      <if test="TipoTicket != null"> AND CLASS IN (${TipoTicket})</if>
+		      <if test="fechainicio != null || fechafin != null">AND ACTUAL_FINISH BETWEEN ${fechainicio} AND ${fechafin}</if>
+		      
+		      
+			 
+			 	UNION ALL
+			 		
+			 SELECT OWNER_ID,OWNER,OWNER_GROUP,OWNER_GROUP_ID,CLASS,STATUS,PARENT_CLIENT_ID,RES_COUNTRY,TEAM,TRIBE,ACCOUNT_CLASSIFICATION,
+			 				CASE WHEN SUBSTR(OWNER_GROUP,1,4) = 'Petr' OR OWNER_GROUP IN ('Data Management Petroperu') THEN 'Petroperu' 
+ 	   						WHEN SUBSTR(OWNER_GROUP,1,4) = 'IBM-' THEN 'Interbank' ELSE 'Campus' END AS OWNERGROUP
+ 	   						
+ 	   						
+			 FROM CONSUMOS.V_SAB_SCCD_WORKORDER_BACKLOG 
+			 WHERE  	RES_COUNTRY IN ('Peru')
+			 
+			  <if test="Tribu != null"> AND TRIBE IN (${Tribu})</if>			 		
+		 	  <if test="Squad != null"> AND ACCOUNT_CLASSIFICATION IN (${Squad}) </if>			 		
+			  <if test="Team != null"> AND TEAM IN (${Team})</if>			 	
+		      <if test="TipoTicket != null"> AND CLASS IN (${TipoTicket})</if>
+		      <if test="fechainicio != null || fechafin != null">AND ACTUAL_FINISH BETWEEN ${fechainicio} AND ${fechafin}</if>
+		      
+		      	 
+			 
+			 )       
+			 
+	    <if test="Site != null"> WHERE OWNERGROUP IN (${Site})</if>
+	    
+	   
+	UNION ALL
+		
+		
+		
+		
+		  SELECT          
+	 		 OWNER_ID,OWNER,TEAM,        
+			 SUM(CASE WHEN STATUS IN ('QUEUED')THEN 1 ELSE 0 END) QUEUED,          
+			 SUM(CASE WHEN STATUS IN ('PLANNED')THEN 1 ELSE 0 END) PLANNED,          
+			 SUM(CASE WHEN STATUS IN ('INPROG')THEN 1 ELSE 0 END) INPROGRESS,          
+			 SUM(CASE WHEN STATUS IN ('PENDING')THEN 1 ELSE 0 END) PENDING,          
+			 SUM(CASE WHEN STATUS IN ('SLAHOLD')THEN 1 ELSE 0 END) SLAHOLD,    
+			 SUM(CASE WHEN STATUS IN ('CLOSED')THEN 1 ELSE 0 END) CLOSED,
+			 SUM(CASE WHEN STATUS IN ('RESOLVED')THEN 1 ELSE 0 END) RESOLVED,       
+			 SUM(CASE WHEN STATUS IN ('QUEUED','PLANNED','INPROG','PENDING','SLAHOLD','CLOSED','RESOLVED')THEN 1 ELSE 0 END) TOTAL   
+	   
+	    FROM 
+	              
+	    	(SELECT OWNER_ID,OWNER,OWNER_GROUP,OWNER_GROUP_ID,CLASS,STATUS,PARENT_CLIENT_ID,RES_COUNTRY,TEAM,TRIBE,ACCOUNT_CLASSIFICATION,
+	    					CASE WHEN SUBSTR(OWNER_GROUP,1,4) = 'Petr' OR OWNER_GROUP IN ('Data Management Petroperu') THEN 'Petroperu' 
+ 	   						WHEN SUBSTR(OWNER_GROUP,1,4) = 'IBM-' THEN 'Interbank' ELSE 'Campus' END AS OWNERGROUP
+ 	   						 
+	    	FROM CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2
+	    	 WHERE  	RES_COUNTRY IN ('Peru')  
+	    	
+	    	  <if test="Tribu != null"> AND TRIBE IN (${Tribu})</if>			 		
+		 	  <if test="Squad != null"> AND ACCOUNT_CLASSIFICATION IN (${Squad}) </if>			 		
+			  <if test="Team != null"> AND TEAM IN (${Team})</if>			 	
+		      <if test="TipoTicket != null"> AND CLASS IN (${TipoTicket})</if>
+		      <if test="fechainicio != null || fechafin != null">AND ACTUAL_FINISH BETWEEN ${fechainicio} AND ${fechafin}</if>
+		      
+    		
+    			 UNION  ALL
+    			
+			 SELECT OWNER_ID,OWNER,OWNER_GROUP,OWNER_GROUP_ID,CLASS,STATUS,PARENT_CLIENT_ID,RES_COUNTRY,TEAM,TRIBE ,ACCOUNT_CLASSIFICATION,
+							CASE WHEN SUBSTR(OWNER_GROUP,1,4) = 'Petr' OR OWNER_GROUP IN ('Data Management Petroperu') THEN 'Petroperu' 
+ 	   						WHEN SUBSTR(OWNER_GROUP,1,4) = 'IBM-' THEN 'Interbank' ELSE 'Campus' END AS OWNERGROUP
+ 	   						
+ 	   						
+			 FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			 WHERE  	RES_COUNTRY IN ('Peru')
+			 
+			  <if test="Tribu != null"> AND TRIBE IN (${Tribu})</if>			 		
+		 	  <if test="Squad != null"> AND ACCOUNT_CLASSIFICATION IN (${Squad}) </if>			 		
+			  <if test="Team != null"> AND TEAM IN (${Team})</if>			 	
+		      <if test="TipoTicket != null"> AND CLASS IN (${TipoTicket})</if>
+		      <if test="fechainicio != null || fechafin != null">AND ACTUAL_FINISH BETWEEN ${fechainicio} AND ${fechafin}</if>
+		      
+		      
+			 
+			 	UNION ALL
+			 		
+			 SELECT OWNER_ID,OWNER,OWNER_GROUP,OWNER_GROUP_ID,CLASS,STATUS,PARENT_CLIENT_ID,RES_COUNTRY,TEAM,TRIBE,ACCOUNT_CLASSIFICATION,
+			 				CASE WHEN SUBSTR(OWNER_GROUP,1,4) = 'Petr' OR OWNER_GROUP IN ('Data Management Petroperu') THEN 'Petroperu' 
+ 	   						WHEN SUBSTR(OWNER_GROUP,1,4) = 'IBM-' THEN 'Interbank' ELSE 'Campus' END AS OWNERGROUP
+ 	   						
+ 	   						
+			 FROM CONSUMOS.V_SAB_SCCD_WORKORDER_BACKLOG 
+			 WHERE  	RES_COUNTRY IN ('Peru')
+			 
+			  <if test="Tribu != null"> AND TRIBE IN (${Tribu})</if>			 		
+		 	  <if test="Squad != null"> AND ACCOUNT_CLASSIFICATION IN (${Squad}) </if>			 		
+			  <if test="Team != null"> AND TEAM IN (${Team})</if>			 	
+		      <if test="TipoTicket != null"> AND CLASS IN (${TipoTicket})</if>
+		      <if test="fechainicio != null || fechafin != null">AND ACTUAL_FINISH BETWEEN ${fechainicio} AND ${fechafin}</if>
+		      
+		      	 
+			 
+			 )       
+			 
+	    <if test="Site != null"> WHERE OWNERGROUP IN (${Site})</if>
+	    
+	    GROUP BY           
+	    	OWNER_ID,OWNER,TEAM
+ 	
+ 	 
+	</select> 
+	
+	
+	<resultMap id="resultTabla3" type="com.pe.ibm.bean.BeanTablero">
+		<result property="Team" column="TEAM" />
+		<result property="SquadInterGroup" column="SquadIntergroup" />
+		<result property="SquadMulti1" column="SquadMultiIndustria1" />
+		<result property="SquadMulti2" column="SquadMultiIndustria2" />
+		<result property="SquadCommercial" column="SquadCommercial" />
+		<result property="IBM" column="IBM" />
+		<result property="Total" column="TOTAL" />
+		
+	</resultMap>
+	
+	<select id="listReportT3" resultMap="resultTabla3" parameterType = "com.pe.ibm.bean.BeanTablero" >
+		
+				SELECT 
+				     ('GRAND TOTAL') AS TEAM,
+				     SUM(CASE WHEN ACCOUNT_CLASSIFICATION IN ('Squad Intergroup')THEN 1 ELSE 0	END) SquadIntergroup,
+				     SUM(CASE WHEN ACCOUNT_CLASSIFICATION IN ('Squad Multi Industria 1')THEN 1 ELSE 0 END) SquadMultiIndustria1,
+				     SUM(CASE WHEN ACCOUNT_CLASSIFICATION IN ('Squad Multi Industria 2')THEN 1 ELSE 0 END) SquadMultiIndustria2,
+				     SUM(CASE WHEN ACCOUNT_CLASSIFICATION IN ('Squad Commercial')THEN 1 ELSE 0 END) SquadCommercial,
+				     SUM(CASE WHEN ACCOUNT_CLASSIFICATION IN ('IBM')THEN 1 ELSE 0 END) IBM,
+					 SUM(CASE WHEN ACCOUNT_CLASSIFICATION IN ('IBM','Squad Intergroup','Squad Multi Industria 1','Squad Multi Industria 2','Squad Commercial')THEN 1 ELSE 0 END) TOTAL
+				    
+				     
+			     FROM 
+			     
+			     
+			     	(SELECT OWNER_ID,OWNER,OWNER_GROUP,OWNER_GROUP_ID,CLASS,STATUS,PARENT_CLIENT_ID,RES_COUNTRY,TEAM,ACCOUNT_CLASSIFICATION,
+		     				CASE WHEN SUBSTR(OWNER_GROUP,1,4) = 'Petr' OR OWNER_GROUP IN ('Data Management Petroperu') THEN 'Petroperu' 
+ 	   						WHEN SUBSTR(OWNER_GROUP,1,4) = 'IBM-' THEN 'Interbank' ELSE 'Campus' END AS OWNERGROUP
+			    	
+			    	
+			    	FROM CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2
+			    	
+			    	<if test="fechainicio != null || fechafin != null">WHERE ACTUAL_FINISH BETWEEN ${fechainicio} AND ${fechafin}</if> 
+		    		
+		    			UNION ALL
+		    			
+					 SELECT OWNER_ID,OWNER,OWNER_GROUP,OWNER_GROUP_ID,CLASS,STATUS,PARENT_CLIENT_ID,RES_COUNTRY,TEAM,ACCOUNT_CLASSIFICATION,
+		     				CASE WHEN SUBSTR(OWNER_GROUP,1,4) = 'Petr' OR OWNER_GROUP IN ('Data Management Petroperu') THEN 'Petroperu' 
+ 	   						WHEN SUBSTR(OWNER_GROUP,1,4) = 'IBM-' THEN 'Interbank' ELSE 'Campus' END AS OWNERGROUP
+ 	   						
+ 	   						
+					 FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+					 
+					 <if test="fechainicio != null || fechafin != null">WHERE ACTUAL_FINISH BETWEEN ${fechainicio} AND ${fechafin}</if>
+					 
+					 	UNION ALL
+					 		
+					 SELECT OWNER_ID,OWNER,OWNER_GROUP,OWNER_GROUP_ID,CLASS,STATUS,PARENT_CLIENT_ID,RES_COUNTRY,TEAM,ACCOUNT_CLASSIFICATION,
+		     				CASE WHEN SUBSTR(OWNER_GROUP,1,4) = 'Petr' OR OWNER_GROUP IN ('Data Management Petroperu') THEN 'Petroperu' 
+ 	   						WHEN SUBSTR(OWNER_GROUP,1,4) = 'IBM-' THEN 'Interbank' ELSE 'Campus' END AS OWNERGROUP
+ 	   						
+					 FROM CONSUMOS.V_SAB_SCCD_WORKORDER_BACKLOG 
+					 
+					 <if test="fechainicio != null || fechafin != null">WHERE ACTUAL_FINISH BETWEEN ${fechainicio} AND ${fechafin}</if>			 
+					 
+					 )
+			     	
+			 	WHERE  		
+			 		RES_COUNTRY IN ('Peru') 
+			 	
+			 	<if test="TipoTicket != null"> AND CLASS IN (${TipoTicket})</if>
+			 		
+		 		<if test="idOwner != null"> AND OWNER_ID IN (${idOwner}) </if>
+			 		
+			 	<if test="Status != null"> AND STATUS IN (${Status})</if>
+			 	
+			 	<if test="Site != null"> AND OWNERGROUP IN (${Site})</if>
+			 	
+	 	UNION ALL
+		
+		
+		
+	  SELECT * FROM 
+		     (
+		  
+		  SELECT 
+				     TEAM,
+				     SUM(CASE WHEN ACCOUNT_CLASSIFICATION IN ('Squad Intergroup')THEN 1 ELSE 0	END) SquadIntergroup,
+				     SUM(CASE WHEN ACCOUNT_CLASSIFICATION IN ('Squad Multi Industria 1')THEN 1 ELSE 0 END) SquadMultiIndustria1,
+				     SUM(CASE WHEN ACCOUNT_CLASSIFICATION IN ('Squad Multi Industria 2')THEN 1 ELSE 0 END) SquadMultiIndustria2,
+				     SUM(CASE WHEN ACCOUNT_CLASSIFICATION IN ('Squad Commercial')THEN 1 ELSE 0 END) SquadCommercial,
+				     SUM(CASE WHEN ACCOUNT_CLASSIFICATION IN ('IBM')THEN 1 ELSE 0 END) IBM,
+					 SUM(CASE WHEN ACCOUNT_CLASSIFICATION IN ('IBM','Squad Intergroup','Squad Multi Industria 1','Squad Multi Industria 2','Squad Commercial')THEN 1 ELSE 0 END) TOTAL
+				    
+				     
+			     FROM 
+			     
+			     
+			     	(SELECT OWNER_ID,OWNER,OWNER_GROUP,OWNER_GROUP_ID,CLASS,STATUS,PARENT_CLIENT_ID,RES_COUNTRY,TEAM,ACCOUNT_CLASSIFICATION,
+		     				CASE WHEN SUBSTR(OWNER_GROUP,1,4) = 'Petr' OR OWNER_GROUP IN ('Data Management Petroperu') THEN 'Petroperu' 
+ 	   						WHEN SUBSTR(OWNER_GROUP,1,4) = 'IBM-' THEN 'Interbank' ELSE 'Campus' END AS OWNERGROUP
+			    	
+			    	
+			    	FROM CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2
+			    	
+			    	<if test="fechainicio != null || fechafin != null">WHERE ACTUAL_FINISH BETWEEN ${fechainicio} AND ${fechafin}</if> 
+		    		
+		    			UNION ALL
+		    			
+					 SELECT OWNER_ID,OWNER,OWNER_GROUP,OWNER_GROUP_ID,CLASS,STATUS,PARENT_CLIENT_ID,RES_COUNTRY,TEAM,ACCOUNT_CLASSIFICATION,
+		     				CASE WHEN SUBSTR(OWNER_GROUP,1,4) = 'Petr' OR OWNER_GROUP IN ('Data Management Petroperu') THEN 'Petroperu' 
+ 	   						WHEN SUBSTR(OWNER_GROUP,1,4) = 'IBM-' THEN 'Interbank' ELSE 'Campus' END AS OWNERGROUP
+ 	   						
+ 	   						
+					 FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+					 
+					 <if test="fechainicio != null || fechafin != null">WHERE ACTUAL_FINISH BETWEEN ${fechainicio} AND ${fechafin}</if>
+					 
+					 	UNION ALL
+					 		
+					 SELECT OWNER_ID,OWNER,OWNER_GROUP,OWNER_GROUP_ID,CLASS,STATUS,PARENT_CLIENT_ID,RES_COUNTRY,TEAM,ACCOUNT_CLASSIFICATION,
+		     				CASE WHEN SUBSTR(OWNER_GROUP,1,4) = 'Petr' OR OWNER_GROUP IN ('Data Management Petroperu') THEN 'Petroperu' 
+ 	   						WHEN SUBSTR(OWNER_GROUP,1,4) = 'IBM-' THEN 'Interbank' ELSE 'Campus' END AS OWNERGROUP
+ 	   						
+ 	   						
+					 FROM CONSUMOS.V_SAB_SCCD_WORKORDER_BACKLOG 
+					 
+					 <if test="fechainicio != null || fechafin != null">WHERE ACTUAL_FINISH BETWEEN ${fechainicio} AND ${fechafin}</if>			 
+					 
+					 )
+			     	
+			 	WHERE  		
+			 		RES_COUNTRY IN ('Peru') 
+			 	
+			 	<if test="TipoTicket != null"> AND CLASS IN (${TipoTicket})</if>
+			 		
+		 		<if test="idOwner != null"> AND OWNER_ID IN (${idOwner}) </if>
+			 		
+			 	<if test="Status != null"> AND STATUS IN (${Status})</if>
+			 	
+			 	<if test="Site != null"> AND OWNERGROUP IN (${Site})</if>
+			 	
+			 	GROUP BY   	
+			 			TEAM
+			 			
+	 		)	
+			 			
+	
+				
+ 	 
+	</select>
+	
+
+</mapper>
+
+
+
+

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration
+PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<environments default="development">
+		<environment id="development">
+			<transactionManager type="JDBC" />
+			<dataSource type="POOLED">
+				<property name="driver" value="com.ibm.db2.jcc.DB2Driver" />
+				<!--  local -->
+<!-- 				<property name="url" value="jdbc:db2://9.6.100.121:50000/SISTOPER" /> -->
+<!-- 				<property name="username" value="db2inst2" /> -->
+<!-- 				<property name="password" value="p4ssw0rd2017%p4ssw0rd2017%" /> -->
+
+				<!--  BlueMix -->
+<!-- 				<property name="url" value="jdbc:db2://cap-sg-prd-3.integration.ibmcloud.com:16824/SMDESKDB:securityMechanism=13;" /> -->
+<!-- 				<property name="username" value="db2inst1" /> -->
+<!-- 				<property name="password" value="p4ssw0rd" /> -->
+
+				<!--  Server Test -->
+<!-- 				<property name="url" value="jdbc:db2://129.39.179.204:50000/SMDESKDB:securityMechanism=13;" /> -->
+<!-- 				<property name="username" value="db2inst1" /> -->
+<!-- 				<property name="password" value="_M3f$345m" /> -->
+
+				<!--  Server PRD -->
+				<property name="url" value="jdbc:db2://129.39.179.15:50000/SMDESKDB:securityMechanism=13;" />
+				<property name="username" value="db2inst1" />
+				<property name="password" value="p4ssw0rd" />
+				<property name="poolMaximumActiveConnections" value="3"></property>
+				<property name="poolMaximumIdleConnections" value="3"></property>
+				<property name="poolPingQuery" value="true" />
+				<property name="poolTimeToWait" value="1000"/>
+				<property name="poolMaximumCheckoutTime" value="120000"/>
+			</dataSource>
+		</environment>
+	</environments>
+
+	<mappers>
+		<mapper resource="com/pe/ibm/access/MapperMaximoMobility.xml"/>
+		<mapper resource="com/pe/ibm/access/MapperMaximoWH.xml" />
+		<mapper resource="com/pe/ibm/access/MapperOptions.xml" />
+		<mapper resource="com/pe/ibm/access/MapperOptionsCont.xml" />
+		<mapper resource="com/pe/ibm/access/MapperMaximoSLA.xml" />
+		<mapper resource="com/pe/ibm/access/MapperProyecto.xml" />
+		<mapper resource="com/pe/ibm/access/MapperNivelServicio.xml" />
+		<mapper resource="com/pe/ibm/access/MapperDistribucionTickets.xml" />
+		<mapper resource="com/pe/ibm/access/MapperLineaBase.xml" />
+		<mapper resource="com/pe/ibm/access/MapperTicketWO.xml" /> 
+		<mapper resource="com/pe/ibm/access/MapperLlamadasMobility.xml" /> 
+		
+		<mapper resource="com/pe/ibm/access/MapperEstadoTicket.xml" /> 
+		<mapper resource="com/pe/ibm/access/MapperFeriado.xml" /> 
+		<mapper resource="com/pe/ibm/access/MapperHorario.xml" /> 
+	</mappers>
+
+</configuration>

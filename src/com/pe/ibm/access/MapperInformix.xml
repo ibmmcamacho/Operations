@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="informix">
+  
+	<resultMap id = "result" type = "com.pe.ibm.bean.BeanInformix">
+      <result property = "sessionId" column = "sessionId"/>
+      <result property = "sessionSeqNum" column = "sessionSeqNum"/>
+      <result property = "nodeID" column = "nodeID"/>
+      <result property = "profileID" column = "profileID"/>
+      <result property = "applicationname" column = "applicationname"/>
+      <result property = "contactType" column = "contactType"/>
+      <result property = "contactDisposition" column = "contactDisposition"/>
+      <result property = "startDateTime" column = "startDateTime"/>
+      <result property = "endDateTime" column = "endDateTime"/>
+      <result property = "minute" column = "minute"/>
+      <result property = "current" column = "current"/>
+   	</resultMap>
+   
+    <select id = "listar" resultMap = "result" parameterType = "com.pe.ibm.bean.BeanInformix">
+                Select sessionId, sessionSeqNum, nodeID, profileID, applicationname, contactType, contactDisposition, startDateTime, endDateTime, 
+                current - 6 units minute, current
+                from contactcalldetail where startDateTime between '2019-02-08 00:00:00' and '2019-02-10 23:59:59'
+    </select>
+
+</mapper>

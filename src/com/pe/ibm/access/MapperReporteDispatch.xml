@@ -1,0 +1,823 @@
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="reporteDispatch">
+	<resultMap id="resultReporteDispatch" type="com.pe.ibm.bean.BeanReporteDispatch">
+		<result property="strSquad" column="SQUAD" />
+		<result property="iTicketsIC" column="IN_CRITERIA" />
+		<result property="iTicketsOC" column="OUT_OF_CRITERIA" />
+		<result property="iTicketsP" column="PLANIFICADO" />
+		<result property="iTotal" column="TOTAL" />
+	</resultMap>
+	
+	<select id="getReporteDispatch" parameterType="com.pe.ibm.bean.BeanReporteDispatch" resultMap="resultReporteDispatch">
+		SELECT
+			ACCOUNT_CLASSIFICATION as SQUAD,
+			COUNT(DECODE(COMPLIANCE_OLA_PERU_RESOLVE,'In criteria', COD_TICKET)) AS IN_CRITERIA,
+			COUNT(DECODE(COMPLIANCE_OLA_PERU_RESOLVE,'Out of criteria', COD_TICKET)) AS OUT_OF_CRITERIA,
+			COUNT(CASE
+			WHEN COMPLIANCE_OLA_PERU_RESOLVE IS NULL
+			THEN COD_TICKET
+			END) AS PLANIFICADO,
+			COUNT(COD_TICKET) AS TOTAL
+			FROM CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 SA
+			WHERE
+			 STATUS IN('INPROG','PENDING','QUEUED','SLAHOLD') AND 
+			 RES_COUNTRY IN(${pais}) AND
+			 <if test='strOwnerId != null'>
+   				OWNER_ID IN(${strOwnerId}) AND 
+             </if>
+    		 <if test='strCodTeam != null'>
+   				OWNER_GROUP_ID IN(${strCodTeam}) AND
+    		 </if>
+    		 <if test='strParentClientId != null'>
+   				PARENT_CLIENT_ID IN(${strParentClientId}) AND
+  		     </if>
+			 DECODE(SUBSTR(OWNER_GROUP,1,4),'Petr','Petroperú','IBM-','Interbank','Campus') = 'Campus' AND 
+			 CLASS IN(${strTipo})  AND
+			 TEAM IS NOT NULL AND
+			 ACCOUNT_CLASSIFICATION IN(${squad})
+			 GROUP BY ROLLUP (ACCOUNT_CLASSIFICATION)
+			 ORDER BY ACCOUNT_CLASSIFICATION
+	</select>
+	
+	<resultMap id="resultReporteCriteria" type="com.pe.ibm.bean.BeanReporteDispatch">
+		<result property="strSquad" column="SQUAD" />
+		<result property="strTiempoRestante" column="TIEMPO_RESTANTE" />
+		<result property="strTicket" column="VCOD_TICKET" />
+		<result property="iPrioridad" column="INTERNAL_PRIORITY" />
+		<result property="strOwner" column="OWNER" />
+		<result property="strStatus" column="VSTATUS" />
+		<result property="iHorasVencer" column="HRS_PARA_VENCER" />
+		<result property="sCDate" column="VCREATION_DATE" />
+		<result property="strClase" column="VCLASS" />
+		<result property="strUniqueid" column="ITICKET_UID" />
+		<result property="strTeam" column="VTEAM" />
+		<result property="strClienteId" column="VCLIENT_ID" />
+		<result property="strCliente" column="VCLIENT" />
+		<result property="strSummary" column="VSUMMARY" />
+		<result property="strDetails" column="VDETAILS" />
+		<result property="strCreatorId" column="VCREATOR_ID" />
+		<result property="strCreator" column="VCREATOR" />
+		<result property="strCreatorGroup" column="VCREATOR_GROUP" />
+		<result property="strReported" column="VREPORTED_ID" />
+		<result property="strAffectedPerson" column="VAFFECTED_PERSON_ID" />
+		<result property="strCi" column="VCI" />
+		<result property="strCiName" column="VCI_NAME" />
+		<result property="strCiEnvironment" column="VCI_ENVIRONMENT" />
+		<result property="strLocationId" column="VLOCATION_ID" />
+		<result property="strLocation" column="VLOCATION" />
+		<result property="strParentClientId" column="VPARENT_CLIENT_ID" />
+		<result property="strParentClient" column="VPARENT_CLIENT" />
+	</resultMap>
+
+	<select id="getReporteCriteria" parameterType="com.pe.ibm.bean.BeanReporteDispatch" resultMap="resultReporteCriteria">
+	
+	SELECT 
+ 	ACCOUNT_CLASSIFICATION as SQUAD,
+	(CASE
+	WHEN 
+	(CASE WHEN 
+	(SELECT OLA.RESOLVE 
+	FROM 
+		CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+	WHERE 
+		OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+		OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+		OLA.CUSTOMER IS NULL AND OLA.TYPE='LOCAL OLA') IS NULL 
+	THEN 
+		CAST(NULL AS DECIMAL(31,3))
+	ELSE 
+		CAST(((SELECT OLA.RESOLVE 
+		FROM 
+			CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+		WHERE 
+			OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+			OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+			OLA.CUSTOMER IS NULL 
+			AND OLA.TYPE='LOCAL OLA') - SA.TIME_TO_RESOLVE) AS DECIMAL(31,3)) 
+	END) IS NULL THEN 'Planeado'
+	ELSE 
+		CASE
+		WHEN
+			(CASE WHEN 
+	(SELECT OLA.RESOLVE 
+	FROM 
+		CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+	WHERE 
+		OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+		OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+		OLA.CUSTOMER IS NULL AND OLA.TYPE='LOCAL OLA') IS NULL 
+	THEN 
+		CAST(NULL AS DECIMAL(31,3))
+	ELSE 
+		CAST(((SELECT OLA.RESOLVE 
+		FROM 
+			CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+		WHERE 
+			OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+			OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+			OLA.CUSTOMER IS NULL 
+			AND OLA.TYPE='LOCAL OLA') - SA.TIME_TO_RESOLVE) AS DECIMAL(31,3)) 
+	END) <![CDATA[ <= ]]> 0 
+			THEN 'Vencido'
+		WHEN
+			(CASE WHEN 
+	(SELECT OLA.RESOLVE 
+	FROM 
+		CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+	WHERE 
+		OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+		OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+		OLA.CUSTOMER IS NULL AND OLA.TYPE='LOCAL OLA') IS NULL 
+	THEN 
+		CAST(NULL AS DECIMAL(31,3))
+	ELSE 
+		CAST(((SELECT OLA.RESOLVE 
+		FROM 
+			CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+		WHERE 
+			OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+			OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+			OLA.CUSTOMER IS NULL 
+			AND OLA.TYPE='LOCAL OLA') - SA.TIME_TO_RESOLVE) AS DECIMAL(31,3)) 
+	END) <![CDATA[ < ]]> 4 AND
+			(CASE WHEN 
+	(SELECT OLA.RESOLVE 
+	FROM 
+		CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+	WHERE 
+		OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+		OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+		OLA.CUSTOMER IS NULL AND OLA.TYPE='LOCAL OLA') IS NULL 
+	THEN 
+		CAST(NULL AS DECIMAL(31,3))
+	ELSE 
+		CAST(((SELECT OLA.RESOLVE 
+		FROM 
+			CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+		WHERE 
+			OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+			OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+			OLA.CUSTOMER IS NULL 
+			AND OLA.TYPE='LOCAL OLA') - SA.TIME_TO_RESOLVE) AS DECIMAL(31,3)) 
+	END) <![CDATA[ > ]]> 0
+			THEN 'Entre 0 y 4 Hrs'
+		WHEN
+			(CASE WHEN 
+	(SELECT OLA.RESOLVE 
+	FROM 
+		CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+	WHERE 
+		OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+		OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+		OLA.CUSTOMER IS NULL AND OLA.TYPE='LOCAL OLA') IS NULL 
+	THEN 
+		CAST(NULL AS DECIMAL(31,3))
+	ELSE 
+		CAST(((SELECT OLA.RESOLVE 
+		FROM 
+			CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+		WHERE 
+			OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+			OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+			OLA.CUSTOMER IS NULL 
+			AND OLA.TYPE='LOCAL OLA') - SA.TIME_TO_RESOLVE) AS DECIMAL(31,3)) 
+	END) <![CDATA[ >= ]]> 4 AND
+			(CASE WHEN 
+	(SELECT OLA.RESOLVE 
+	FROM 
+		CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+	WHERE 
+		OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+		OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+		OLA.CUSTOMER IS NULL AND OLA.TYPE='LOCAL OLA') IS NULL 
+	THEN 
+		CAST(NULL AS DECIMAL(31,3))
+	ELSE 
+		CAST(((SELECT OLA.RESOLVE 
+		FROM 
+			CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+		WHERE 
+			OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+			OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+			OLA.CUSTOMER IS NULL 
+			AND OLA.TYPE='LOCAL OLA') - SA.TIME_TO_RESOLVE) AS DECIMAL(31,3)) 
+	END) <![CDATA[ <= ]]> 8
+			THEN 'Entre 4 y 8 Hrs'
+		WHEN
+			(CASE WHEN 
+	(SELECT OLA.RESOLVE 
+	FROM 
+		CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+	WHERE 
+		OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+		OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+		OLA.CUSTOMER IS NULL AND OLA.TYPE='LOCAL OLA') IS NULL 
+	THEN 
+		CAST(NULL AS DECIMAL(31,3))
+	ELSE 
+		CAST(((SELECT OLA.RESOLVE 
+		FROM 
+			CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+		WHERE 
+			OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+			OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+			OLA.CUSTOMER IS NULL 
+			AND OLA.TYPE='LOCAL OLA') - SA.TIME_TO_RESOLVE) AS DECIMAL(31,3)) 
+	END) <![CDATA[ > ]]> 8 THEN 'A tiempo'
+		END
+	END) AS TIEMPO_RESTANTE
+	,COD_TICKET VCOD_TICKET, 
+	SA.INTERNAL_PRIORITY, 
+	COALESCE(OWNER,'No asignado') AS OWNER, 
+	STATUS VSTATUS,
+	(CASE WHEN 
+			(SELECT OLA.RESOLVE 
+			FROM 
+				CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+			WHERE 
+				OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+				OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+				OLA.CUSTOMER IS NULL AND OLA.TYPE='LOCAL OLA') IS NULL 
+			THEN 
+				CAST(NULL AS DECIMAL(31,3))
+			ELSE 
+				CAST(((SELECT OLA.RESOLVE 
+				FROM 
+					CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+				WHERE 
+					OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+					OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+					OLA.CUSTOMER IS NULL 
+					AND OLA.TYPE='LOCAL OLA') - SA.TIME_TO_RESOLVE) AS DECIMAL(31,3)) 
+			END) AS HRS_PARA_VENCER,
+	CREATION_DATE VCREATION_DATE,
+	CLASS VCLASS,
+	TICKET_UID ITICKET_UID,
+	TEAM VTEAM,
+	CLIENT_ID VCLIENT_ID,
+	CLIENT VCLIENT,
+	SUMMARY VSUMMARY,
+	DETAILS VDETAILS,
+	CREATOR_ID VCREATOR_ID,
+	CREATOR VCREATOR,
+	CREATOR_GROUP VCREATOR_GROUP,
+	NOTIFIER VREPORTED_ID,
+	AFFECTED_PERSON_ID VAFFECTED_PERSON_ID,
+	CI VCI,
+	CI_NAME VCI_NAME,
+	CI_ENVIRONMENT VCI_ENVIRONMENT,
+	LOCATION_ID VLOCATION_ID,
+	LOCATION VLOCATION,
+	PARENT_CLIENT_ID VPARENT_CLIENT_ID,
+	PARENT_CLIENT VPARENT_CLIENT
+FROM 
+	CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 SA
+WHERE
+	STATUS IN('INPROG','PENDING','QUEUED','SLAHOLD') AND
+	DECODE(SUBSTR(OWNER_GROUP,1,4),'Petr','Petroperú','IBM-','Interbank','Campus') = 'Campus' AND 
+	CLASS IN('INCIDENT','SR') AND
+	RES_COUNTRY IN(${pais}) AND
+	TEAM IS NOT NULL AND
+	<if test='strOwnerId != null'>
+   		OWNER_ID IN(${strOwnerId}) AND 
+    </if>
+ 	<if test='strTipo != null'>
+	 	COMPLIANCE_OLA_PERU_RESOLVE IN(${strTipo}) AND
+    </if>
+	<if test='strTipo == null'>
+	 	COMPLIANCE_OLA_PERU_RESOLVE IS NULL AND
+    </if>
+		ACCOUNT_CLASSIFICATION IN(${squad}) AND
+	<if test='strCodTeam != null'>
+   		OWNER_GROUP_ID IN(${strCodTeam}) AND
+    </if>
+    <if test='strParentClientId != null'>
+   		PARENT_CLIENT_ID IN(${strParentClientId}) AND
+    </if>
+	(CASE
+		WHEN 
+			(CASE WHEN 
+			(SELECT OLA.RESOLVE 
+			FROM 
+				CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+			WHERE 
+				OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+				OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+				OLA.CUSTOMER IS NULL AND OLA.TYPE='LOCAL OLA') IS NULL 
+			THEN 
+				CAST(NULL AS DECIMAL(31,3))
+			ELSE 
+				CAST(((SELECT OLA.RESOLVE 
+				FROM 
+					CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+				WHERE 
+					OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+					OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+					OLA.CUSTOMER IS NULL 
+					AND OLA.TYPE='LOCAL OLA') - SA.TIME_TO_RESOLVE) AS DECIMAL(31,3)) 
+			END) IS NULL 
+		THEN 
+	  		'Planeado'
+	  	WHEN
+	  		(CASE WHEN 
+			(SELECT OLA.RESOLVE 
+			FROM 
+				CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+			WHERE 
+				OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+				OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+				OLA.CUSTOMER IS NULL AND OLA.TYPE='LOCAL OLA') IS NULL 
+			THEN 
+				CAST(NULL AS DECIMAL(31,3))
+			ELSE 
+				CAST(((SELECT OLA.RESOLVE 
+				FROM 
+					CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+				WHERE 
+					OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+					OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+					OLA.CUSTOMER IS NULL 
+					AND OLA.TYPE='LOCAL OLA') - SA.TIME_TO_RESOLVE) AS DECIMAL(31,3)) 
+			END) <![CDATA[ < ]]> 4 AND
+			(CASE WHEN 
+			(SELECT OLA.RESOLVE 
+			FROM 
+				CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+			WHERE 
+				OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+				OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+				OLA.CUSTOMER IS NULL AND OLA.TYPE='LOCAL OLA') IS NULL 
+			THEN 
+				CAST(NULL AS DECIMAL(31,3))
+			ELSE 
+				CAST(((SELECT OLA.RESOLVE 
+				FROM 
+					CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+				WHERE 
+					OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+					OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+					OLA.CUSTOMER IS NULL 
+					AND OLA.TYPE='LOCAL OLA') - SA.TIME_TO_RESOLVE) AS DECIMAL(31,3)) 
+			END) <![CDATA[ > ]]> 0
+			THEN
+				'Entre 0 y 4 Hrs'
+		WHEN
+			(CASE WHEN 
+			(SELECT OLA.RESOLVE 
+			FROM 
+				CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+			WHERE 
+				OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+				OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+				OLA.CUSTOMER IS NULL AND OLA.TYPE='LOCAL OLA') IS NULL 
+			THEN 
+				CAST(NULL AS DECIMAL(31,3))
+			ELSE 
+				CAST(((SELECT OLA.RESOLVE 
+				FROM 
+					CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+				WHERE 
+					OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+					OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+					OLA.CUSTOMER IS NULL 
+					AND OLA.TYPE='LOCAL OLA') - SA.TIME_TO_RESOLVE) AS DECIMAL(31,3)) 
+			END) <![CDATA[ >= ]]> 4 AND
+			(CASE WHEN 
+			(SELECT OLA.RESOLVE 
+			FROM 
+				CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+			WHERE 
+				OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+				OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+				OLA.CUSTOMER IS NULL AND OLA.TYPE='LOCAL OLA') IS NULL 
+			THEN 
+				CAST(NULL AS DECIMAL(31,3))
+			ELSE 
+				CAST(((SELECT OLA.RESOLVE 
+				FROM 
+					CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+				WHERE 
+					OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+					OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+					OLA.CUSTOMER IS NULL 
+					AND OLA.TYPE='LOCAL OLA') - SA.TIME_TO_RESOLVE) AS DECIMAL(31,3)) 
+			END) <![CDATA[ <= ]]> 8
+			THEN
+				'Entre 4 y 8 Hrs'
+		WHEN
+			(CASE WHEN 
+			(SELECT OLA.RESOLVE 
+			FROM 
+				CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+			WHERE 
+				OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+				OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+				OLA.CUSTOMER IS NULL AND OLA.TYPE='LOCAL OLA') IS NULL 
+			THEN 
+				CAST(NULL AS DECIMAL(31,3))
+			ELSE 
+				CAST(((SELECT OLA.RESOLVE 
+				FROM 
+					CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+				WHERE 
+					OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+					OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+					OLA.CUSTOMER IS NULL 
+					AND OLA.TYPE='LOCAL OLA') - SA.TIME_TO_RESOLVE) AS DECIMAL(31,3)) 
+			END) <![CDATA[ > ]]> 8
+			THEN
+				'A tiempo'
+	END) IS NOT NULL
+
+	</select>
+
+
+	
+ 	<resultMap id="resultTFC" type="com.pe.ibm.bean.BeanReporteDispatch">
+		<result property="strSquad" column="SQUAD" />
+		<result property="strClienteId" column="VCLIENT_ID" />
+		<result property="strCliente" column="VCLIENT" />
+		<result property="strTicket" column="VCOD_TICKET" />
+		<result property="iPrioridad" column="IINTERNAL_PRIORITY" />		
+		<result property="strOwnerId" column="OWNER_ID" />
+		<result property="strOwner" column="OWNER" />
+		<result property="strEstado" column="VSTATUS" />
+		<result property="iHrsVencidas" column="HRS_VENCIDAS" />
+		<result property="sCDate" column="VCREATION_DATE" />
+		<result property="strClase" column="VCLASS" />
+		<result property="strUniqueid" column="ITICKET_UID" />
+		<result property="strTeam" column="VTEAM" />
+		<result property="strSummary" column="VSUMMARY" />
+		<result property="strDetails" column="VDETAILS" />
+		<result property="strCreatorId" column="VCREATOR_ID" />
+		<result property="strCreator" column="VCREATOR" />
+		<result property="strCreatorGroup" column="VCREATOR_GROUP" />
+		<result property="strReported" column="VREPORTED_ID" />
+		<result property="strAffectedPerson" column="VAFFECTED_PERSON_ID" />
+		<result property="strCi" column="VCI" />
+		<result property="strCiName" column="VCI_NAME" />
+		<result property="strCiEnvironment" column="VCI_ENVIRONMENT" />
+		<result property="strLocationId" column="VLOCATION_ID" />
+		<result property="strLocation" column="VLOCATION" />
+		<result property="strParentClientId" column="VPARENT_CLIENT_ID" />
+		<result property="strParentClient" column="VPARENT_CLIENT" />
+	</resultMap>
+ 	<select id="getTFC" parameterType="com.pe.ibm.bean.BeanReporteDispatch" resultMap="resultTFC">
+		SELECT 
+			ACCOUNT_CLASSIFICATION as SQUAD,
+			CLIENT_ID VCLIENT_ID,
+		        CLIENT VCLIENT,
+			COD_TICKET VCOD_TICKET, 
+			SA.INTERNAL_PRIORITY IINTERNAL_PRIORITY, 
+			COALESCE(OWNER_ID,'No asignado') AS OWNER_ID, 
+			COALESCE(OWNER,'No asignado') AS OWNER, 
+			STATUS VSTATUS,
+			(CASE WHEN 
+			(SELECT OLA.RESOLVE 
+			FROM 
+				CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+			WHERE 
+				OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+				OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+				OLA.CUSTOMER IS NULL AND OLA.TYPE='LOCAL OLA') IS NULL 
+			THEN 
+				CAST(NULL AS DECIMAL(31,3))
+			ELSE 
+				CAST(((SELECT OLA.RESOLVE 
+				FROM 
+					CONSUMOS.SAB_SCCD_OLA_SLA AS OLA 
+				WHERE 
+					OLA.TICKET_CLASS = SA.TICKET_CLASS AND 
+					OLA.PRIORITY = SA.INTERNAL_PRIORITY AND 
+					OLA.CUSTOMER IS NULL 
+					AND OLA.TYPE='LOCAL OLA') - SA.TIME_TO_RESOLVE) * -1 AS DECIMAL(31,3))
+			END) AS HRS_VENCIDAS,
+			CREATION_DATE VCREATION_DATE,
+			CLASS VCLASS,
+			TICKET_UID ITICKET_UID,
+			TEAM VTEAM,
+			SUMMARY VSUMMARY,
+			DETAILS VDETAILS,
+			CREATOR_ID VCREATOR_ID,
+			CREATOR VCREATOR,
+			CREATOR_GROUP VCREATOR_GROUP,
+			NOTIFIER VREPORTED_ID,
+			AFFECTED_PERSON_ID VAFFECTED_PERSON_ID,
+			CI VCI,
+			CI_NAME VCI_NAME,
+			CI_ENVIRONMENT VCI_ENVIRONMENT,
+			LOCATION_ID VLOCATION_ID,
+			LOCATION VLOCATION,
+			PARENT_CLIENT_ID VPARENT_CLIENT_ID,
+			PARENT_CLIENT VPARENT_CLIENT,
+			RES_COUNTRY VRES_COUNTRY,
+			ACCOUNT_CLASSIFICATION VACCOUNT_CLASSIFICATION,
+			STATUS VSTATUS,
+			TEAM VTEAM,
+			'' VEXCLUDE
+		FROM CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 SA
+		WHERE 
+			COMPLIANCE_OLA_PERU_RESOLVE='Out of criteria' AND
+			STATUS IN('INPROG','PENDING','QUEUED','SLAHOLD') AND
+			CLASS IN('INCIDENT','SR') AND
+			DECODE(SUBSTR(owner_group,1,4),'Petr','Petroperú','IBM-','Interbank','Campus') = 'Campus' AND
+			ACCOUNT_CLASSIFICATION IN(${squad}) AND
+			RES_COUNTRY IN(${pais}) AND			
+			<if test='strOwnerId != null'>
+   				OWNER_ID IN(${strOwnerId}) AND 
+    		</if>
+   		 	<if test='strCodTeam != null'>
+   				OWNER_GROUP_ID IN(${strCodTeam}) AND
+    		</if>
+    		<if test='strParentClientId != null'>
+   				PARENT_CLIENT_ID IN(${strParentClientId}) AND
+  		    </if>
+			TEAM IS NOT NULL
+		
+	</select>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- QUERY PRODUCTIVIDAD INICIO -->
+
+	<resultMap id="resultTeam"  type="com.pe.ibm.bean.BeanReporteDispatch">
+		<result property="strTeam" column="VTEAM" />
+		<result property="strCodTeam" column="VOWNER_GROUP_ID" />
+	</resultMap>
+	<select id="getTeam"  parameterType="com.pe.ibm.bean.BeanReporteDispatch" resultMap="resultTeam">
+		select TEAM VTEAM, listagg(distinct OWNER_GROUP_ID, ',') within group (order by OWNER_GROUP_ID) AS VOWNER_GROUP_ID
+			from 
+			   (select TEAM, OWNER_GROUP_ID, row_number() over (partition by TEAM, OWNER_GROUP_ID order by TEAM) as rnum 
+			   from CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 SA WHERE TEAM IS NOT NULL AND CLASS IN('INCIDENT','SR') AND STATUS IN('INPROG','PENDING','QUEUED','SLAHOLD') AND 
+			 RES_COUNTRY IS NOT NULL AND ACCOUNT_CLASSIFICATION IS NOT NULL) 
+			where rnum = 1 group by TEAM
+	</select>
+	
+	
+	<resultMap id="resultCliente"  type="com.pe.ibm.bean.BeanReporteDispatch">	
+		<result property="strParentClientId" column="VPARENT_CLIENT_ID" />	
+		<result property="strParentClient" column="VPARENT_CLIENT" />
+	</resultMap>
+	
+	<select id="getCliente" parameterType="com.pe.ibm.bean.BeanReporteDispatch" resultMap="resultCliente">
+		SELECT DISTINCT PARENT_CLIENT_ID VPARENT_CLIENT_ID, PARENT_CLIENT VPARENT_CLIENT 
+		FROM CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG
+		WHERE PARENT_CLIENT_ID IS NOT NULL AND PARENT_CLIENT IS NOT NULL 
+		<if test='squad != null'>
+   		   AND ACCOUNT_CLASSIFICATION IN(#{squad})
+  		</if>
+	</select>
+	
+	
+	
+	<resultMap id="resultTendenciaResolucion" type="com.pe.ibm.bean.BeanReporteDispatch">
+		<result property="strTipo" column="TIPO" />
+		<result property="strSquad" column="DESCRIPCION" />
+		<result property="strFechaClaim" column="FECHACLAIM" />
+		<result property="iTotal" column="TOTAL" />
+	</resultMap>
+	<select id="getTendenciaResolucion" parameterType="com.pe.ibm.bean.BeanReporteDispatch" resultMap="resultTendenciaResolucion">
+		SELECT TIPO, DESCRIPCION, FECHACLAIM, TOTAL FROM
+        (SELECT TIPO, DESCRIPCION, FECHACLAIM, TOTAL FROM
+        (SELECT TIPO, DESCRIPCION, FECHACLAIM,TOTAL FROM
+        (SELECT 'BUSINESS' TIPO, COALESCE(RESOLVED_BUSINESS_TIME,'Horas Total') DESCRIPCION,FECHACLAIM, SUM(TOTAL) TOTAL
+		FROM DISPATCH.MXPRODUCTIVIDAD 
+		WHERE FECHACLAIM BETWEEN #{strFechaInicio} AND #{strFechaFin}
+		<if test='pais != null'>
+	   		AND RES_COUNTRY = #{pais} 
+	    </if>
+		<if test='strResolutorGroupId != null'>
+	   		AND RESOLVER_GROUP = #{strResolutorGroupId} 
+	    </if>
+		AND ACCOUNT_CLASSIFICATION IS NOT NULL AND ACCOUNT_CLASSIFICATION NOT IN ('','(null)','Squad 4')
+		GROUP BY RESOLVED_BUSINESS_TIME,FECHACLAIM WITH CUBE ORDER BY RESOLVED_BUSINESS_TIME,FECHACLAIM ASC)
+		
+		UNION ALL
+		
+		SELECT TIPO, DESCRIPCION,FECHACLAIM,TOTAL FROM
+		(SELECT 'SQUAD' TIPO, COALESCE(ACCOUNT_CLASSIFICATION,'Resolución Total') DESCRIPCION,FECHACLAIM, SUM(TOTAL) TOTAL 
+		FROM DISPATCH.MXPRODUCTIVIDAD 
+		WHERE FECHACLAIM BETWEEN #{strFechaInicio} AND #{strFechaFin}
+		<if test='pais != null'>
+	   		AND RES_COUNTRY = #{pais} 
+	    </if>
+		<if test='strResolutorGroupId != null'>
+	   		AND RESOLVER_GROUP = #{strResolutorGroupId} 
+	    </if>
+		AND ACCOUNT_CLASSIFICATION IS NOT NULL AND ACCOUNT_CLASSIFICATION NOT IN ('','(null)','Squad 4')
+		GROUP BY ACCOUNT_CLASSIFICATION,FECHACLAIM WITH CUBE
+		ORDER BY ACCOUNT_CLASSIFICATION,FECHACLAIM ASC)
+		) WHERE FECHACLAIM IS NOT NULL
+		ORDER BY FECHACLAIM ASC)
+		
+		UNION ALL
+		
+		SELECT 'ENTRANTES' TIPO, 'ENTRANTES' ENTRANTE, FECHACLAIM,SUM(TOTAL) TOTAL 
+		FROM DISPATCH.MXPRODUCTIVIDADREPORT
+        WHERE FECHACLAIM BETWEEN #{strFechaInicio} AND #{strFechaFin}
+        <if test='pais != null'>
+   		AND RES_COUNTRY = #{pais} 
+	    </if>
+		<if test='strResolutorGroupId != null'>
+	   		AND RESOLVER_GROUP = #{strResolutorGroupId} 
+	    </if>
+        GROUP BY FECHACLAIM
+        ORDER BY FECHACLAIM ASC
+        
+	</select>
+	
+	
+	<resultMap id="resultReporteMesActual" type="com.pe.ibm.bean.BeanReporteDispatch">
+		<result property="strSquad" column="SQUAD" />
+		<result property="iTicketsIC" column="INCRITERIA" />
+		<result property="iTicketsOC" column="OUTOFCRITERIA" />
+		<result property="iTicketsP" column="PLANIFICADO" />
+		<result property="iNoAplica" column="NOAPLICA" />
+		<result property="iTotal" column="TOTAL" />
+	</resultMap>
+	<select id="getReporteMesActual" parameterType="com.pe.ibm.bean.BeanReporteDispatch" resultMap="resultReporteMesActual">
+		SELECT COALESCE(SQUAD,'TOTAL') SQUAD,INCRITERIA,OUTOFCRITERIA,PLANIFICADO,NOAPLICA,TOTAL FROM
+			(SELECT DISTINCT ACCOUNT_CLASSIFICATION SQUAD ,SUM(INCRITERIA) INCRITERIA,SUM(OUTOFCRITERIA) OUTOFCRITERIA,SUM(PLANIFICADO) PLANIFICADO, SUM(NOAPLICA) NOAPLICA, SUM(INCRITERIA)+SUM(OUTOFCRITERIA)+SUM(PLANIFICADO)+SUM(NOAPLICA) TOTAL FROM
+				(SELECT ACCOUNT_CLASSIFICATION,COALESCE(SUM(INCRITERIA),0) INCRITERIA,COALESCE(SUM(OUTOFCRITERIA),0) OUTOFCRITERIA,COALESCE(SUM(PLANIFICADO),0) PLANIFICADO, COALESCE(SUM(NOAPLICA),0) NOAPLICA FROM 
+				(SELECT ACCOUNT_CLASSIFICATION, 
+				CASE WHEN COMPLIANCE_OLA_PERU_RESOLVE = 'In criteria' THEN SUM(TOTAL) END AS INCRITERIA,
+				CASE WHEN COMPLIANCE_OLA_PERU_RESOLVE = 'Out of criteria' THEN SUM(TOTAL) END AS OUTOFCRITERIA,
+				CASE WHEN COMPLIANCE_OLA_PERU_RESOLVE = 'Planificado' THEN SUM(TOTAL) END AS PLANIFICADO,
+				CASE WHEN COMPLIANCE_OLA_PERU_RESOLVE = '' THEN SUM(TOTAL) END AS NOAPLICA
+				FROM DISPATCH.MXPRODUCTIVIDAD 
+				WHERE FECHACLAIM BETWEEN #{strFechaInicio} AND #{strFechaFin}
+                <if test='pais != null'>
+                        AND RES_COUNTRY = #{pais} 
+                </if>
+                <if test='strResolutorGroupId != null'>
+                        AND RESOLVER_GROUP = #{strResolutorGroupId} 
+                </if>
+				AND ACCOUNT_CLASSIFICATION IS NOT NULL AND ACCOUNT_CLASSIFICATION NOT IN ('','(null)','Squad 4')
+				GROUP BY ACCOUNT_CLASSIFICATION,COMPLIANCE_OLA_PERU_RESOLVE)
+				GROUP BY ACCOUNT_CLASSIFICATION)
+			GROUP BY ACCOUNT_CLASSIFICATION WITH ROLLUP
+			ORDER BY ACCOUNT_CLASSIFICATION)
+	</select>
+	
+	
+	
+	<resultMap id="resultReporteMesActualHorario" type="com.pe.ibm.bean.BeanReporteDispatch">
+		<result property="strSquad" column="SQUAD" />
+		<result property="iTicketsIC" column="INCRITERIA" />
+		<result property="iTicketsOC" column="OUTOFCRITERIA" />
+		<result property="iTicketsP" column="PLANIFICADO" />
+		<result property="iNoAplica" column="NOAPLICA" />
+		<result property="iTotal" column="TOTAL" />
+	</resultMap>
+	<select id="getReporteMesActualHorario" parameterType="com.pe.ibm.bean.BeanReporteDispatch" resultMap="resultReporteMesActualHorario">
+	SELECT COALESCE(SQUAD,'TOTAL') SQUAD,INCRITERIA,OUTOFCRITERIA,PLANIFICADO,NOAPLICA,TOTAL FROM
+			(SELECT DISTINCT RESOLVED_BUSINESS_TIME SQUAD ,SUM(INCRITERIA) INCRITERIA,SUM(OUTOFCRITERIA) OUTOFCRITERIA,SUM(PLANIFICADO) PLANIFICADO, SUM(NOAPLICA) NOAPLICA, SUM(INCRITERIA)+SUM(OUTOFCRITERIA)+SUM(PLANIFICADO)+SUM(NOAPLICA) TOTAL FROM
+				(SELECT RESOLVED_BUSINESS_TIME,COALESCE(SUM(INCRITERIA),0) INCRITERIA,COALESCE(SUM(OUTOFCRITERIA),0) OUTOFCRITERIA,COALESCE(SUM(PLANIFICADO),0) PLANIFICADO, COALESCE(SUM(NOAPLICA),0) NOAPLICA FROM 
+				(SELECT RESOLVED_BUSINESS_TIME, 
+				CASE WHEN COMPLIANCE_OLA_PERU_RESOLVE = 'In criteria' THEN SUM(TOTAL) END AS INCRITERIA,
+				CASE WHEN COMPLIANCE_OLA_PERU_RESOLVE = 'Out of criteria' THEN SUM(TOTAL) END AS OUTOFCRITERIA,
+				CASE WHEN COMPLIANCE_OLA_PERU_RESOLVE = 'Planificado' THEN SUM(TOTAL) END AS PLANIFICADO,
+				CASE WHEN COMPLIANCE_OLA_PERU_RESOLVE = '' THEN SUM(TOTAL) END AS NOAPLICA
+			FROM DISPATCH.MXPRODUCTIVIDAD 
+			WHERE FECHACLAIM BETWEEN #{strFechaInicio} AND #{strFechaFin}
+            <if test='pais != null'>
+                    AND RES_COUNTRY = #{pais} 
+            </if>
+            <if test='strResolutorGroupId != null'>
+                    AND RESOLVER_GROUP = #{strResolutorGroupId} 
+            </if>
+			AND ACCOUNT_CLASSIFICATION IS NOT NULL AND ACCOUNT_CLASSIFICATION NOT IN ('','(null)','Squad 4')
+			GROUP BY RESOLVED_BUSINESS_TIME,COMPLIANCE_OLA_PERU_RESOLVE)
+			GROUP BY RESOLVED_BUSINESS_TIME)
+		GROUP BY RESOLVED_BUSINESS_TIME WITH ROLLUP
+		ORDER BY RESOLVED_BUSINESS_TIME)
+	</select>
+	
+	
+	
+	<resultMap id="resultReporteEspecialistaClase" type="com.pe.ibm.bean.BeanReporteDispatch">
+		<result property="strOwner" column="OWNER" />
+		<result property="iIncident" column="INCIDENT" />
+		<result property="iProblem" column="PROBLEM" />
+		<result property="iSr" column="SR" />
+		<result property="iChange" column="CHANGE" />
+		<result property="iWorkOrder" column="WORKORDER" />
+		<result property="iActivity" column="ACTIVITY" />
+		<result property="iTotal" column="TOTAL" />
+	</resultMap>
+	<select id="getReporteEspecialistaClase" parameterType="com.pe.ibm.bean.BeanReporteDispatch" resultMap="resultReporteEspecialistaClase">
+	SELECT COALESCE(OWNER,'ZZTOTAL') OWNER, INCIDENT, PROBLEM, SR, CHANGE, WORKORDER, ACTIVITY, TOTAL FROM
+		(SELECT OWNER, COALESCE(SUM(INCIDENT),0) INCIDENT, COALESCE(SUM(PROBLEM),0) PROBLEM, COALESCE(SUM(SR),0) SR, COALESCE(SUM(CHANGE),0) CHANGE, COALESCE(SUM(WORKORDER),0) WORKORDER, COALESCE(SUM(ACTIVITY),0) ACTIVITY,
+		(COALESCE(SUM(INCIDENT),0) + COALESCE(SUM(PROBLEM),0) + COALESCE(SUM(SR),0) + COALESCE(SUM(CHANGE),0) + COALESCE(SUM(WORKORDER),0) + COALESCE(SUM(ACTIVITY),0)) TOTAL FROM
+			(SELECT OWNER, 
+			CASE WHEN CLASS = 'INCIDENT' THEN SUM(TOTAL) END INCIDENT,
+			CASE WHEN CLASS = 'PROBLEM' THEN SUM(TOTAL) END PROBLEM,
+			CASE WHEN CLASS = 'SR' THEN SUM(TOTAL) END SR,
+			CASE WHEN CLASS = 'CHANGE' THEN SUM(TOTAL) END CHANGE,
+			CASE WHEN CLASS = 'WORKORDER' THEN SUM(TOTAL) END WORKORDER,
+			CASE WHEN CLASS = 'ACTIVITY' THEN SUM(TOTAL) END ACTIVITY
+			FROM DISPATCH.MXPRODUCTIVIDAD 
+			WHERE FECHACLAIM BETWEEN #{strFechaInicio} AND #{strFechaFin}
+            <if test='pais != null'>
+                    AND RES_COUNTRY = #{pais} 
+            </if>
+            <if test='strResolutorGroupId != null'>
+                    AND RESOLVER_GROUP = #{strResolutorGroupId} 
+            </if>
+			AND OWNER IS NOT NULL AND OWNER != '' GROUP BY OWNER, CLASS)
+		GROUP BY OWNER WITH ROLLUP)
+	ORDER BY OWNER ASC
+	</select>
+	
+	
+	<resultMap id="resultReporteEspecialistaHorario" type="com.pe.ibm.bean.BeanReporteDispatch">
+		<result property="strOwner" column="OWNER" />
+		<result property="iTicketsIC" column="INCRITERIA" />
+		<result property="iTicketsOC" column="OUTOFCRITERIA" />
+		<result property="iTicketsP" column="PLANIFICADO" />
+		<result property="iNoAplica" column="NOAPLICA" />
+		<result property="iTotal" column="TOTAL" />
+	</resultMap>
+	<select id="getReporteEspecialistaHorario" parameterType="com.pe.ibm.bean.BeanReporteDispatch" resultMap="resultReporteEspecialistaHorario">
+	SELECT COALESCE(OWNER,'ZZTOTAL') OWNER,INCRITERIA,OUTOFCRITERIA,PLANIFICADO,NOAPLICA,TOTAL FROM
+			(SELECT OWNER ,SUM(INCRITERIA) INCRITERIA,SUM(OUTOFCRITERIA) OUTOFCRITERIA,SUM(PLANIFICADO) PLANIFICADO, SUM(NOAPLICA) NOAPLICA, SUM(INCRITERIA)+SUM(OUTOFCRITERIA)+SUM(PLANIFICADO)+SUM(NOAPLICA) TOTAL FROM
+				(SELECT OWNER,COALESCE(SUM(INCRITERIA),0) INCRITERIA,COALESCE(SUM(OUTOFCRITERIA),0) OUTOFCRITERIA,COALESCE(SUM(PLANIFICADO),0) PLANIFICADO, COALESCE(SUM(NOAPLICA),0) NOAPLICA FROM 
+				(SELECT OWNER, 
+				CASE WHEN COMPLIANCE_OLA_PERU_RESOLVE = 'In criteria' THEN SUM(TOTAL) END AS INCRITERIA,
+				CASE WHEN COMPLIANCE_OLA_PERU_RESOLVE = 'Out of criteria' THEN SUM(TOTAL) END AS OUTOFCRITERIA,
+				CASE WHEN COMPLIANCE_OLA_PERU_RESOLVE = 'Planificado' THEN SUM(TOTAL) END AS PLANIFICADO,
+				CASE WHEN COMPLIANCE_OLA_PERU_RESOLVE = '' THEN SUM(TOTAL) END AS NOAPLICA
+			FROM DISPATCH.MXPRODUCTIVIDAD 
+			WHERE FECHACLAIM BETWEEN #{strFechaInicio} AND #{strFechaFin}
+            <if test='pais != null'>
+                    AND RES_COUNTRY = #{pais} 
+            </if>
+            <if test='strResolutorGroupId != null'>
+                    AND RESOLVER_GROUP = #{strResolutorGroupId} 
+            </if>
+			AND OWNER IS NOT NULL AND OWNER != ''
+			GROUP BY OWNER,COMPLIANCE_OLA_PERU_RESOLVE)
+			GROUP BY OWNER)
+		GROUP BY OWNER WITH ROLLUP
+		ORDER BY OWNER)
+	</select>
+	
+	
+	
+	<!-- QUERY PRODUCTIVIDAD FINAL -->
+	
+	<resultMap id="resultGrupoResolutor" type="com.pe.ibm.bean.BeanReporteDispatch">
+		<result property="strResolutorGroupId" column="RESOLVER_GROUP" />
+		<result property="strResolutorGroup" column="DESCRIPCION" />
+	</resultMap>
+	<select id="getGrupoResolutor" parameterType="com.pe.ibm.bean.BeanReporteDispatch" resultMap="resultGrupoResolutor">
+	SELECT RESOLVER_GROUP,DESCRIPCION FROM
+	(SELECT DISTINCT P.RESOLVER_GROUP, (SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE TIPO = 'GRUPOPROPIETARIO_ALERTA' AND VALOR1 = P.RESOLVER_GROUP) DESCRIPCION FROM DISPATCH.MXPRODUCTIVIDAD P)
+	WHERE DESCRIPCION IS NOT NULL 
+	</select>
+	
+	<resultMap id="resultComboTorre" type="com.pe.ibm.bean.BeanReporteDispatch">
+		<result property="strOwnerGroupId" column="OWNER_GROUP_ID" />
+		<result property="strOwnerGroup" column="OWNER_GROUP" />
+	</resultMap>
+	<select id="getComboTorre" parameterType="com.pe.ibm.bean.BeanReporteDispatch" resultMap="resultComboTorre">
+		SELECT 
+			DISTINCT OWNER_GROUP_ID, 
+			OWNER_GROUP 
+		FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS
+		WHERE
+			 <if test='pais != null'>
+   				RES_COUNTRY IN('${pais}')
+             </if>
+	</select>
+	
+</mapper>

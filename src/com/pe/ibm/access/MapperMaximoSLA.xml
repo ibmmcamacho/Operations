@@ -1,0 +1,21 @@
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.pe.ibm.access.MapperMaximoSLA">
+
+	<!-- 	R E T U R N S -->
+	<resultMap id="result" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="strValor1" column="TITULO" />
+		<result property="strValor2" column="VALOR_NUMERICO" />
+	</resultMap>
+	<select id="clientTicketsSLA" resultMap="result" parameterType = "com.pe.ibm.bean.BeanMaximo" >
+		SELECT 
+		TITULO, VALOR_NUMERICO
+		FROM SMARTDESK.SLA_CLIENTE AS SL
+		INNER JOIN SMARTDESK.PROYECTO AS PR 
+		ON PR.IDPROYECTO = SL.ID_PROYECTO
+		WHERE
+		PR.PLUSCUSTOMER IN (${ticketCliente})
+	</select>
+	<!-- 	ticketCliente =	Rimac = ID_PROYECTO 28 -->
+</mapper>

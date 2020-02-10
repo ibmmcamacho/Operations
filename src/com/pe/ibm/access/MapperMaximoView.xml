@@ -1,0 +1,1577 @@
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.pe.ibm.access.MapperMaximoView">
+
+	<!-- 	R E T U R N S -->
+	
+	<resultMap id="resultTicketsCount" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="strValor1" column="TICKETS_ACU" /><!-- Luego se guarda en iCantidad como int -->
+		<result property="strValor2" column="TICKETS_PRI" /><!-- Luego se guarda en iCantidad como int -->
+		<result property="strValor3" column="TICKETS_NAS" /><!-- Luego se guarda en iCantidad como int -->
+	</resultMap>
+	<select id="ticketsCount" resultMap="resultTicketsCount" parameterType = "com.pe.ibm.bean.BeanMaximo" >
+			
+	
+	  SELECT 
+		
+		COUNT(A.COD_TICKET) as TICKETS_ACU, 
+		SUM(CASE WHEN (A.INTERNAL_PRIORITY IN ('1','2')) THEN 1 ELSE 0 END) AS TICKETS_PRI,
+		SUM(CASE WHEN (A.OWNER_ID IN ('NULL',NULL) ) THEN 1 ELSE 0 END) AS TICKETS_NAS
+		FROM 
+		
+		<if test="strValor4 == null">
+		(
+		SELECT PARENT_CLIENT_ID, COD_TICKET, INTERNAL_PRIORITY, OWNER_ID,CLASS FROM
+		CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2
+		WHERE TRIBE IN (${Tribu})
+		<if test="ticketIdCliente != null">
+		AND PARENT_CLIENT_ID IN (${ticketIdCliente})
+		</if>
+		
+		<if test="ticketIdGrupoPropietario != null">
+			AND OWNER_GROUP_ID IN (${ticketIdGrupoPropietario})
+    	</if>
+    	<if test="ticketEmailPropietario != null">
+			AND OWNER_ID IN (${ticketEmailPropietario})
+		</if> 
+		
+		
+		UNION ALL
+		
+		SELECT PARENT_CLIENT_ID, COD_TICKET, INTERNAL_PRIORITY, OWNER_ID,CLASS FROM
+		CONSUMOS.V_SAB_SCCD_WORKORDER_BACKLOG
+		WHERE TRIBE IN (${Tribu})
+		
+		<if test="ticketIdCliente != null">
+		AND PARENT_CLIENT_ID IN (${ticketIdCliente})
+		</if>  
+		<if test="ticketIdGrupoPropietario != null">
+			AND OWNER_GROUP_ID IN (${ticketIdGrupoPropietario})
+    	</if>
+    	<if test="ticketEmailPropietario != null">
+			AND OWNER_ID IN (${ticketEmailPropietario})
+		</if>
+		
+		) A
+		
+		</if>
+		
+		<if test="strValor4 != null">		
+		(
+		SELECT 			
+				COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,PARENT_CLIENT_ID,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CLASS,
+				(CASE WHEN MAX(B.VCOD_TICKET) IS NULL THEN MAX(C.VCOD_TICKET) ELSE MAX(B.VCOD_TICKET) END )WORKORDER		 
+		FROM 
+			CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 A LEFT JOIN CONSUMOS.SAB_SCCD_WORKORDER_RESUELTOS B ON A.COD_TICKET = B.VPARENT_TICKET 
+			LEFT JOIN CONSUMOS.SAB_SCCD_WORKORDER_BACKLOG C ON A.COD_TICKET = C.VPARENT_TICKET
+		WHERE 
+			<if test="ticketIdCliente != null">
+		PARENT_CLIENT_ID IN (${ticketIdCliente})
+		</if>
+		<if test="ticketIdGrupoPropietario != null">
+			AND OWNER_GROUP_ID IN (${ticketIdGrupoPropietario})
+    	</if>
+    	<if test="ticketEmailPropietario != null">
+			AND OWNER_ID IN (${ticketEmailPropietario})
+		</if>  				
+		
+		GROUP BY 
+				COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,PARENT_CLIENT_ID,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CLASS				
+		)  A	
+		
+		WHERE WORKORDER IS NULL AND CLASS IN ('SR','INCIDENT')
+		
+		</if>
+		
+		<if test="strValor5 != null || strValor6 != null || strValor7 != null || strValor8 != null || strValor9 != null || strValor10 != null">
+		WHERE 
+			A.CLASS IN (''<if test="strValor5 != null">,'SR'</if><if test="strValor6 != null">,'INCIDENT'</if>
+						<if test="strValor7 != null">,'PROBLEM'</if><if test="strValor8 != null">,'WORKORDER'</if>
+						<if test="strValor9 != null">,'ACTIVITY'</if><if test="strValor10 != null">,'CHANGE'</if>)	
+		
+		</if>		
+			
+		
+	</select>
+	
+	<resultMap id="resultOwnersTicketsView" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketEmailPropietario" column="OWNER_ID" />
+		<result property="ticketPropietario" column="OWNER" />
+	</resultMap>
+	<select id="ownersTicketsView" resultMap="resultOwnersTicketsView" parameterType = "com.pe.ibm.bean.BeanMaximo" >
+		SELECT DISTINCT
+		OWNER_ID, OWNER
+		FROM CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2
+		WHERE 
+		<if test="ticketIdCliente != null">
+		PARENT_CLIENT_ID IN (${ticketIdCliente})
+		</if>
+		<if test="ticketIdGrupoPropietario != null">
+			AND OWNER_GROUP_ID IN (${ticketIdGrupoPropietario})
+    	</if>
+		AND OWNER NOT IN ('Unknown', 'NULL')
+	</select>
+	
+<!-- 	C	O	M	B	O	-	F	I	L	L -->
+	
+	<resultMap id="resultSelectSquad" type="com.pe.ibm.bean.BeanMaximo">		
+		<result property="strValor1" column="TRIBE" />
+	</resultMap>
+	<select id="selectSquad" resultMap="resultSelectSquad" parameterType = "com.pe.ibm.bean.BeanMaximo" >
+		SELECT DISTINCT 
+			TRIBE 
+		FROM  
+			CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 
+		WHERE 
+			TRIBE NOT IN ('NULL','')
+	</select>
+	
+	<resultMap id="resultSelectClient" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketIdCliente" column="PARENT_CLIENT_ID" />
+		<result property="ticketCliente" column="PARENT_CLIENT" />
+	</resultMap>
+	<select id="selectClient" resultMap="resultSelectClient" parameterType = "com.pe.ibm.bean.BeanMaximo" >
+		SELECT DISTINCT 
+		PARENT_CLIENT_ID, PARENT_CLIENT
+		FROM CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2
+		WHERE PARENT_CLIENT NOT IN ('Unknown', 'NULL')
+		AND RES_COUNTRY IN ('Peru', 'India')
+		AND TRIBE IN ('${strValor1}')
+	</select>
+	
+	<resultMap id="resultSelectGroupOwner" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketIdGrupoPropietario" column="OWNER_GROUP_ID" />
+		<result property="ticketGrupoPropietario" column="OWNER_GROUP" />
+	</resultMap>
+	<select id="selectGroupOwner" resultMap="resultSelectGroupOwner" parameterType = "com.pe.ibm.bean.BeanMaximo" >
+		SELECT DISTINCT 
+		OWNER_GROUP_ID, OWNER_GROUP
+		FROM CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2
+		WHERE 
+		<if test="ticketIdCliente != null">
+		PARENT_CLIENT_ID IN (${ticketIdCliente}) AND
+		</if>
+		 OWNER_GROUP NOT IN ('Unknown', 'NULL')
+		AND RES_COUNTRY IN ('Peru', 'India')
+	</select>
+	
+	
+	
+	<resultMap id="resultSelectOwner" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketEmailPropietario" column="OWNER_ID" />
+		<result property="ticketPropietario" column="OWNER" />
+		<result property="strValor1" column="DIA" />
+		<result property="strValor2" column="HORA" />
+		<result property="strValor3" column="MINUTOS" />
+		<result property="strValor4" column="TICKETS_TOT" />
+		<result property="strValor5" column="TICKETS_VIG" />
+		<result property="strValor6" column="TICKETS_VEN" />
+		
+		
+	</resultMap>
+	<select id="selectOwner" resultMap="resultSelectOwner" parameterType = "com.pe.ibm.bean.BeanMaximo" >
+		
+		SELECT 		
+			OWNER_ID, OWNER,<!-- ACTIVITY_SKILL_LEVEL, -->
+			CAST((MAX(TIME_TO_RESOLVE)/24) AS INT) DIA,
+			CAST(MOD(MAX(TIME_TO_RESOLVE),24) AS INT) HORA,
+			CAST(((MOD(MAX(TIME_TO_RESOLVE),24)*60) - (CAST(MOD(MAX(TIME_TO_RESOLVE),24) AS INT) * 60)) AS INT) MINUTOS,
+			COUNT(1) TICKETS_TOT,
+			SUM(CASE WHEN COMPLIANCE_OLA_PERU_RESOLVE = 'In criteria'
+				THEN 1 ELSE 0
+				END) TICKETS_VIG,
+			SUM(CASE WHEN COMPLIANCE_OLA_PERU_RESOLVE = 'Out of criteria'
+				THEN 1 ELSE 0
+				END) AS TICKETS_VEN					
+		FROM 
+		
+		<if test="strValor4 == null">
+		(
+		SELECT COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,
+			CREATION_DATE,REPORT_DATE,ACTUAL_START, COMPLIANCE_OLA_PERU_RESOLVE ,BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,'' AS WORKLOG	,CLASS<!-- ,ACTIVITY_SKILL_LEVEL -->
+			
+		FROM	
+		
+			CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2		
+		WHERE TRIBE IN (${Tribu})
+		
+		<if test="ticketIdCliente != null">
+		AND PARENT_CLIENT_ID IN (${ticketIdCliente}) 
+		</if>
+		
+		<if test="ticketIdGrupoPropietario != null">
+		AND	 OWNER_GROUP_ID IN (${ticketIdGrupoPropietario}) 
+		</if>
+		<if test="ticketEmailPropietario != null">
+		AND	 OWNER_ID IN (${ticketEmailPropietario}) 
+			 
+		</if> AND RES_COUNTRY IN ('Peru', 'India')
+		
+		UNION		
+		SELECT COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,
+			CREATION_DATE,REPORT_DATE,ACTUAL_START, COMPLIANCE_OLA_PERU_RESOLVE ,BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,'' AS WORKLOG	,CLASS<!-- ,ACTIVITY_SKILL_LEVEL -->
+		FROM
+			CONSUMOS.V_SAB_SCCD_WORKORDER_BACKLOG
+		WHERE TRIBE IN (${Tribu})
+		
+		<if test="ticketIdCliente != null">
+	AND	PARENT_CLIENT_ID IN (${ticketIdCliente}) 
+		</if>
+		
+		<if test="ticketIdGrupoPropietario != null">
+	AND	 OWNER_GROUP_ID IN (${ticketIdGrupoPropietario}) 
+		</if>
+		<if test="ticketEmailPropietario != null">
+		AND	 OWNER_ID IN (${ticketEmailPropietario}) 
+		</if> 
+		
+		AND RES_COUNTRY IN ('Peru', 'India')
+		) 		
+		
+		WHERE		 
+			OWNER IS NOT NULL 
+		</if>
+			
+		<if test="strValor4 != null">
+		
+		(
+		SELECT 			
+				COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,PARENT_CLIENT_ID,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CLASS,
+				(CASE WHEN MAX(B.VCOD_TICKET) IS NULL THEN MAX(C.VCOD_TICKET) ELSE MAX(B.VCOD_TICKET) END )WORKORDER		 
+		FROM 
+			CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 A LEFT JOIN CONSUMOS.SAB_SCCD_WORKORDER_RESUELTOS B ON A.COD_TICKET = B.VPARENT_TICKET 
+			LEFT JOIN CONSUMOS.SAB_SCCD_WORKORDER_BACKLOG C ON A.COD_TICKET = C.VPARENT_TICKET
+		WHERE  TRIBE IN (${Tribu})
+			<if test="ticketIdCliente != null">
+	AND	PARENT_CLIENT_ID IN (${ticketIdCliente}) 
+		</if>
+		<if test="ticketIdGrupoPropietario != null">
+		AND	 OWNER_GROUP_ID IN (${ticketIdGrupoPropietario}) 
+		</if>
+		<if test="ticketEmailPropietario != null">
+		AND	 OWNER_ID IN (${ticketEmailPropietario}) 
+		</if> 	
+		AND RES_COUNTRY IN ('Peru', 'India')
+		
+		GROUP BY 
+				COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,PARENT_CLIENT_ID,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CLASS				
+		)  
+		WHERE WORKORDER IS NULL 	AND CLASS IN ('SR','INCIDENT')	AND OWNER IS NOT NULL 	
+		</if>
+		
+		<if test="strValor5 != null || strValor6 != null || strValor7 != null || strValor8 != null || strValor9 != null || strValor10 != null">
+		
+		AND CLASS IN (''<if test="strValor5 != null">,'SR'</if><if test="strValor6 != null">,'INCIDENT'</if>
+						<if test="strValor7 != null">,'PROBLEM'</if><if test="strValor8 != null">,'WORKORDER'</if>
+						<if test="strValor9 != null">,'ACTIVITY'</if><if test="strValor10 != null">,'CHANGE'</if>)			
+		</if>		
+		
+		GROUP BY 
+			OWNER_ID,OWNER<!-- ,ACTIVITY_SKILL_LEVEL -->
+		
+	</select>	
+	
+	<resultMap id="WO_Grouplist" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="idTicket" column="COD_TICKET" />
+		<result property="ticketTitulo" column="INTERNAL_PRIORITY" />
+		<result property="ticketDetalle" column="STATUS" />		
+		<result property="ticketIdCliente" column="SOURCE" />
+		<result property="ticketCliente" column="AFFECTED_PERSON_ID" />
+		<result property="ticketPrioridad" column="OWNER_GROUP_ID" />		
+		<result property="ticketImpact" column="OWNER_GROUP" />
+		<result property="ticketUrgencia" column="OWNER_ID" />
+		<result property="ticketFechaCreacion" column="OWNER" />
+		<result property="ticketFechaFin" column="PARENT_CLIENT" />
+		<result property="ticketIdEstado" column="SUMMARY" />
+		<result property="ticketUsuarioVip" column="CI" />
+		<result property="ticketEstado" column="CI_NAME" />
+		<result property="ticketIdGrupoPropietario" column="CLASSIFICATION_ID" />
+		<result property="ticketGrupoPropietario" column="CLASSIFICATION" />
+		<result property="ticketIdLugar" column="CREATION_DATE" />
+		<result property="ticketLugar" column="REPORT_DATE" />
+		<result property="ticketITGrupoResolutor" column="ACTUAL_START" />
+		<result property="ticketIdGrupoResolutor" column="COMPLIANCE_OLA_PERU_RESOLVE" />
+		<result property="ticketGrupoResolutor" column="BACKLOG_AGE_GROUP" />
+		<result property="ticketPropietario" column="TIME_TO_RESOLVE" />
+		<result property="ticketEmailPropietario" column="ACCOUNT_CLASSIFICATION" />
+		<result property="ticketPersonaReportado" column="WORKLOG" />
+		<result property="strParentTicket" column="PARENT_TICKET" />
+		<result property="strValor11" column="WO_GROUP" />
+		
+	</resultMap>
+	<select id="listWOGroup" resultMap="WO_Grouplist" parameterType = "com.pe.ibm.bean.BeanMaximo" >
+	SELECT 
+		COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,
+		SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+		BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CAST(WORKLOG AS VARCHAR(500))  AS WORKLOG,PARENT_TICKET,WO_GROUP
+	FROM 
+		CONSUMOS.V_SAB_SCCD_WORKORDER_BACKLOG 
+	WHERE 
+		WO_GROUP IN (
+		
+		SELECT		
+				COD_TICKET
+		FROM 
+		
+		(select
+				COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CAST(WORKLOG AS VARCHAR(500)) AS WORKLOG,CLASS,PARENT_TICKET,WO_GROUP
+		from CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 
+		WHERE 	TRIBE IN (${Tribu})
+				
+			<if test="strValor1 != null">
+	AND	PARENT_CLIENT_ID IN (${strValor1}) 
+		</if>		
+					
+			<if test="strValor2 != null">
+				AND	OWNER_GROUP_ID IN (${strValor2})
+			</if>
+		 AND CLASS IN ('WORKORDER') 
+		union all
+		
+		select COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CAST(WORKLOG AS VARCHAR(500)) AS WORKLOG,CLASS ,PARENT_TICKET,WO_GROUP
+		from CONSUMOS.V_SAB_SCCD_WORKORDER_BACKLOG
+		WHERE 	TRIBE IN (${Tribu})
+				 		
+		<if test="strValor1 != null">
+		AND PARENT_CLIENT_ID IN (${strValor1}) 
+		</if>
+			<if test="strValor2 != null">
+				AND	OWNER_GROUP_ID IN (${strValor2})
+			</if>
+			AND CLASS IN ('WORKORDER')
+			)
+		
+		
+		)
+			
+	</select>
+	
+	
+	<!-- MODAL TICKETS TOTALES POR CLIENT Y GRUPO -->	
+	<resultMap id="acumuladosticket" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="idTicket" column="COD_TICKET" />
+		<result property="ticketTitulo" column="INTERNAL_PRIORITY" />
+		<result property="ticketDetalle" column="STATUS" />		
+		<result property="ticketIdCliente" column="SOURCE" />
+		<result property="ticketCliente" column="AFFECTED_PERSON_ID" />
+		<result property="ticketPrioridad" column="OWNER_GROUP_ID" />		
+		<result property="ticketImpact" column="OWNER_GROUP" />
+		<result property="ticketUrgencia" column="OWNER_ID" />
+		<result property="ticketFechaCreacion" column="OWNER" />
+		<result property="ticketFechaFin" column="PARENT_CLIENT" />
+		<result property="ticketIdEstado" column="SUMMARY" />
+		<result property="ticketUsuarioVip" column="CI" />
+		<result property="ticketEstado" column="CI_NAME" />
+		<result property="ticketIdGrupoPropietario" column="CLASSIFICATION_ID" />
+		<result property="ticketGrupoPropietario" column="CLASSIFICATION" />
+		<result property="ticketIdLugar" column="CREATION_DATE" />
+		<result property="ticketLugar" column="REPORT_DATE" />
+		<result property="ticketITGrupoResolutor" column="ACTUAL_START" />
+		<result property="ticketIdGrupoResolutor" column="COMPLIANCE_OLA_PERU_RESOLVE" />
+		<result property="ticketGrupoResolutor" column="BACKLOG_AGE_GROUP" />
+		<result property="ticketPropietario" column="TIME_TO_RESOLVE" />
+		<result property="ticketEmailPropietario" column="ACCOUNT_CLASSIFICATION" />
+		<result property="ticketPersonaReportado" column="WORKLOG" />
+		<result property="strParentTicket" column="PARENT_TICKET" />
+		<result property="strValor11" column="WO_GROUP" />
+		
+	</resultMap>
+	<select id="selectMAT" resultMap="acumuladosticket" parameterType = "com.pe.ibm.bean.BeanMaximo" >
+				  
+	   SELECT		
+				COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CAST(WORKLOG AS VARCHAR(500))  AS WORKLOG,PARENT_TICKET,WO_GROUP
+		FROM 
+		<if test="strValor4 == null">
+		(select
+				COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CAST(WORKLOG AS VARCHAR(500)) AS WORKLOG,CLASS,PARENT_TICKET,WO_GROUP
+		from CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 
+		WHERE 	
+		
+		TRIBE IN (${Tribu})
+		
+				<if test="strValor1 != null">
+		AND PARENT_CLIENT_ID IN (${strValor1})
+		</if>
+					
+			<if test="strValor2 != null">
+				AND	OWNER_GROUP_ID IN (${strValor2})
+			</if>
+			
+			<if test="strValor3 != null">		
+				AND	OWNER_ID IN (${strValor3})
+			</if>	 
+		
+		union all
+		
+		select COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CAST(WORKLOG AS VARCHAR(500)) AS WORKLOG,CLASS ,PARENT_TICKET,WO_GROUP
+		from CONSUMOS.V_SAB_SCCD_WORKORDER_BACKLOG
+		WHERE 	TRIBE IN (${Tribu})
+		<if test="strValor1 != null">
+		AND PARENT_CLIENT_ID IN (${strValor1}) 
+		</if>	
+					
+			<if test="strValor2 != null">
+				AND	OWNER_GROUP_ID IN (${strValor2})
+			</if>
+			
+			<if test="strValor3 != null">	
+				AND	OWNER_ID IN (${strValor3})
+			</if>	)
+						  
+  		</if> 
+	
+		<if test="strValor4 != null">	
+		(
+		SELECT 			
+				COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CLASS,CAST(A.WORKLOG AS VARCHAR(500)) AS WORKLOG,
+				(CASE WHEN MAX(B.VCOD_TICKET) IS NULL THEN MAX(C.VCOD_TICKET) ELSE MAX(B.VCOD_TICKET) END )WORKORDER,PARENT_TICKET,WO_GROUP		 
+		FROM 
+			CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 A LEFT JOIN CONSUMOS.SAB_SCCD_WORKORDER_RESUELTOS B ON A.COD_TICKET = B.VPARENT_TICKET 
+			LEFT JOIN CONSUMOS.SAB_SCCD_WORKORDER_BACKLOG C ON A.COD_TICKET = C.VPARENT_TICKET
+		WHERE 	TRIBE IN (${Tribu})
+				<if test="strValor1 != null">
+	AND	PARENT_CLIENT_ID IN (${strValor1}) 
+		</if>
+					
+			<if test="strValor2 != null">
+				AND	OWNER_GROUP_ID IN (${strValor2})
+			</if>
+			
+			<if test="strValor3 != null">	
+				AND	OWNER_ID IN (${strValor3})
+			</if>	
+		GROUP BY 
+				COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CLASS,CAST(A.WORKLOG AS VARCHAR(500)),PARENT_TICKET,WO_GROUP				
+		) 
+		
+		WHERE WORKORDER IS NULL AND CLASS IN ('SR','INCIDENT')
+		
+			
+		
+		</if>	
+		
+		
+		<if test="strValor5 != null || strValor6 != null || strValor7 != null || strValor8 != null || strValor9 != null || strValor10 != null">
+		
+		WHERE 
+			CLASS IN (''<if test="strValor5 != null">,'SR'</if><if test="strValor6 != null">,'INCIDENT'</if>
+						<if test="strValor7 != null">,'PROBLEM'</if><if test="strValor8 != null">,'WORKORDER'</if>
+						<if test="strValor9 != null">,'ACTIVITY'</if><if test="strValor10 != null">,'CHANGE'</if>)			
+		</if>
+	
+	</select>
+	<!--FFIIINNN MODAL TICKETS TOTALES POR CLIENT Y GRUPO -->
+	
+	
+	<!-- MODAL TICKETS SIN ASIGNAR POR CLIENT Y GRUPO -->	
+	<resultMap id="sinasignarticket" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="idTicket" column="COD_TICKET" />
+		<result property="ticketTitulo" column="INTERNAL_PRIORITY" />
+		<result property="ticketDetalle" column="STATUS" />		
+		<result property="ticketIdCliente" column="SOURCE" />
+		<result property="ticketCliente" column="AFFECTED_PERSON_ID" />
+		<result property="ticketPrioridad" column="OWNER_GROUP_ID" />		
+		<result property="ticketImpact" column="OWNER_GROUP" />
+		<result property="ticketUrgencia" column="OWNER_ID" />
+		<result property="ticketFechaCreacion" column="OWNER" />
+		<result property="ticketFechaFin" column="PARENT_CLIENT" />
+		<result property="ticketIdEstado" column="SUMMARY" />
+		<result property="ticketUsuarioVip" column="CI" />
+		<result property="ticketEstado" column="CI_NAME" />
+		<result property="ticketIdGrupoPropietario" column="CLASSIFICATION_ID" />
+		<result property="ticketGrupoPropietario" column="CLASSIFICATION" />
+		<result property="ticketIdLugar" column="CREATION_DATE" />
+		<result property="ticketLugar" column="REPORT_DATE" />
+		<result property="ticketITGrupoResolutor" column="ACTUAL_START" />
+		<result property="ticketIdGrupoResolutor" column="COMPLIANCE_OLA_PERU_RESOLVE" />
+		<result property="ticketGrupoResolutor" column="BACKLOG_AGE_GROUP" />
+		<result property="ticketPropietario" column="TIME_TO_RESOLVE" />
+		<result property="ticketEmailPropietario" column="ACCOUNT_CLASSIFICATION" />
+		<result property="ticketPersonaReportado" column="WORKLOG" />
+		<result property="strParentTicket" column="PARENT_TICKET" />
+		
+	</resultMap>
+	<select id="selectMST" resultMap="sinasignarticket" parameterType = "com.pe.ibm.bean.BeanMaximo" >
+	
+			
+			  
+	  SELECT 
+			COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,
+			CREATION_DATE,REPORT_DATE,ACTUAL_START, COMPLIANCE_OLA_PERU_RESOLVE ,BACKLOG_AGE_GROUP,
+			TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CAST(WORKLOG AS VARCHAR(500))  AS WORKLOG,PARENT_TICKET
+			
+		FROM
+		
+		<if test="strValor4 == null"> 
+		(
+		SELECT COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,
+			CREATION_DATE,REPORT_DATE,ACTUAL_START, COMPLIANCE_OLA_PERU_RESOLVE ,BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,
+			ACCOUNT_CLASSIFICATION,CAST(WORKLOG AS VARCHAR(500))  AS WORKLOG,CLASS		,PARENT_TICKET
+		FROM
+			CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2
+		WHERE  TRIBE IN (${Tribu})
+			<if test="strValor1 != null">
+		AND PARENT_CLIENT_ID IN (${strValor1}) 
+		</if>
+		<if test="strValor2 != null">
+			AND	OWNER_GROUP_ID IN (${strValor2})
+		</if>	
+		
+		UNION
+		
+		SELECT COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,
+			CREATION_DATE,REPORT_DATE,ACTUAL_START, COMPLIANCE_OLA_PERU_RESOLVE ,BACKLOG_AGE_GROUP,
+			TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CAST(WORKLOG AS VARCHAR(500))  AS WORKLOG,CLASS,PARENT_TICKET	
+		FROM 
+			CONSUMOS.V_SAB_SCCD_WORKORDER_BACKLOG
+		WHERE  TRIBE IN (${Tribu})
+			<if test="strValor1 != null">
+	AND	PARENT_CLIENT_ID IN (${strValor1}) 
+		</if>
+		<if test="strValor2 != null">
+			AND	OWNER_GROUP_ID IN (${strValor2})
+		</if>
+		
+		) 
+		WHERE			
+			OWNER_ID IN ('NULL',NULL)
+			  
+		</if>		
+	<if test="strValor4 != null">	
+		(
+		SELECT 			
+				COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,PARENT_CLIENT_ID,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CLASS,CAST(A.WORKLOG AS VARCHAR(500))  AS WORKLOG,
+				(CASE WHEN MAX(B.VCOD_TICKET) IS NULL THEN MAX(C.VCOD_TICKET) ELSE MAX(B.VCOD_TICKET) END )WORKORDER,PARENT_TICKET		 
+		FROM 
+			CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 A LEFT JOIN CONSUMOS.SAB_SCCD_WORKORDER_RESUELTOS B ON A.COD_TICKET = B.VPARENT_TICKET 
+			LEFT JOIN CONSUMOS.SAB_SCCD_WORKORDER_BACKLOG C ON A.COD_TICKET = C.VPARENT_TICKET
+		WHERE   TRIBE IN (${Tribu})
+			<if test="strValor1 != null">
+	AND	PARENT_CLIENT_ID IN (${strValor1}) 
+		</if>
+		<if test="strValor2 != null">
+			AND	OWNER_GROUP_ID IN (${strValor2})
+		</if>
+		
+		GROUP BY 
+				COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,PARENT_CLIENT_ID,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CLASS,CAST(A.WORKLOG AS VARCHAR(500))	,PARENT_TICKET			
+		)  A	
+		
+		WHERE WORKORDER IS NULL
+		AND CLASS IN ('SR','INCIDENT')
+		AND
+			OWNER_ID IN ('NULL',NULL)
+	
+	</if>
+		<if test="strValor5 != null || strValor6 != null || strValor7 != null || strValor8 != null || strValor9 != null || strValor10 != null">
+		
+		AND
+			CLASS IN (''<if test="strValor5 != null">,'SR'</if><if test="strValor6 != null">,'INCIDENT'</if>
+						<if test="strValor7 != null">,'PROBLEM'</if><if test="strValor8 != null">,'WORKORDER'</if>
+						<if test="strValor9 != null">,'ACTIVITY'</if><if test="strValor10 != null">,'CHANGE'</if>)		
+		</if>
+			
+		
+	</select>
+	<!--FFIIINNN MODAL TICKETS SIN ASIGNAR POR CLIENT Y GRUPO -->
+	
+	
+	<!-- MODAL PARA PRIORIDAD DE TICKET -->
+	<resultMap id="prioridadticket" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="idTicket" column="COD_TICKET" />
+		<result property="ticketTitulo" column="INTERNAL_PRIORITY" />
+		<result property="ticketDetalle" column="STATUS" />		
+		<result property="ticketIdCliente" column="SOURCE" />
+		<result property="ticketCliente" column="AFFECTED_PERSON_ID" />
+		<result property="ticketPrioridad" column="OWNER_GROUP_ID" />		
+		<result property="ticketImpact" column="OWNER_GROUP" />
+		<result property="ticketUrgencia" column="OWNER_ID" />
+		<result property="ticketFechaCreacion" column="OWNER" />
+		<result property="ticketFechaFin" column="PARENT_CLIENT" />
+		<result property="ticketIdEstado" column="SUMMARY" />
+		<result property="ticketUsuarioVip" column="CI" />
+		<result property="ticketEstado" column="CI_NAME" />
+		<result property="ticketIdGrupoPropietario" column="CLASSIFICATION_ID" />
+		<result property="ticketGrupoPropietario" column="CLASSIFICATION" />
+		<result property="ticketIdLugar" column="CREATION_DATE" />
+		<result property="ticketLugar" column="REPORT_DATE" />
+		<result property="ticketITGrupoResolutor" column="ACTUAL_START" />
+		<result property="ticketIdGrupoResolutor" column="COMPLIANCE_OLA_PERU_RESOLVE" />
+		<result property="ticketGrupoResolutor" column="BACKLOG_AGE_GROUP" />
+		<result property="ticketPropietario" column="TIME_TO_RESOLVE" />
+		<result property="ticketEmailPropietario" column="ACCOUNT_CLASSIFICATION" />
+		<result property="ticketPersonaReportado" column="WORKLOG" />
+		<result property="strParentTicket" column="PARENT_TICKET" />
+		
+	</resultMap>
+	<select id="selectMPT" resultMap="prioridadticket" parameterType = "com.pe.ibm.bean.BeanMaximo" >
+	
+	
+		SELECT 
+			COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,
+			CREATION_DATE,REPORT_DATE,ACTUAL_START, COMPLIANCE_OLA_PERU_RESOLVE ,
+			BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CAST(WORKLOG AS VARCHAR(500))  AS WORKLOG,PARENT_TICKET
+			
+		FROM
+		
+		<if test="strValor4 == null">	
+		(
+		SELECT COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,
+			CREATION_DATE,REPORT_DATE,ACTUAL_START, COMPLIANCE_OLA_PERU_RESOLVE ,BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,
+			ACCOUNT_CLASSIFICATION,CAST(WORKLOG AS VARCHAR(500))  AS WORKLOG,CLASS		,PARENT_TICKET
+		FROM
+			CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2
+		WHERE   TRIBE IN (${Tribu})
+			<if test="strValor1 != null">
+		AND PARENT_CLIENT_ID IN (${strValor1}) 
+		</if>  
+		<if test="strValor2 != null">
+			AND	OWNER_GROUP_ID IN (${strValor2})
+		</if>	
+		
+		UNION
+		
+		SELECT COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,
+			CREATION_DATE,REPORT_DATE,ACTUAL_START, COMPLIANCE_OLA_PERU_RESOLVE ,BACKLOG_AGE_GROUP,
+			TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CAST(WORKLOG AS VARCHAR(500))  AS WORKLOG,CLASS	,PARENT_TICKET
+		FROM
+			CONSUMOS.V_SAB_SCCD_WORKORDER_BACKLOG
+		WHERE  TRIBE IN (${Tribu})
+			<if test="strValor1 != null">
+	AND	PARENT_CLIENT_ID IN (${strValor1}) 
+		</if>  
+		<if test="strValor2 != null">
+			AND	OWNER_GROUP_ID IN (${strValor2})
+		</if>		
+		) 
+		WHERE 		
+			INTERNAL_PRIORITY IN ('1','2')			
+		</if>		
+		
+		<if test="strValor4 != null">			
+		(
+		SELECT 			
+				COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,PARENT_CLIENT_ID,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CLASS,CAST(A.WORKLOG AS VARCHAR(500))  AS WORKLOG,
+				(CASE WHEN MAX(B.VCOD_TICKET) IS NULL THEN MAX(C.VCOD_TICKET) ELSE MAX(B.VCOD_TICKET) END )WORKORDER,PARENT_TICKET		 
+		FROM 
+			CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 A LEFT JOIN CONSUMOS.SAB_SCCD_WORKORDER_RESUELTOS B ON A.COD_TICKET = B.VPARENT_TICKET 
+			LEFT JOIN CONSUMOS.SAB_SCCD_WORKORDER_BACKLOG C ON A.COD_TICKET = C.VPARENT_TICKET
+		WHERE  TRIBE IN (${Tribu})
+			<if test="strValor1 != null">
+		AND PARENT_CLIENT_ID IN (${strValor1}) 
+		</if>    	
+		<if test="strValor2 != null">
+			AND	OWNER_GROUP_ID IN (${strValor2})
+		</if>
+		
+		GROUP BY 
+				COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,PARENT_CLIENT_ID,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CLASS,CAST(A.WORKLOG AS VARCHAR(500)),PARENT_TICKET				
+		)  A
+		WHERE 		
+			INTERNAL_PRIORITY IN ('1','2')
+			
+		AND WORKORDER IS NULL
+		AND CLASS IN ('SR','INCIDENT')
+			
+		</if>		
+		
+		<if test="strValor5 != null || strValor6 != null || strValor7 != null || strValor8 != null || strValor9 != null || strValor10 != null">
+		AND
+			CLASS IN (''<if test="strValor5 != null">,'SR'</if><if test="strValor6 != null">,'INCIDENT'</if>
+						<if test="strValor7 != null">,'PROBLEM'</if><if test="strValor8 != null">,'WORKORDER'</if>
+						<if test="strValor9 != null">,'ACTIVITY'</if><if test="strValor10 != null">,'CHANGE'</if>)	
+		
+		</if>
+		
+	</select>
+	
+	<!-- MODAL PARA PRIORIDAD DE TICKET -->
+	
+	
+	
+	<!-- MODAL PARA Vigentes DE TICKET -->
+	<resultMap id="vigentesticket" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="idTicket" column="COD_TICKET" />
+		<result property="ticketTitulo" column="INTERNAL_PRIORITY" />
+		<result property="ticketDetalle" column="STATUS" />		
+		<result property="ticketIdCliente" column="SOURCE" />
+		<result property="ticketCliente" column="AFFECTED_PERSON_ID" />
+		<result property="ticketPrioridad" column="OWNER_GROUP_ID" />		
+		<result property="ticketImpact" column="OWNER_GROUP" />
+		<result property="ticketUrgencia" column="OWNER_ID" />
+		<result property="ticketFechaCreacion" column="OWNER" />
+		<result property="ticketFechaFin" column="PARENT_CLIENT" />
+		<result property="ticketIdEstado" column="SUMMARY" />
+		<result property="ticketUsuarioVip" column="CI" />
+		<result property="ticketEstado" column="CI_NAME" />
+		<result property="ticketIdGrupoPropietario" column="CLASSIFICATION_ID" />
+		<result property="ticketGrupoPropietario" column="CLASSIFICATION" />
+		<result property="ticketIdLugar" column="CREATION_DATE" />
+		<result property="ticketLugar" column="REPORT_DATE" />
+		<result property="ticketITGrupoResolutor" column="ACTUAL_START" />
+		<result property="ticketIdGrupoResolutor" column="COMPLIANCE_OLA_PERU_RESOLVE" />
+		<result property="ticketGrupoResolutor" column="BACKLOG_AGE_GROUP" />
+		<result property="ticketPropietario" column="TIME_TO_RESOLVE" />
+		<result property="ticketEmailPropietario" column="ACCOUNT_CLASSIFICATION" />
+		<result property="ticketPersonaReportado" column="WORKLOG" />
+		<result property="strParentTicket" column="PARENT_TICKET" />
+		
+	</resultMap>
+	<select id="modalvigentes" resultMap="vigentesticket" parameterType = "com.pe.ibm.bean.BeanMaximo" >
+	
+		SELECT		
+				COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CAST(WORKLOG AS VARCHAR(500)) AS WORKLOG,PARENT_TICKET
+		FROM 
+		<if test="strValor4 == null">
+		(select
+				COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CAST(WORKLOG AS VARCHAR(500)) AS WORKLOG,CLASS	,PARENT_TICKET
+		from CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 
+		WHERE 	TRIBE IN (${Tribu})
+				<if test="strValor1 != null">
+		AND PARENT_CLIENT_ID IN (${strValor1}) 
+		</if>   		
+					
+			<if test="strValor2 != null">
+			AND		OWNER_GROUP_ID IN (${strValor2})
+			</if>
+			
+			<if test="strValor3 != null">	
+				AND	OWNER_ID IN (${strValor3})
+			</if>	 
+		
+		union all
+		
+		select COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CAST(WORKLOG AS VARCHAR(500)) AS WORKLOG,CLASS,PARENT_TICKET 
+		from CONSUMOS.V_SAB_SCCD_WORKORDER_BACKLOG
+		WHERE 	TRIBE IN (${Tribu})
+				<if test="strValor1 != null">
+	AND	PARENT_CLIENT_ID IN (${strValor1}) 
+		</if>   		
+					
+			<if test="strValor2 != null">
+				AND	OWNER_GROUP_ID IN (${strValor2})
+			</if>
+			
+			<if test="strValor3 != null">	
+				AND	OWNER_ID IN (${strValor3})
+			</if>	)
+			
+			WHERE  
+				COMPLIANCE_OLA_PERU_RESOLVE in ('In criteria')
+						  
+  		</if> 
+	
+		<if test="strValor4 != null">	
+		(
+		SELECT 			
+				COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CLASS,CAST(A.WORKLOG AS VARCHAR(500)) AS WORKLOG,
+				(CASE WHEN MAX(B.VCOD_TICKET) IS NULL THEN MAX(C.VCOD_TICKET) ELSE MAX(B.VCOD_TICKET) END )WORKORDER,PARENT_TICKET		 
+		FROM 
+			CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 A LEFT JOIN CONSUMOS.SAB_SCCD_WORKORDER_RESUELTOS B ON A.COD_TICKET = B.VPARENT_TICKET 
+			LEFT JOIN CONSUMOS.SAB_SCCD_WORKORDER_BACKLOG C ON A.COD_TICKET = C.VPARENT_TICKET
+		WHERE 	TRIBE IN (${Tribu})
+				<if test="strValor1 != null">
+	AND	PARENT_CLIENT_ID IN (${strValor1}) 
+		</if>   		
+					
+			<if test="strValor2 != null">
+				AND	OWNER_GROUP_ID IN (${strValor2})
+			</if>
+			
+			<if test="strValor3 != null">	
+				AND	OWNER_ID IN (${strValor3})
+			</if>	
+		GROUP BY 
+				COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CLASS,CAST(A.WORKLOG AS VARCHAR(500)),PARENT_TICKET				
+		) 
+		
+		WHERE WORKORDER IS NULL
+		AND CLASS IN ('SR','INCIDENT')
+			
+		AND 
+			COMPLIANCE_OLA_PERU_RESOLVE in ('In criteria')
+		
+		</if>	
+		
+		
+		<if test="strValor5 != null || strValor6 != null || strValor7 != null || strValor8 != null || strValor9 != null || strValor10 != null">
+		
+		AND
+			CLASS IN (''<if test="strValor5 != null">,'SR'</if><if test="strValor6 != null">,'INCIDENT'</if>
+						<if test="strValor7 != null">,'PROBLEM'</if><if test="strValor8 != null">,'WORKORDER'</if>
+						<if test="strValor9 != null">,'ACTIVITY'</if><if test="strValor10 != null">,'CHANGE'</if>)			
+		</if>
+		
+		
+		
+	</select>
+	
+	
+	<resultMap id="vencidosticket" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="idTicket" column="COD_TICKET" />
+		<result property="ticketTitulo" column="INTERNAL_PRIORITY" />
+		<result property="ticketDetalle" column="STATUS" />		
+		<result property="ticketIdCliente" column="SOURCE" />
+		<result property="ticketCliente" column="AFFECTED_PERSON_ID" />
+		<result property="ticketPrioridad" column="OWNER_GROUP_ID" />		
+		<result property="ticketImpact" column="OWNER_GROUP" />
+		<result property="ticketUrgencia" column="OWNER_ID" />
+		<result property="ticketFechaCreacion" column="OWNER" />
+		<result property="ticketFechaFin" column="PARENT_CLIENT" />
+		<result property="ticketIdEstado" column="SUMMARY" />
+		<result property="ticketUsuarioVip" column="CI" />
+		<result property="ticketEstado" column="CI_NAME" />
+		<result property="ticketIdGrupoPropietario" column="CLASSIFICATION_ID" />
+		<result property="ticketGrupoPropietario" column="CLASSIFICATION" />
+		<result property="ticketIdLugar" column="CREATION_DATE" />
+		<result property="ticketLugar" column="REPORT_DATE" />
+		<result property="ticketITGrupoResolutor" column="ACTUAL_START" />
+		<result property="ticketIdGrupoResolutor" column="COMPLIANCE_OLA_PERU_RESOLVE" />
+		<result property="ticketGrupoResolutor" column="BACKLOG_AGE_GROUP" />
+		<result property="ticketPropietario" column="TIME_TO_RESOLVE" />
+		<result property="ticketEmailPropietario" column="ACCOUNT_CLASSIFICATION" />
+		<result property="ticketPersonaReportado" column="WORKLOG" />
+		<result property="strParentTicket" column="PARENT_TICKET" />
+	</resultMap>
+	<select id="modalvencidos" resultMap="vencidosticket" parameterType = "com.pe.ibm.bean.BeanMaximo" >
+	
+		SELECT		
+				COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CAST(WORKLOG AS VARCHAR(500)) AS WORKLOG,PARENT_TICKET
+		FROM 
+		<if test="strValor4 == null">
+		(select
+				COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CAST(WORKLOG AS VARCHAR(500)) AS WORKLOG,CLASS	,PARENT_TICKET
+		from CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 
+		WHERE 	TRIBE IN (${Tribu})
+				<if test="strValor1 != null">
+	AND	PARENT_CLIENT_ID IN (${strValor1}) 
+		</if>   		
+					
+			<if test="strValor2 != null">
+				AND	OWNER_GROUP_ID IN (${strValor2})
+			</if>
+			
+			<if test="strValor3 != null">	
+				AND	OWNER_ID IN (${strValor3})
+			</if>	 
+		
+		union all
+		
+		select COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CAST(WORKLOG AS VARCHAR(500)) AS WORKLOG,CLASS ,PARENT_TICKET
+		from CONSUMOS.V_SAB_SCCD_WORKORDER_BACKLOG
+		WHERE 	TRIBE IN (${Tribu})
+				<if test="strValor1 != null">
+	AND	PARENT_CLIENT_ID IN (${strValor1}) 
+		</if>   		
+					
+			<if test="strValor2 != null">
+				AND	OWNER_GROUP_ID IN (${strValor2})
+			</if>
+			
+			<if test="strValor3 != null">	
+				AND	OWNER_ID IN (${strValor3})
+			</if>	)
+			
+			WHERE  
+				COMPLIANCE_OLA_PERU_RESOLVE in ('Out of criteria')
+						  
+  		</if> 
+	
+		<if test="strValor4 != null">	
+		(
+		SELECT 			
+				COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CLASS,CAST(A.WORKLOG AS VARCHAR(500)) AS WORKLOG,
+				(CASE WHEN MAX(B.VCOD_TICKET) IS NULL THEN MAX(C.VCOD_TICKET) ELSE MAX(B.VCOD_TICKET) END )WORKORDER,PARENT_TICKET		 
+		FROM 
+			CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 A LEFT JOIN CONSUMOS.SAB_SCCD_WORKORDER_RESUELTOS B ON A.COD_TICKET = B.VPARENT_TICKET 
+			LEFT JOIN CONSUMOS.SAB_SCCD_WORKORDER_BACKLOG C ON A.COD_TICKET = C.VPARENT_TICKET
+		WHERE 	TRIBE IN (${Tribu})
+				<if test="strValor1 != null">
+	AND	PARENT_CLIENT_ID IN (${strValor1}) 
+		</if>   		
+					
+			<if test="strValor2 != null">
+				AND	OWNER_GROUP_ID IN (${strValor2})
+			</if>
+			
+			<if test="strValor3 != null">	
+				AND	OWNER_ID IN (${strValor3})
+			</if>	
+		GROUP BY 
+				COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CLASS,CAST(A.WORKLOG AS VARCHAR(500)),PARENT_TICKET				
+		) 
+		
+		WHERE WORKORDER IS NULL
+		AND CLASS IN ('SR','INCIDENT')
+		
+		
+		AND 
+			COMPLIANCE_OLA_PERU_RESOLVE in ('Out of criteria')
+		
+		</if>	
+		
+		
+		<if test="strValor5 != null || strValor6 != null || strValor7 != null || strValor8 != null || strValor9 != null || strValor10 != null">
+		
+		AND
+			CLASS IN (''<if test="strValor5 != null">,'SR'</if><if test="strValor6 != null">,'INCIDENT'</if>
+						<if test="strValor7 != null">,'PROBLEM'</if><if test="strValor8 != null">,'WORKORDER'</if>
+						<if test="strValor9 != null">,'ACTIVITY'</if><if test="strValor10 != null">,'CHANGE'</if>)			
+		</if>
+				
+	</select>
+	
+	
+	<resultMap id="resultTabla1" type="com.pe.ibm.bean.BeanMaximo">
+		
+		<result property="strValor1" column="COD_TICKET" />
+		<result property="strValor2" column="SUMMARY" />
+		<result property="strValor3" column="CREATOR" />
+		<result property="strValor4" column="AFFECTED_PERSON_ID" />
+		<result property="strValor5" column="CREATION_DATE" />
+		<result property="strValor6" column="OWNER_GROUP" />
+		<result property="strValor7" column="INTERNAL_PRIORITY" />
+		<result property="strValor8" column="OWNER_ID" />
+		<result property="strValor9" column="OWNER" />
+		<result property="strValor10" column="STATUS" />
+		<result property="sysPwd" column="WORKLOG" />
+		<result property="sysUser" column="TIME_TO_RESOLVE" />	
+		
+	</resultMap>
+	<select id="tabla1" resultMap="resultTabla1" parameterType = "com.pe.ibm.bean.BeanMaximo" >
+			
+			<if test="strValor1 == null &amp;&amp; strValor2 == null &amp;&amp;
+			  strValor3 == null &amp;&amp; strValor4 == null &amp;&amp;
+			  strValor5 == null &amp;&amp; strValor6 == null &amp;&amp;
+			  strValor7 == null"> <!-- Sin Ningun check seleccionado -->
+				
+			SELECT		
+				 COD_TICKET,SUMMARY,CREATOR,AFFECTED_PERSON_ID,COALESCE(CREATION_DATE,'') AS CREATION_DATE,OWNER_GROUP,INTERNAL_PRIORITY,				
+				REPLACE (OWNER_ID,'NULL','')AS OWNER_ID,COALESCE(OWNER,'') AS OWNER,STATUS,CAST(WORKLOG AS VARCHAR(500)) AS WORKLOG,TIME_TO_RESOLVE,CLASS
+		FROM 
+		
+		(select
+				 COD_TICKET,SUMMARY,CREATOR,AFFECTED_PERSON_ID,COALESCE(CREATION_DATE,'') AS CREATION_DATE,OWNER_GROUP,INTERNAL_PRIORITY,				
+				REPLACE (OWNER_ID,'NULL','')AS OWNER_ID,COALESCE(OWNER,'') AS OWNER,STATUS,CAST(WORKLOG AS VARCHAR(500)) AS WORKLOG,TIME_TO_RESOLVE,CLASS
+		from CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 
+		WHERE
+				PARENT_CLIENT_ID IN ('PE-RIMAC-SO')
+			AND
+				OWNER_GROUP_ID IN ('I-DCS-PE-VIR10-RIMAC-VIP','I-DCS-PE-VIR10-RIMAC-OSPRV','I-DCS-PE-VIR10-RIMAC-OSNR','I-DCS-PE-VIR10-RIMAC-OSRT')
+				 
+		
+		UNION ALL
+		
+		select   COD_TICKET,SUMMARY,CREATOR,AFFECTED_PERSON_ID,COALESCE(CREATION_DATE,'') AS CREATION_DATE,OWNER_GROUP,INTERNAL_PRIORITY,				
+				REPLACE (OWNER_ID,'NULL','')AS OWNER_ID,COALESCE(OWNER,'') AS OWNER,STATUS,CAST(WORKLOG AS VARCHAR(500)) AS WORKLOG,TIME_TO_RESOLVE,CLASS
+				
+		from CONSUMOS.V_SAB_SCCD_WORKORDER_BACKLOG
+		WHERE
+				PARENT_CLIENT_ID IN ('PE-RIMAC-SO')
+			AND
+				OWNER_GROUP_ID IN ('I-DCS-PE-VIR10-RIMAC-VIP','I-DCS-PE-VIR10-RIMAC-OSPRV','I-DCS-PE-VIR10-RIMAC-OSNR','I-DCS-PE-VIR10-RIMAC-OSRT'))
+				
+					
+				
+			</if>
+			
+			
+			<if test="strValor1 != null">
+				
+	SELECT		COD_TICKET,WORKORDER,CLASS,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,
+		SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+		BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,WORKLOG
+
+	FROM
+		(
+		SELECT 			
+				COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CLASS,
+				(CASE WHEN MAX(B.VCOD_TICKET) IS NULL THEN MAX(C.VCOD_TICKET) ELSE MAX(B.VCOD_TICKET) END )WORKORDER, CAST(A.WORKLOG AS VARCHAR(500)) AS WORKLOG	
+		FROM 
+		        
+			CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 A 
+			LEFT JOIN CONSUMOS.SAB_SCCD_WORKORDER_RESUELTOS B ON A.COD_TICKET = B.VPARENT_TICKET 
+			LEFT JOIN CONSUMOS.SAB_SCCD_WORKORDER_BACKLOG C ON A.COD_TICKET = C.VPARENT_TICKET
+		WHERE
+				PARENT_CLIENT_ID IN ('PE-RIMAC-SO')
+			AND
+				OWNER_GROUP_ID IN ('I-DCS-PE-VIR10-RIMAC-VIP','I-DCS-PE-VIR10-RIMAC-OSPRV','I-DCS-PE-VIR10-RIMAC-OSNR','I-DCS-PE-VIR10-RIMAC-OSRT')			
+
+		GROUP BY 
+				COD_TICKET,INTERNAL_PRIORITY,STATUS,SOURCE,AFFECTED_PERSON_ID,OWNER_GROUP_ID,OWNER_GROUP,OWNER_ID,OWNER,PARENT_CLIENT,
+				SUMMARY,CI,CI_NAME,CLASSIFICATION_ID,CLASSIFICATION,CREATION_DATE,REPORT_DATE,ACTUAL_START,COMPLIANCE_OLA_PERU_RESOLVE ,
+				BACKLOG_AGE_GROUP,TIME_TO_RESOLVE,ACCOUNT_CLASSIFICATION,CLASS,CAST(A.WORKLOG AS VARCHAR(500))				
+		) 		
+
+		WHERE WORKORDER IS NULL
+
+		
+		AND CLASS IN ('SR','INCIDENT')
+
+			</if>	
+			
+			
+			<if test="strValor2 != null || strValor3 != null || strValor4 != null || strValor5 != null || strValor6 != null || strValor7 != null">
+			SELECT		
+				 COD_TICKET,SUMMARY,CREATOR,AFFECTED_PERSON_ID,COALESCE(CREATION_DATE,'') AS CREATION_DATE,OWNER_GROUP,INTERNAL_PRIORITY,				
+				REPLACE (OWNER_ID,'NULL','')AS OWNER_ID,COALESCE(OWNER,'') AS OWNER,STATUS,CAST(WORKLOG AS VARCHAR(500)) AS WORKLOG,TIME_TO_RESOLVE,CLASS
+		FROM 
+		
+		(select
+				 COD_TICKET,SUMMARY,CREATOR,AFFECTED_PERSON_ID,COALESCE(CREATION_DATE,'') AS CREATION_DATE,OWNER_GROUP,INTERNAL_PRIORITY,				
+				REPLACE (OWNER_ID,'NULL','')AS OWNER_ID,COALESCE(OWNER,'') AS OWNER,STATUS,CAST(WORKLOG AS VARCHAR(500)) AS WORKLOG,TIME_TO_RESOLVE,CLASS
+		from CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 
+		WHERE
+				PARENT_CLIENT_ID IN ('PE-RIMAC-SO')
+			AND
+				OWNER_GROUP_ID IN ('I-DCS-PE-VIR10-RIMAC-VIP','I-DCS-PE-VIR10-RIMAC-OSPRV','I-DCS-PE-VIR10-RIMAC-OSNR','I-DCS-PE-VIR10-RIMAC-OSRT')				 
+		
+		union all
+		
+		select   COD_TICKET,SUMMARY,CREATOR,AFFECTED_PERSON_ID,COALESCE(CREATION_DATE,'') AS CREATION_DATE,OWNER_GROUP,INTERNAL_PRIORITY,				
+				REPLACE (OWNER_ID,'NULL','')AS OWNER_ID,COALESCE(OWNER,'') AS OWNER,STATUS,CAST(WORKLOG AS VARCHAR(500)) AS WORKLOG,TIME_TO_RESOLVE,CLASS
+				
+		from CONSUMOS.V_SAB_SCCD_WORKORDER_BACKLOG
+		WHERE
+				PARENT_CLIENT_ID IN ('PE-RIMAC-SO')
+			AND
+				OWNER_GROUP_ID IN ('I-DCS-PE-VIR10-RIMAC-VIP','I-DCS-PE-VIR10-RIMAC-OSPRV','I-DCS-PE-VIR10-RIMAC-OSNR','I-DCS-PE-VIR10-RIMAC-OSRT'))
+				
+					
+			
+			WHERE
+				CLASS IN (''<if test="strValor2 != null">,'SR'</if><if test="strValor3 != null">,'INCIDENT'</if><if test="strValor4 != null">,'PROBLEM'</if><if test="strValor5 != null">,'WORKORDER'</if><if test="strValor6 != null">,'ACTIVITY'</if><if test="strValor7 != null">,'CHANGE'</if>)
+			
+			</if>
+			
+			
+	</select>
+	
+	<!-- I-SDD-PE-VIR08-RIMAC-MS  ============ VIP id -->
+	
+	
+	
+	
+	
+	
+	<resultMap id="resultTabla2" type="com.pe.ibm.bean.BeanMaximo">
+		
+		<result property="strValor1" column="COD_TICKET" />
+		<result property="strValor2" column="SUMMARY" />
+		<result property="strValor3" column="CREATOR" />
+		<result property="strValor4" column="AFFECTED_PERSON_ID" />
+		<result property="strValor5" column="CREATION_DATE" />
+		<result property="strValor6" column="OWNER_GROUP" />
+		<result property="strValor7" column="INTERNAL_PRIORITY" />
+		<result property="strValor8" column="OWNER_ID" />
+		<result property="strValor9" column="OWNER" />
+		<result property="strValor10" column="STATUS" />
+		<result property="sysPwd" column="WORKLOG" />
+		<result property="sysUser" column="TIME_TO_RESOLVE" />	
+		
+	</resultMap>
+	<select id="tabla2" resultMap="resultTabla2" parameterType = "com.pe.ibm.bean.BeanMaximo" >
+			SELECT		
+				COD_TICKET,
+				SUMMARY,
+				CREATOR,
+				AFFECTED_PERSON_ID,
+				COALESCE(CREATION_DATE,'') AS CREATION_DATE,				
+				OWNER_GROUP,
+				INTERNAL_PRIORITY,				
+				REPLACE (OWNER_ID,'NULL','')AS OWNER_ID,
+				COALESCE(OWNER,'') AS OWNER,
+				STATUS,
+				COALESCE(WORKLOG,'') AS WORKLOG,				
+				TIME_TO_RESOLVE
+			
+			FROM 
+				CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2
+			WHERE 
+				OWNER_GROUP_ID IN (${ticketIdGrupoPropietario}) 
+			
+	</select>
+	
+	
+	<resultMap id="resultTabla3" type="com.pe.ibm.bean.BeanMaximo">
+		
+		<result property="strValor1" column="COD_TICKET" />
+		<result property="strValor2" column="SUMMARY" />
+		<result property="strValor3" column="CREATOR" />
+		<result property="strValor4" column="AFFECTED_PERSON_ID" />
+		<result property="strValor5" column="CREATION_DATE" />
+		<result property="strValor6" column="OWNER_GROUP" />
+		<result property="strValor7" column="INTERNAL_PRIORITY" />
+		<result property="strValor8" column="OWNER_ID" />
+		<result property="strValor9" column="OWNER" />
+		<result property="strValor10" column="STATUS" />
+		<result property="sysPwd" column="WORKLOG" />
+		<result property="sysUser" column="TIME_TO_RESOLVE" />	
+		
+	</resultMap>
+	<select id="tabla3" resultMap="resultTabla3" parameterType = "com.pe.ibm.bean.BeanMaximo" >
+			SELECT		
+				COD_TICKET,
+				SUMMARY,
+				CREATOR,
+				AFFECTED_PERSON_ID,
+				COALESCE(CREATION_DATE,'') AS CREATION_DATE,				
+				OWNER_GROUP,
+				INTERNAL_PRIORITY,				
+				REPLACE (OWNER_ID,'NULL','')AS OWNER_ID,
+				COALESCE(OWNER,'') AS OWNER,
+				STATUS,
+				COALESCE(WORKLOG,'') AS WORKLOG,				
+				TIME_TO_RESOLVE
+			
+			FROM 
+				CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2
+			WHERE 
+				OWNER_GROUP_ID IN (${ticketIdGrupoPropietario}) 
+			
+	</select>
+	
+	
+	
+	
+
+							<!-- MAPPER SURA TABLA  -->
+	
+	
+    
+    
+    <resultMap id = "tabla1" type = "com.pe.ibm.bean.BeanSuraTabla">
+      
+      <result property = "sValor1" column = "PRIORIDAD"/>
+      <result property = "indicador" column = "INDICADOR"/>
+      <result property = "sla" column = "SLA"/>
+      <result property = "cumple" column = "CUMPLE"/>
+      <result property = "nocumple" column = "NOCUMPLE"/>
+      <result property = "total" column = "TOTAL"/>
+      <result property = "tasadepenalidad" column = "TASEDEPENALIDAD"/>
+      
+   	</resultMap>   
+   
+
+    <select id = "listarsuratabla1" resultMap ="tabla1"  parameterType = "com.pe.ibm.bean.BeanSuraTabla">
+    
+    SELECT * FROM
+	(
+	
+	<!-- TABLA 1 -->
+	SELECT 	
+			('P1') AS PRIORIDAD,	
+			('Tiempo@de@Respuesta@de@Incidentes@P1') AS INDICADOR,
+			('95%menor3hrs')  AS SLA,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND COMPLIANCE_SLA_RESOLVE ='In criteria' AND INTERNAL_PRIORITY IN ('1') AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS CUMPLE,	
+			 
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND COMPLIANCE_SLA_RESOLVE ='Out of criteria' AND INTERNAL_PRIORITY IN ('1') AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS NOCUMPLE,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND INTERNAL_PRIORITY IN ('1') AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS TOTAL,
+			('1.00%') AS TASADEPENALIDAD
+		 
+	FROM CONSUMOS.PORTAL
+	UNION 
+	SELECT 		
+			('P2') AS PRIORIDAD,
+			('Tiempo@de@Respuesta@de@Incidentes@P2') AS INDICADOR,
+			('95%menor8hrs')  AS SLA,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND COMPLIANCE_SLA_RESOLVE ='In criteria' AND INTERNAL_PRIORITY IN ('2') AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS CUMPLE,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND COMPLIANCE_SLA_RESOLVE ='Out of criteria' AND INTERNAL_PRIORITY IN ('2') AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS NOCUMPLE,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND INTERNAL_PRIORITY IN ('2') AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL)  AS TOTAL,
+			('0.50%') AS TASADEPENALIDAD
+	 
+	FROM CONSUMOS.PORTAL 
+	UNION
+	SELECT 		
+			('P3') AS PRIORIDAD,
+			('Tiempo@de@Respuesta@de@Incidentes@P3') AS INDICADOR,
+			('95%menor24hrs')  AS SLA,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND COMPLIANCE_SLA_RESOLVE ='In criteria' AND INTERNAL_PRIORITY IN ('3') AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS CUMPLE,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND COMPLIANCE_SLA_RESOLVE ='Out of criteria' AND INTERNAL_PRIORITY IN ('3') AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS NOCUMPLE,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND INTERNAL_PRIORITY IN ('3') AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS TOTAL,
+			('0.50%') AS TASADEPENALIDAD
+		 
+	FROM CONSUMOS.PORTAL
+	UNION
+	SELECT 		
+			('P4') AS PRIORIDAD,
+			('Tiempo@de@Respuesta@de@Incidentes@P4') AS INDICADOR,
+			('95%menor48hrs')  AS SLA,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND COMPLIANCE_SLA_RESOLVE ='In criteria' AND INTERNAL_PRIORITY IN ('4') AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS CUMPLE,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND COMPLIANCE_SLA_RESOLVE ='Out of criteria' AND INTERNAL_PRIORITY IN ('4') AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS NOCUMPLE,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND INTERNAL_PRIORITY IN ('4') AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS TOTAL,
+			('-') AS TASADEPENALIDAD
+		 
+	FROM CONSUMOS.PORTAL 
+	UNION
+	<!--FIN TABLA 1 -->
+
+	) 
+	 ORDER BY INDICADOR ASC
+    
+    </select> 
+    
+    
+    
+    
+    
+    
+    <resultMap id = "tabla2" type = "com.pe.ibm.bean.BeanSuraTabla">
+      
+      <result property = "sValor1" column = "PRIORIDAD"/>
+      <result property = "indicador" column = "INDICADOR"/>
+      <result property = "sla" column = "SLA"/>
+      <result property = "cumple" column = "CUMPLE"/>
+      <result property = "nocumple" column = "NOCUMPLE"/>
+      <result property = "total" column = "TOTAL"/>
+      <result property = "tasadepenalidad" column = "TASEDEPENALIDAD"/>
+      
+   	</resultMap>   
+   
+
+    <select id = "listarsuratabla2" resultMap ="tabla2"  parameterType = "com.pe.ibm.bean.BeanSuraTabla">
+    
+    SELECT * FROM
+	(
+	
+	<!-- TABLA 2 -->
+	SELECT 		
+			('P1') AS PRIORIDAD,
+			('Tiempo@de@Respuesta@de@Incidentes@P1') AS INDICADOR,
+			('90%menor4hrs')  AS SLA,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND COMPLIANCE_SLA_RESOLVE ='In criteria' AND INTERNAL_PRIORITY IN ('1') AND CLASS IN ('SR') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS CUMPLE,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND COMPLIANCE_SLA_RESOLVE ='Out of criteria' AND INTERNAL_PRIORITY IN ('1') AND CLASS IN ('SR') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS NOCUMPLE,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND INTERNAL_PRIORITY IN ('1') AND CLASS IN ('SR') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS TOTAL,
+			('1.00%') AS TASADEPENALIDAD
+		 
+	FROM CONSUMOS.PORTAL  
+	UNION 
+	SELECT 	
+			('P2') AS PRIORIDAD,	
+			('Tiempo@de@Respuesta@de@Incidentes@P2') AS INDICADOR,
+			('90%menor12hrs')  AS SLA,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND COMPLIANCE_SLA_RESOLVE ='In criteria' AND INTERNAL_PRIORITY IN ('2') AND CLASS IN ('SR') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS CUMPLE,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND COMPLIANCE_SLA_RESOLVE ='Out of criteria' AND INTERNAL_PRIORITY IN ('2') AND CLASS IN ('SR') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS NOCUMPLE,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND INTERNAL_PRIORITY IN ('2') AND CLASS IN ('SR') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS TOTAL,
+			('0.50%') AS TASADEPENALIDAD
+	 
+	FROM CONSUMOS.PORTAL 
+	UNION
+	SELECT 		
+			('P3') AS PRIORIDAD,
+			('Tiempo@de@Respuesta@de@Incidentes@P3') AS INDICADOR,
+			('90%menor36hrs')  AS SLA,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND COMPLIANCE_SLA_RESOLVE ='In criteria' AND INTERNAL_PRIORITY IN ('3') AND CLASS IN ('SR') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS CUMPLE,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND COMPLIANCE_SLA_RESOLVE ='Out of criteria' AND INTERNAL_PRIORITY IN ('3') AND CLASS IN ('SR') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS NOCUMPLE,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND INTERNAL_PRIORITY IN ('3') AND CLASS IN ('SR') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS TOTAL,
+			('0.50%') AS TASADEPENALIDAD
+		 
+	FROM CONSUMOS.PORTAL
+	UNION
+	SELECT 	
+			('P4') AS PRIORIDAD,	
+			('Tiempo@de@Respuesta@de@Incidentes@P4') AS INDICADOR,
+			('90%menor48hrs')  AS SLA,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND COMPLIANCE_SLA_RESOLVE ='In criteria' AND INTERNAL_PRIORITY IN ('4') AND CLASS IN ('SR') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS CUMPLE,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND COMPLIANCE_SLA_RESOLVE ='Out of criteria' AND INTERNAL_PRIORITY IN ('4') AND CLASS IN ('SR') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS NOCUMPLE,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND INTERNAL_PRIORITY IN ('4') AND CLASS IN ('SR') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS TOTAL,
+			('-') AS TASADEPENALIDAD
+		 
+	FROM CONSUMOS.PORTAL 
+	UNION
+	SELECT 	
+			('P5') AS PRIORIDAD,	
+			('Tiempo@de@Respuesta@de@Incidentes@P5') AS INDICADOR,
+			('90%menor72hrs')  AS SLA,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND COMPLIANCE_SLA_RESOLVE ='In criteria' AND INTERNAL_PRIORITY IN ('5') AND CLASS IN ('SR') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS CUMPLE,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND COMPLIANCE_SLA_RESOLVE ='Out of criteria' AND INTERNAL_PRIORITY IN ('5') AND CLASS IN ('SR') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS NOCUMPLE,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND INTERNAL_PRIORITY IN ('5') AND CLASS IN ('SR') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS TOTAL,
+			('-') AS TASADEPENALIDAD
+			FROM CONSUMOS.PORTAL 
+	
+	<!--FIN TABLA 2 -->
+
+	)
+	 ORDER BY INDICADOR ASC
+    
+    </select> 
+    
+    
+    
+    
+    
+    
+	<resultMap id = "tabla3" type = "com.pe.ibm.bean.BeanSuraTabla">
+      <result property = "sValor1" column = "PRIORIDAD"/>
+      <result property = "indicador" column = "INDICADOR"/>
+      <result property = "sla" column = "SLA"/>
+      <result property = "cumple" column = "CUMPLE"/>
+      <result property = "nocumple" column = "NOCUMPLE"/>
+      <result property = "total" column = "TOTAL"/>
+      <result property = "tasadepenalidad" column = "TASEDEPENALIDAD"/>
+      
+   	</resultMap>   
+   
+
+    <select id = "listarsuratabla3" resultMap ="tabla3"  parameterType = "com.pe.ibm.bean.BeanSuraTabla">
+    
+    SELECT * FROM
+	(
+	
+	<!-- TABLA 3 -->
+	SELECT
+			('P1') AS PRIORIDAD,
+			('Tiempo@de@Respuesta@de@Incidentes@P1') AS INDICADOR,
+			('95%menor15min')  AS SLA,
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_DISPATCH IS NOT NULL AND COMPLIANCE_SLA_DISPATCH ='In criteria' AND INTERNAL_PRIORITY IN ('1') AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS CUMPLE,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_DISPATCH IS NOT NULL AND COMPLIANCE_SLA_DISPATCH ='Out of criteria' AND INTERNAL_PRIORITY IN ('1') AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS NOCUMPLE,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_DISPATCH IS NOT NULL AND INTERNAL_PRIORITY IN ('1') AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS TOTAL,
+			('1.00%') AS TASADEPENALIDAD
+
+	FROM CONSUMOS.PORTAL  
+	UNION 
+	SELECT 		
+			('P2') AS PRIORIDAD,
+			('Tiempo@de@Respuesta@de@Incidentes@P2') AS INDICADOR,
+			('95%menor60 min')  AS SLA,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_DISPATCH IS NOT NULL AND COMPLIANCE_SLA_DISPATCH ='In criteria' AND INTERNAL_PRIORITY IN ('2') AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS CUMPLE,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_DISPATCH IS NOT NULL AND COMPLIANCE_SLA_DISPATCH ='Out of criteria' AND INTERNAL_PRIORITY IN ('2') AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS NOCUMPLE,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_DISPATCH IS NOT NULL AND INTERNAL_PRIORITY IN ('2') AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS TOTAL,
+			('0.50%') AS TASADEPENALIDAD
+	 
+	FROM CONSUMOS.PORTAL 
+	UNION
+	SELECT 		
+			('P3') AS PRIORIDAD,
+			('Tiempo@de@Respuesta@de@Incidentes@P3') AS INDICADOR,
+			('95%menor4 hrs')  AS SLA,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_DISPATCH IS NOT NULL AND COMPLIANCE_SLA_DISPATCH ='In criteria' AND INTERNAL_PRIORITY IN ('3') AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS CUMPLE,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_DISPATCH IS NOT NULL AND COMPLIANCE_SLA_DISPATCH ='Out of criteria' AND INTERNAL_PRIORITY IN ('3') AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS NOCUMPLE,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_DISPATCH IS NOT NULL AND INTERNAL_PRIORITY IN ('3') AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS TOTAL,
+			('0.50%') AS TASADEPENALIDAD
+		 
+	FROM CONSUMOS.PORTAL
+	UNION
+	SELECT 		
+			('P4') AS PRIORIDAD,
+			('Tiempo@de@Respuesta@de@Incidentes@P4') AS INDICADOR,
+			('95%menor12 hrs')  AS SLA,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_DISPATCH IS NOT NULL AND COMPLIANCE_SLA_DISPATCH ='In criteria' AND INTERNAL_PRIORITY IN ('4') AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS CUMPLE,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_DISPATCH IS NOT NULL AND COMPLIANCE_SLA_DISPATCH ='Out of criteria' AND INTERNAL_PRIORITY IN ('4') AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS NOCUMPLE,	
+			(SELECT COUNT(1) FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS 
+			WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_DISPATCH IS NOT NULL AND INTERNAL_PRIORITY IN ('4') AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+			 AND  ACTUAL_FINISH BETWEEN '${fechainicio}' AND '${fechafin}' AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL) AS TOTAL,
+			('-') AS TASADEPENALIDAD
+		 
+	FROM CONSUMOS.PORTAL 
+	UNION
+	<!--FIN TABLA 3 -->
+
+	) 
+	 ORDER BY INDICADOR ASC
+    
+    </select> 
+    
+    <!-- REPORTE -->
+    
+    <resultMap id = "reporteTabla" type = "com.pe.ibm.bean.BeanSuraTabla">
+      <result property = "sValor1" column = "COD_TICKET"/>
+      <result property = "sValor2" column = "SUMMARY"/>
+      <result property = "sValor3" column = "CREATOR"/>
+      <result property = "sValor4" column = "AFFECTED_PERSON_ID"/>
+      <result property = "sValor5" column = "CREATION_DATE"/>
+      <result property = "sValor6" column = "OWNER_GROUP"/>
+      <result property = "sValor7" column = "INTERNAL_PRIORITY"/>
+	  <result property = "sValor8" column = "OWNER_ID"/>
+	  <result property = "sValor9" column = "OWNER"/> 
+	  <result property = "sValor10" column = "STATUS"/> 
+	  <result property = "sValor11" column = "WORKLOG"/> 
+	  <result property = "sValor12" column = "TIME_TO_RESOLVE"/>
+	  <result property = "sValor13" column = "CLASS"/> 
+	  <result property = "sValor14" column = "COMPLIANCE_SLA_DISPATCH"/> 
+	  <result property = "sValor15" column = "COMPLIANCE_SLA_RESOLVE"/>   
+	     
+   	</resultMap>   
+   
+
+    <select id = "listReport" resultMap ="reporteTabla"  parameterType = "com.pe.ibm.bean.BeanSuraTabla">
+    
+    SELECT		
+			COD_TICKET,
+			SUMMARY,
+			CREATOR,
+			AFFECTED_PERSON_ID,
+			COALESCE(CREATION_DATE,'') AS CREATION_DATE,
+			OWNER_GROUP,
+			INTERNAL_PRIORITY,				
+			REPLACE (OWNER_ID,'NULL','')AS OWNER_ID,
+			COALESCE(OWNER,'') AS OWNER,
+			STATUS,
+			CAST(WORKLOG AS VARCHAR(500)) AS WORKLOG,
+			TIME_TO_RESOLVE,
+			CLASS,
+			COMPLIANCE_SLA_DISPATCH,
+			COMPLIANCE_SLA_RESOLVE
+		FROM 
+		 	CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS		 
+		 WHERE 
+		 	PARENT_CLIENT_ID IN ('PE-SURA-SO') 
+		 	
+	 	<if test="parametro1 == 'Tabla3'">AND COMPLIANCE_SLA_DISPATCH IS NOT NULL</if>
+	 	<if test="parametro1 == 'Tabla1' || parametro1 == 'Tabla2'">AND COMPLIANCE_SLA_RESOLVE IS NOT NULL</if> 
+	   AND INTERNAL_PRIORITY IN (
+	   	<if test="parametro2 == 'P1'">1</if>
+	   	<if test="parametro2 == 'P2'">2</if>
+	   	<if test="parametro2 == 'P3'">3</if>
+	   	<if test="parametro2 == 'P4'">4</if>
+	   	<if test="parametro2 == 'P5'">5</if>
+	   	<if test="parametro2 == 'TODOS'">1,2,3,4,5</if>
+	   )
+	   AND CLASS IN (
+	   	<if test="parametro1 == 'Tabla1' || parametro1 == 'Tabla3'">'INCIDENT'</if>
+	   	<if test="parametro1 == 'Tabla2'">'SR'</if>
+	   	<if test="parametro1 == 'TODOS'">'SR','INCIDENT'</if>
+	   )
+	   AND RES_COUNTRY IN ('Peru', 'India')
+	   AND DATE(ACTUAL_FINISH) BETWEEN DATE('${fechainicio}') AND DATE('${fechafin}')
+       AND STATUS_GROUP = 'Closed' AND GLOBAL_TICKET IS NULL
+    </select>
+    
+    
+    <!-- REPORTE -->
+    
+	
+	<!-- MAPPER SURA TABLA -->
+	
+	
+	
+</mapper>

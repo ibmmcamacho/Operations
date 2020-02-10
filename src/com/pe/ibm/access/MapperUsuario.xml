@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="com.pe.ibm.access.MapperUsuario">
+  
+	<resultMap id = "result" type = "com.pe.ibm.bean.BeanUsuario">
+      <result property = "id" column = "IDEMPLEADO"/>
+      <result property = "nombres" column = "NOMBRE"/>
+      <result property = "apellidos" column = "AP_PATERNO"/>
+   	</resultMap>   
+   
+    <select id = "listar" resultMap = "result" statementType = "CALLABLE">
+      {call SCHEDULE.SELECT_EMPLEADOS()}
+    </select> 
+
+
+</mapper>

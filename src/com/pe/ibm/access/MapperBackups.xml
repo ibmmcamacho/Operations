@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="com.pe.ibm.access.MapperBackups">
+	<resultMap id = "result" type = "com.pe.ibm.bean.BeanBackups">
+	  <result property = "id" column = "ID"/>
+	  <result property = "schedulername" column = "SCHEDULERNAME"/>
+	  <result property = "ipaddress" column = "IPADDRESS"/>
+	  <result property = "resource" column = "RESOURCE"/>
+	  <result property = "severity" column = "SEVERITY"/>
+	  <result property = "tipo" column = "TIPO_SCHED"/>
+	  <result property = "severidad" column = "SEVERIDAD"/>	  
+   	</resultMap>
+     
+    <select id = "listarbackups" resultMap = "result" parameterType = "com.pe.ibm.bean.BeanBackups">     
+     	SELECT T.ID,T.SCHEDULERNAME,T.IPADDRESS,T.RESOURCE,T.SEVERITY,T.TIPO_SCHED,CASE WHEN T.SEVERITY = 5 THEN 'FATAL'
+     	WHEN T.SEVERITY = 4 THEN 'CRITICAL'
+     	WHEN T.SEVERITY = 3 THEN 'WARNING'
+     	END as SEVERIDAD,C.CUSTOMERCODE,C.CUSTOMER  FROM DB2LDS.TSMSCHEDXIP  T
+     	INNER JOIN DB2LDS.COMPUTERSYSTEM CS ON CS.RESOURCEID = T.RESOURCE
+		INNER JOIN DB2LDS.CUSTOMER C ON C.CUSTOMERCODE = CS.CUSTOMERCODE
+    </select>
+    
+    <resultMap id = "resultComboResource" type = "com.pe.ibm.bean.BeanBackups">
+	  <result property = "resource" column = "RESOURCEID"/>
+   	</resultMap>
+     
+    <select id = "listarcomboresource" resultMap = "resultComboResource" parameterType = "com.pe.ibm.bean.BeanBackups">     
+     	SELECT RESOURCEID FROM DB2LDS.COMPUTERSYSTEM
+    </select> 
+    
+    <insert  id="Insert_Update" parameterType="com.pe.ibm.bean.BeanBackups" statementType="CALLABLE">
+     {call DB2LDS.RUD_BACKUPS(
+        #{id,javaType=Integer,jdbcType=INTEGER,mode=IN},
+        #{schedulername,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{ipaddress,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{resource,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{severity,javaType=Integer,jdbcType=INTEGER,mode=IN},
+        #{tipo,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{userMod,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{operacion,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{resultado,javaType=Integer,jdbcType=INTEGER,mode=OUT}
+     )}
+	</insert>
+    
+    
+</mapper>

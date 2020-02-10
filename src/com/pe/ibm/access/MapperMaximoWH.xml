@@ -1,0 +1,2474 @@
+	<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="maximoWH">
+	
+	<resultMap id="resultBacklogGSP" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketClass" column="VCLASS" />
+		<result property="ticketGrupoResolutor" column="VRESOLVER_GROUP"/>
+		<result property="strValor1" column="MENOS5DIAS_"/>
+		<result property="strValor2" column="ENTRE5A10DIAS_"/>
+		<result property="strValor3" column="ENTRE11A15DIAS_"/>
+		<result property="strValor4" column="MAS15DIAS_"/>
+	</resultMap>
+	<select id="getBacklogGSP" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultBacklogGSP">
+
+	SELECT COALESCE(VCLASS,'ZTOTAL GENERAL') VCLASS,COALESCE(VRESOLVER_GROUP,'TOTAL') VRESOLVER_GROUP,SUM(MENOS5DIAS) MENOS5DIAS_, SUM(ENTRE5A10DIAS) ENTRE5A10DIAS_, SUM(ENTRE11A15DIAS) ENTRE11A15DIAS_ ,SUM(MAS15DIAS) MAS15DIAS_ FROM
+	(
+		SELECT VCLASS,VRESOLVER_GROUP,
+			CASE WHEN (CAST(DIAS AS INT) <![CDATA[ < ]]>  5) THEN SUM(CANTIDAD) ELSE 0 END MENOS5DIAS,
+			CASE WHEN (CAST(DIAS AS INT) <![CDATA[ > ]]> 4 and DIAS <![CDATA[ < ]]> 11) THEN SUM(CANTIDAD) ELSE 0 END ENTRE5A10DIAS,
+			CASE WHEN (CAST(DIAS AS INT) <![CDATA[ > ]]> 10 and DIAS <![CDATA[ < ]]> 16) THEN SUM(CANTIDAD) ELSE 0 END ENTRE11A15DIAS,
+			CASE WHEN (CAST(DIAS AS INT) <![CDATA[ > ]]>  15) THEN SUM(CANTIDAD) ELSE 0 END MAS15DIAS
+		FROM(
+			SELECT VCLASS, VRESOLVER_GROUP, DIAS, COUNT(1) CANTIDAD
+			FROM(
+				SELECT VCLASS,
+					CASE WHEN LENGTH(VRESOLVER_GROUP) > 0
+					THEN VRESOLVER_GROUP
+					ELSE 'SIN ASIGNAR'
+					END AS VRESOLVER_GROUP,
+					TIMESTAMPDIFF(16,CHAR(TIMESTAMP(CURRENT_TIMESTAMP) - TIMESTAMP(VCREATION_DATE))) AS DIAS
+				FROM
+					SABANA.TICKET_INCSRS_BACKLOG
+				WHERE VPARENT_CLIENT_ID = 'PE-GSP-SO'
+			UNION
+				SELECT VCLASS,
+					CASE WHEN LENGTH(VRESOLVER_GROUP) > 0
+					THEN VRESOLVER_GROUP
+					ELSE 'SIN ASIGNAR'
+					END AS VRESOLVER_GROUP,
+					TIMESTAMPDIFF(16,CHAR(TIMESTAMP(CURRENT_TIMESTAMP) - TIMESTAMP(VCREATION_DATE))) AS DIAS
+				FROM
+					SABANA.TICKET_PRO_BACKLOG
+				WHERE VPARENT_CLIENT_ID = 'PE-GSP-SO'
+			UNION
+				SELECT VCLASS,
+					CASE WHEN LENGTH(VRESOLVER_GROUP) > 0
+					THEN VRESOLVER_GROUP
+					ELSE 'SIN ASIGNAR'
+					END AS VRESOLVER_GROUP,
+					TIMESTAMPDIFF(16,CHAR(TIMESTAMP(CURRENT_TIMESTAMP) - TIMESTAMP(VCREATION_DATE))) AS DIAS
+				FROM
+					SABANA.WORKORDER_CHAWORACT_BACKLOG 
+				WHERE VPARENT_CLIENT_ID = 'PE-GSP-SO'
+				)
+			--WHERE VRESOLVER_GROUP NOT IN ('SIN ASIGNAR')
+			GROUP BY VCLASS,VRESOLVER_GROUP,DIAS
+			)
+		GROUP BY VCLASS,VRESOLVER_GROUP,DIAS
+	)
+	GROUP BY VCLASS,VRESOLVER_GROUP ORDER BY 1,2
+	</select>
+	
+	<resultMap id="resultCiscoMesa" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="strValor1" column="tasaabandonodia" />
+		<result property="strValor2" column="tasaabandonomes"/>
+		<result property="strValor3" column="residente"/>
+		<result property="strValor4" column="noresidente"/>
+		<result property="strValor5" column="timedia"/>
+		<result property="strValor6" column="timemes"/>
+		<result property="strValor7" column="tasaAbandonoSla"/>
+		<result property="strValor8" column="tiempoRespuestaResidenteSla"/>
+		<result property="strValor9" column="tiempoRespuestaNoResidenteSla"/>
+		<result property="strValor10" column="tiempoConversacionSla"/>
+	</resultMap>
+	<select id="getCiscoMesa" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultCiscoMesa">
+	<![CDATA[ 
+	select 
+		(
+		select TASABDIA from  SMARTDESK.RESULTADO where PERIODO = #{strdate1} AND IDPROYECTO = (select idproyecto from smartdesk.proyecto where cisco = #{strValor1} fetch first 1 rows only)
+		) tasaabandonodia,
+		(
+		select TASABMES from  SMARTDESK.RESULTADO where PERIODO = #{strdate1} AND IDPROYECTO = (select idproyecto from smartdesk.proyecto where cisco = #{strValor1} fetch first 1 rows only)
+		) tasaabandonomes,
+		(select 
+			VALORLETRA
+		from 
+			SMARTDESK.SLA_RESULTADO_MENSUAL 
+		WHERE 
+			ID_SLA = 
+			(SELECT ID_SLA FROM SMARTDESK.SLA_CLIENTE WHERE ID_PROYECTO = (select idproyecto from smartdesk.proyecto where cisco = #{strValor1} fetch first 1 rows only) AND TITULO = 'TIEMPO DE RESPUESTA R.')
+			AND VARCHAR_FORMAT(FECHA,'YYYYMM') = #{strdate2}
+			) residente,
+		(select 
+			VALORLETRA
+		from 
+			SMARTDESK.SLA_RESULTADO_MENSUAL 
+		WHERE 
+			ID_SLA = 
+			(SELECT ID_SLA FROM SMARTDESK.SLA_CLIENTE WHERE ID_PROYECTO = (select idproyecto from smartdesk.proyecto where cisco = #{strValor1} fetch first 1 rows only) AND TITULO = 'TIEMPO DE RESPUESTA NR.')
+			AND VARCHAR_FORMAT(FECHA,'YYYYMM') = #{strdate2}
+			) noresidente,
+		(
+		select 
+			varchar_format(timestamp(date('1970-01-01'), time('00:00:00')) + AVG(TALKTIME) second,'HH24:MI:SS') 
+		from 
+			INFORMIX.LLAM_CONTESTADA 
+		where 
+			PROYECTO = #{strValor1} AND VARCHAR_FORMAT(STARTDATETIME,'YYYYMMDD') = #{strdate3}
+			) timedia,
+		(
+		select 
+			varchar_format(timestamp(date('1970-01-01'), time('00:00:00')) + AVG(TALKTIME) second,'HH24:MI:SS') 
+		from 
+			INFORMIX.LLAM_CONTESTADA 
+		where 
+			PROYECTO = #{strValor1} AND VARCHAR_FORMAT(STARTDATETIME,'YYYYMM') = #{strdate2}
+			)timemes,
+		(
+		SELECT VALOR_LETRAS FROM SMARTDESK.SLA_CLIENTE WHERE ID_PROYECTO = (select idproyecto from smartdesk.proyecto where cisco = #{strValor1} fetch first 1 rows only) AND TITULO = 'TASA DE ABANDONO'
+		)tasaAbandonoSla,
+		(
+		SELECT VALOR_LETRAS FROM SMARTDESK.SLA_CLIENTE WHERE ID_PROYECTO = (select idproyecto from smartdesk.proyecto where cisco = #{strValor1} fetch first 1 rows only) AND TITULO = 'TIEMPO DE RESPUESTA R.'
+		)tiempoRespuestaResidenteSla,
+		(
+		SELECT VALOR_LETRAS FROM SMARTDESK.SLA_CLIENTE WHERE ID_PROYECTO = (select idproyecto from smartdesk.proyecto where cisco = #{strValor1} fetch first 1 rows only) AND TITULO = 'TIEMPO DE RESPUESTA NR.'
+		)tiempoRespuestaNoResidenteSla,
+		(
+		SELECT VALOR_LETRAS FROM SMARTDESK.SLA_CLIENTE WHERE ID_PROYECTO = (select idproyecto from smartdesk.proyecto where cisco = #{strValor1} fetch first 1 rows only) AND TITULO = 'TIEMPO DE CONVERSACI&oacute;N'
+		)tiempoConversacionSla
+		from sysibm.sysdummy1
+		]]>
+	</select>
+	
+	<resultMap id="resultPaises" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="strValor1" column="PAIS" />
+		<result property="iCantidad" column="CANTIDAD" />
+	</resultMap>
+	<select id="getPaises" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultPaises">
+		SELECT PAIS, SUM(CANTIDAD) CANTIDAD FROM (
+		select '' AS PAIS, 0 AS CANTIDAD from SYSIBM.SYSDUMMY1 where IBMREQD = 'NAN'
+		<if test="strResueltos != null">
+		UNION ALL
+		SELECT
+			DISTINCT CASE 
+				WHEN LOCATE('-PE-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' 
+				WHEN LOCATE('-IN-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' 
+				ELSE 'OTRO' 
+				END PAIS,
+			COUNT(1) CANTIDAD
+		FROM
+			SABANA.TICKET_INCSRS
+		WHERE
+			LENGTH(VCREATION_DATE) <![CDATA[ > ]]> 0 AND
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		GROUP BY CASE 
+			WHEN LOCATE('-PE-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' 
+			WHEN LOCATE('-IN-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' 
+			ELSE 'OTRO' END
+		</if>
+		<if test="strBackLog != null"> 
+		UNION 
+		SELECT 
+			DISTINCT CASE 
+				WHEN LOCATE('-PE-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' 
+				WHEN LOCATE('-IN-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' 
+				ELSE 'OTRO' 
+				END PAIS, 
+			COUNT(1) CANTIDAD 
+		FROM 
+			SABANA.TICKET_INCSRS_BACKLOG
+		WHERE
+			LENGTH(VCREATION_DATE) <![CDATA[ > ]]> 0 AND
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		GROUP BY CASE 
+			WHEN LOCATE('-PE-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' 
+			WHEN LOCATE('-IN-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' 
+			ELSE 'OTRO' END
+		</if>
+		<if test="strResueltos != null">
+		UNION 
+		SELECT DISTINCT CASE 
+			WHEN LOCATE('-PE-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' 
+			WHEN LOCATE('-IN-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' 
+			ELSE 'OTRO' END PAIS, 
+			COUNT(1) CANTIDAD 
+		FROM 
+			SABANA.TICKET_PRO 
+		WHERE
+			LENGTH(VCREATION_DATE) <![CDATA[ > ]]> 0 AND
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		GROUP BY CASE 
+			WHEN LOCATE('-PE-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' 
+			WHEN LOCATE('-IN-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' 
+			ELSE 'OTRO' END
+		</if>
+		<if test="strBackLog != null">
+		UNION 
+		SELECT DISTINCT CASE 
+			WHEN LOCATE('-PE-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' 
+			WHEN LOCATE('-IN-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' 
+			ELSE 'OTRO' END PAIS, 
+			COUNT(1) CANTIDAD 
+		FROM 
+			SABANA.TICKET_PRO_BACKLOG 
+		WHERE
+			LENGTH(VCREATION_DATE) <![CDATA[ > ]]> 0 AND 
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		GROUP BY CASE 
+			WHEN LOCATE('-PE-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' 
+			WHEN LOCATE('-IN-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' 
+			ELSE 'OTRO' END
+		</if>
+		<if test="strResueltos != null">
+		UNION 
+		SELECT DISTINCT CASE 
+			WHEN LOCATE('-PE-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' 
+			WHEN LOCATE('-IN-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' 
+			ELSE 'OTRO' END PAIS, 
+			COUNT(1) CANTIDAD 
+		FROM 
+			(SELECT * FROM SABANA.TICKET_WORKORDER_CAN WHERE LENGTH(VCREATION_DATE) > 0) 
+		WHERE
+			LENGTH(VCREATION_DATE) <![CDATA[ > ]]> 0 AND 
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		GROUP BY CASE
+			WHEN LOCATE('-PE-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' 
+			WHEN LOCATE('-IN-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' 
+			ELSE 'OTRO' END
+		</if>
+		<if test="strResueltos != null">
+		UNION 
+		SELECT 
+			DISTINCT CASE 
+				WHEN LOCATE('-PE-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' 
+				WHEN LOCATE('-IN-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' 
+				ELSE 'OTRO' END PAIS, 
+				COUNT(1) CANTIDAD 
+		FROM 
+			SABANA.WORKORDER_CHAWORACT 
+		WHERE
+			LENGTH(VCREATION_DATE) <![CDATA[ > ]]> 0 AND 
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		GROUP BY CASE 
+			WHEN LOCATE('-PE-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' 
+			WHEN LOCATE('-IN-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' 
+			ELSE 'OTRO' END
+		</if>
+		<if test="strBackLog != null">
+		UNION
+		SELECT
+			DISTINCT CASE
+				WHEN LOCATE('-PE-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU'
+				WHEN LOCATE('-IN-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA'
+				ELSE 'OTRO' END PAIS,
+				COUNT(1) CANTIDAD
+		FROM
+			SABANA.WORKORDER_CHAWORACT_BACKLOG
+		WHERE
+			LENGTH(VCREATION_DATE) <![CDATA[ > ]]> 0 AND
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS}) 
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1})
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2})
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3})
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4})
+			</if>
+		GROUP BY CASE 
+			WHEN LOCATE('-PE-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' 
+			WHEN LOCATE('-IN-',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' 
+			ELSE 'OTRO' 
+			END
+		</if>
+		) GROUP BY PAIS
+		ORDER BY PAIS
+	</select>
+		
+	<resultMap id="resultClientes" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="strValor1" column="VPARENT_CLIENT" />
+		<result property="iCantidad" column="CANTIDAD" />
+	</resultMap>
+	<select id="getClientes" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultClientes">
+	SELECT VPARENT_CLIENT, COUNT(1) CANTIDAD FROM (
+		SELECT '' AS VPARENT_CLIENT from SYSIBM.SYSDUMMY1 where IBMREQD = 'NAN'
+		<if test="strResueltos != null">
+		UNION ALL
+		SELECT
+			VPARENT_CLIENT
+		FROM
+			SABANA.TICKET_INCSRS
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+			<if test="strValor5 != null">
+			AND LOCATE(${strValor5},VCREATOR_GROUP) <![CDATA[ > ]]> 0
+			</if> 
+		</if>
+		<if test="strBackLog != null"> 
+		UNION ALL 
+		SELECT
+			VPARENT_CLIENT
+		FROM 
+			SABANA.TICKET_INCSRS_BACKLOG 
+		WHERE
+			LENGTH(VCREATION_DATE) <![CDATA[ > ]]> 0 AND
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+			<if test="strValor5 != null">
+			AND LOCATE(${strValor5},VCREATOR_GROUP) <![CDATA[ > ]]> 0
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION ALL
+		SELECT 
+			VPARENT_CLIENT
+		FROM 
+			SABANA.TICKET_PRO 
+		WHERE
+			LENGTH(VCREATION_DATE) <![CDATA[ > ]]> 0 AND
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+			<if test="strValor5 != null">
+			AND LOCATE(${strValor5},VCREATOR_GROUP) <![CDATA[ > ]]> 0
+			</if>
+		</if>
+		<if test="strBackLog != null">
+		UNION ALL 
+		SELECT
+			VPARENT_CLIENT 
+		FROM 
+			SABANA.TICKET_PRO_BACKLOG 
+		WHERE
+			LENGTH(VCREATION_DATE) <![CDATA[ > ]]> 0 AND 
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+			<if test="strValor5 != null">
+			AND LOCATE(${strValor5},VCREATOR_GROUP) <![CDATA[ > ]]> 0
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION ALL 
+		SELECT
+			VPARENT_CLIENT 
+		FROM 
+			(SELECT * FROM SABANA.TICKET_WORKORDER_CAN WHERE LENGTH(VCREATION_DATE) <![CDATA[ > ]]> 0) 
+		WHERE
+			LENGTH(VCREATION_DATE) <![CDATA[ > ]]> 0 AND 
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+			<if test="strValor5 != null">
+			AND LOCATE(${strValor5},VCREATOR_GROUP) <![CDATA[ > ]]> 0
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION ALL 
+		SELECT 
+			VPARENT_CLIENT 
+		FROM 
+			SABANA.WORKORDER_CHAWORACT 
+		WHERE
+			LENGTH(VCREATION_DATE) <![CDATA[ > ]]> 0 AND 
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+			<if test="strValor5 != null">
+			AND LOCATE(${strValor5},VCREATOR_GROUP) <![CDATA[ > ]]> 0
+			</if>
+		</if>
+		<if test="strBackLog != null">
+		UNION ALL
+		SELECT
+			VPARENT_CLIENT
+		FROM
+			SABANA.WORKORDER_CHAWORACT_BACKLOG
+		WHERE
+			LENGTH(VCREATION_DATE) <![CDATA[ > ]]> 0 AND
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS}) 
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1})
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2})
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3})
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4})
+			</if>
+			<if test="strValor5 != null">
+			AND LOCATE(${strValor5},VCREATOR_GROUP) <![CDATA[ > ]]> 0
+			</if>
+		</if>
+		) GROUP BY VPARENT_CLIENT
+	ORDER BY 2 DESC
+	</select>
+	
+	<resultMap id="resultEstados" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="strValor1" column="VSTATUS" />
+		<result property="iCantidad" column="CANTIDAD" />
+	</resultMap>
+	<select id="getEstados" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultEstados">
+		SELECT VSTATUS, COUNT(1) CANTIDAD FROM (
+		SELECT '' AS VSTATUS from SYSIBM.SYSDUMMY1 where IBMREQD = 'NAN'
+		<if test="strResueltos != null">
+		UNION ALL
+		SELECT
+			VSTATUS
+		FROM
+			SABANA.TICKET_INCSRS
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+			<if test="strValor5 != null">
+			AND UPPER(VPARENT_CLIENT) = UPPER(${strValor5}) 
+			</if>
+		</if>
+		<if test="strBackLog != null"> 
+		UNION ALL 
+		SELECT 
+			VSTATUS
+		FROM 
+			SABANA.TICKET_INCSRS_BACKLOG 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+			<if test="strValor5 != null">
+			AND UPPER(VPARENT_CLIENT) = UPPER(${strValor5}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION ALL
+		SELECT 
+			VSTATUS
+		FROM 
+			SABANA.TICKET_PRO 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+			<if test="strValor5 != null">
+			AND UPPER(VPARENT_CLIENT) = UPPER(${strValor5}) 
+			</if>
+		</if>
+		<if test="strBackLog != null">
+		UNION ALL
+		SELECT 
+			VSTATUS
+		FROM 
+			SABANA.TICKET_PRO_BACKLOG 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+			<if test="strValor5 != null">
+			AND UPPER(VPARENT_CLIENT) = UPPER(${strValor5}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION ALL
+		SELECT 
+			VSTATUS
+		FROM 
+			(SELECT * FROM SABANA.TICKET_WORKORDER_CAN WHERE LENGTH(VCREATION_DATE) > 0) 
+		WHERE
+			LENGTH(VCREATION_DATE) <![CDATA[ > ]]> 0 AND 
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+			<if test="strValor5 != null">
+			AND UPPER(VPARENT_CLIENT) = UPPER(${strValor5}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION ALL
+		SELECT 
+			VSTATUS
+		FROM 
+			SABANA.WORKORDER_CHAWORACT 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+			<if test="strValor5 != null">
+			AND UPPER(VPARENT_CLIENT) = UPPER(${strValor5}) 
+			</if>
+		</if>
+		<if test="strBackLog != null">
+		UNION ALL
+		SELECT
+			VSTATUS
+		FROM
+			SABANA.WORKORDER_CHAWORACT_BACKLOG
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS}) 
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1})
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2})
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3})
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4})
+			</if>
+			<if test="strValor5 != null">
+			AND UPPER(VPARENT_CLIENT) = UPPER(${strValor5}) 
+			</if>
+		</if>
+		) GROUP BY VSTATUS
+	</select>
+	
+	<resultMap id="resultMensual" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="strValor1" column="FECHA" />
+		<result property="iCantidad" column="CANTIDAD" />
+	</resultMap>
+	<select id="getMensual" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultMensual">
+		SELECT FECHA, COUNT(1) CANTIDAD FROM(
+			SELECT '' AS FECHA from SYSIBM.SYSDUMMY1 where IBMREQD = 'NAN'
+		<if test="strResueltos != null">
+		UNION ALL
+		SELECT
+			DATE(VCREATION_DATE) FECHA
+		FROM
+			SABANA.TICKET_INCSRS
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+			<if test="strValor5 != null">
+			AND UPPER(VPARENT_CLIENT) = UPPER(${strValor5})
+			</if>
+		</if>
+		<if test="strBackLog != null"> 
+		UNION ALL
+		SELECT
+			DATE(VCREATION_DATE) FECHA
+		FROM
+			SABANA.TICKET_INCSRS_BACKLOG
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+			<if test="strValor5 != null">
+			AND UPPER(VPARENT_CLIENT) = UPPER(${strValor5}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION ALL
+		SELECT
+			DATE(VCREATION_DATE) FECHA
+		FROM 
+			SABANA.TICKET_PRO 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+			<if test="strValor5 != null">
+			AND UPPER(VPARENT_CLIENT) = UPPER(${strValor5}) 
+			</if>
+		</if>
+		<if test="strBackLog != null">
+		UNION ALL
+		SELECT 
+			DATE(VCREATION_DATE) FECHA
+		FROM 
+			SABANA.TICKET_PRO_BACKLOG 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+			<if test="strValor5 != null">
+			AND UPPER(VPARENT_CLIENT) = UPPER(${strValor5}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION ALL
+		SELECT 
+			DATE(VCREATION_DATE) FECHA
+		FROM 
+			(SELECT * FROM SABANA.TICKET_WORKORDER_CAN WHERE LENGTH(VCREATION_DATE) > 0) 
+		WHERE 
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+			<if test="strValor5 != null">
+			AND UPPER(VPARENT_CLIENT) = UPPER(${strValor5}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION ALL
+		SELECT 
+			DATE(VCREATION_DATE) FECHA
+		FROM 
+			SABANA.WORKORDER_CHAWORACT 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+			<if test="strValor5 != null">
+			AND UPPER(VPARENT_CLIENT) = UPPER(${strValor5}) 
+			</if>
+		</if>
+		<if test="strBackLog != null">
+		UNION ALL
+		SELECT
+			DATE(VCREATION_DATE) FECHA
+		FROM
+			SABANA.WORKORDER_CHAWORACT_BACKLOG
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS}) 
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1})
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2})
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3})
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4})
+			</if>
+			<if test="strValor5 != null">
+			AND UPPER(VPARENT_CLIENT) = UPPER(${strValor5}) 
+			</if>
+		</if>
+		) GROUP BY FECHA
+	</select>
+	
+	<resultMap id="resultDiario" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="strValor1" column="FECHA" />
+		<result property="iCantidad" column="CANTIDAD" />
+	</resultMap>
+	<select id="getDiario" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultDiario">
+		SELECT FECHA, COUNT(1) CANTIDAD FROM (
+			SELECT '' AS FECHA from SYSIBM.SYSDUMMY1 where IBMREQD = 'NAN'
+		<if test="strResueltos != null">
+		UNION ALL
+		SELECT
+			HOUR(VCREATION_DATE) FECHA
+		FROM
+			SABANA.TICKET_INCSRS
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1})
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+			<if test="strValor5 != null">
+			AND UPPER(VPARENT_CLIENT) = #{strValor5} 
+			</if>
+		</if>
+		<if test="strBackLog != null"> 
+		UNION ALL
+		SELECT
+			HOUR(VCREATION_DATE) FECHA
+		FROM
+			SABANA.TICKET_INCSRS_BACKLOG
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+			<if test="strValor5 != null">
+			AND UPPER(VPARENT_CLIENT) = #{strValor5} 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION ALL
+		SELECT
+			HOUR(VCREATION_DATE) FECHA
+		FROM 
+			SABANA.TICKET_PRO 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+			<if test="strValor5 != null">
+			AND UPPER(VPARENT_CLIENT) = #{strValor5} 
+			</if>
+		</if>
+		<if test="strBackLog != null">
+		UNION ALL 
+		SELECT
+			HOUR(VCREATION_DATE) FECHA
+		FROM 
+			SABANA.TICKET_PRO_BACKLOG 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+			<if test="strValor5 != null">
+			AND UPPER(VPARENT_CLIENT) = #{strValor5} 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION ALL
+		SELECT
+			HOUR(VCREATION_DATE) FECHA
+		FROM 
+			(SELECT * FROM SABANA.TICKET_WORKORDER_CAN WHERE LENGTH(VCREATION_DATE) > 0) 
+		WHERE 
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+			<if test="strValor5 != null">
+			AND UPPER(VPARENT_CLIENT) = #{strValor5} 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION ALL
+		SELECT
+			HOUR(VCREATION_DATE) FECHA
+		FROM 
+			SABANA.WORKORDER_CHAWORACT 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+			<if test="strValor5 != null">
+			AND UPPER(VPARENT_CLIENT) = #{strValor5} 
+			</if>
+		</if>
+		<if test="strBackLog != null">
+		UNION ALL
+		SELECT
+			HOUR(VCREATION_DATE) FECHA
+		FROM
+			SABANA.WORKORDER_CHAWORACT_BACKLOG
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS}) 
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1})
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2})
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3})
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4})
+			</if>
+			<if test="strValor5 != null">
+			AND UPPER(VPARENT_CLIENT) = #{strValor5} 
+			</if>
+		</if>
+		) GROUP BY FECHA
+	</select>
+	
+	<resultMap id="resultTendenciaActual" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="strValor1" column="FECHA"/>
+		<result property="strValor2" column="VCREATOR_GROUP"/>
+		<result property="iCantidad" column="CANTIDAD"/>
+	</resultMap>
+	<select id="getTendenciaActual" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultTendenciaActual">
+		SELECT FECHA, VCREATOR_GROUP, COUNT(1) CANTIDAD FROM (
+			SELECT '' AS FECHA, '' AS VCREATOR_GROUP from SYSIBM.SYSDUMMY1 where IBMREQD = 'NAN'
+		<if test="strResueltos != null">
+		UNION ALL
+		SELECT
+			VARCHAR_FORMAT(VCREATION_DATE,'HH24') FECHA, VCREATOR_GROUP
+		FROM
+			SABANA.TICKET_INCSRS
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strBackLog != null"> 
+		UNION ALL
+		SELECT
+			VARCHAR_FORMAT(VCREATION_DATE,'HH24') FECHA, VCREATOR_GROUP
+		FROM
+			SABANA.TICKET_INCSRS_BACKLOG
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION ALL
+		SELECT 
+			VARCHAR_FORMAT(VCREATION_DATE,'HH24') FECHA, VCREATOR_GROUP
+		FROM 
+			SABANA.TICKET_PRO 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strBackLog != null">
+		UNION ALL
+		SELECT 
+			VARCHAR_FORMAT(VCREATION_DATE,'HH24') FECHA, VCREATOR_GROUP
+		FROM 
+			SABANA.TICKET_PRO_BACKLOG 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION ALL
+		SELECT
+			VARCHAR_FORMAT(VCREATION_DATE,'HH24') FECHA, VCREATOR_GROUP
+		FROM 
+			(SELECT * FROM SABANA.TICKET_WORKORDER_CAN WHERE LENGTH(VCREATION_DATE) > 0) 
+		WHERE 
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION ALL
+		SELECT
+			VARCHAR_FORMAT(VCREATION_DATE,'HH24') FECHA, VCREATOR_GROUP
+		FROM 
+			SABANA.WORKORDER_CHAWORACT 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strBackLog != null">
+		UNION ALL
+		SELECT
+			VARCHAR_FORMAT(VCREATION_DATE,'HH24') FECHA, VCREATOR_GROUP
+		FROM
+			SABANA.WORKORDER_CHAWORACT_BACKLOG
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS}) 
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1})
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2})
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3})
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4})
+			</if>
+		</if>
+		) GROUP BY FECHA, VCREATOR_GROUP
+	</select>
+
+	<resultMap id="resultTicketsPaises" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketPais" column="PAIS"/>
+		<result property="idTicket" column="VCOD_TICKET"/>
+		<result property="ticketEstado" column="VSTATUS"/>
+		<result property="ticketCliente" column="VPARENT_CLIENT"/>
+		<result property="ticketTitulo" column="VSUMMARY"/>
+		<result property="ticketFechaCreacion" column="VCREATION_DATE"/>
+	</resultMap>
+	<select id="getTicketsPaises" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultTicketsPaises">
+		SELECT
+			'' PAIS, '' VCOD_TICKET, '' VSTATUS, '' VPARENT_CLIENT, '' VSUMMARY, '' VCREATION_DATE FROM SYSIBM.SYSDUMMY1 where IBMREQD = 'NAN'
+		<if test="strResueltos != null">
+		UNION
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM
+			SABANA.TICKET_INCSRS
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3})
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4})
+			</if>
+		</if>
+		<if test="strBackLog != null"> 
+		UNION
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM
+			SABANA.TICKET_INCSRS_BACKLOG
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION 
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM 
+			SABANA.TICKET_PRO 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strBackLog != null">
+		UNION 
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM 
+			SABANA.TICKET_PRO_BACKLOG 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION 
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM 
+			(SELECT * FROM SABANA.TICKET_WORKORDER_CAN WHERE LENGTH(VCREATION_DATE) > 0) 
+		WHERE 
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION 
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM 
+			SABANA.WORKORDER_CHAWORACT 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strBackLog != null">
+		UNION
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM
+			SABANA.WORKORDER_CHAWORACT_BACKLOG
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS}) 
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1})
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2})
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3})
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4})
+			</if>
+		</if>
+	</select>
+	
+	<resultMap id="resultTicketsClientes" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketPais" column="PAIS"/>
+		<result property="idTicket" column="VCOD_TICKET"/>
+		<result property="ticketEstado" column="VSTATUS"/>
+		<result property="ticketCliente" column="VPARENT_CLIENT"/>
+		<result property="ticketTitulo" column="VSUMMARY"/>
+		<result property="ticketFechaCreacion" column="VCREATION_DATE"/>
+	</resultMap>
+	<select id="getTicketsClientes" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultTicketsClientes">
+		SELECT
+			'' PAIS, '' VCOD_TICKET, '' VSTATUS, '' VPARENT_CLIENT, '' VSUMMARY, '' VCREATION_DATE FROM SYSIBM.SYSDUMMY1 where IBMREQD = 'NAN'
+		<if test="strResueltos != null">
+		UNION
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM
+			SABANA.TICKET_INCSRS
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strBackLog != null"> 
+		UNION
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM
+			SABANA.TICKET_INCSRS_BACKLOG
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION 
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM 
+			SABANA.TICKET_PRO 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strBackLog != null">
+		UNION 
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM 
+			SABANA.TICKET_PRO_BACKLOG 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION 
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM 
+			(SELECT * FROM SABANA.TICKET_WORKORDER_CAN WHERE LENGTH(VCREATION_DATE) > 0) 
+		WHERE 
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION 
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM 
+			SABANA.WORKORDER_CHAWORACT 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strBackLog != null">
+		UNION
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM
+			SABANA.WORKORDER_CHAWORACT_BACKLOG
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS}) 
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1})
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2})
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3})
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4})
+			</if>
+		</if>
+	</select>
+
+	<resultMap id="resultTicketsEstados" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketPais" column="PAIS"/>
+		<result property="idTicket" column="VCOD_TICKET"/>
+		<result property="ticketEstado" column="VSTATUS"/>
+		<result property="ticketCliente" column="VPARENT_CLIENT"/>
+		<result property="ticketTitulo" column="VSUMMARY"/>
+		<result property="ticketFechaCreacion" column="VCREATION_DATE"/>
+	</resultMap>
+	<select id="getTicketsEstados" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultTicketsEstados">
+		SELECT
+			'' PAIS, '' VCOD_TICKET, '' VSTATUS, '' VPARENT_CLIENT, '' VSUMMARY, '' VCREATION_DATE FROM SYSIBM.SYSDUMMY1 where IBMREQD = 'NAN'
+		<if test="strResueltos != null">
+		UNION
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM
+			SABANA.TICKET_INCSRS
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strBackLog != null"> 
+		UNION
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM
+			SABANA.TICKET_INCSRS_BACKLOG
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION 
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM 
+			SABANA.TICKET_PRO 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strBackLog != null">
+		UNION 
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM 
+			SABANA.TICKET_PRO_BACKLOG 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION 
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM 
+			(SELECT * FROM SABANA.TICKET_WORKORDER_CAN WHERE LENGTH(VCREATION_DATE) > 0) 
+		WHERE 
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION 
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM 
+			SABANA.WORKORDER_CHAWORACT 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strBackLog != null">
+		UNION
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM
+			SABANA.WORKORDER_CHAWORACT_BACKLOG
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS}) 
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1})
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2})
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3})
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4})
+			</if>
+		</if> 		
+	</select>
+		
+	<resultMap id="resultTicketsMensual" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketPais" column="PAIS"/>
+		<result property="idTicket" column="VCOD_TICKET"/>
+		<result property="ticketEstado" column="VSTATUS"/>
+		<result property="ticketCliente" column="VPARENT_CLIENT"/>
+		<result property="ticketTitulo" column="VSUMMARY"/>
+		<result property="ticketFechaCreacion" column="VCREATION_DATE"/>
+	</resultMap>
+	<select id="getTicketsMensual" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultTicketsMensual">
+		SELECT
+			'' PAIS, '' VCOD_TICKET, '' VSTATUS, '' VPARENT_CLIENT, '' VSUMMARY, '' VCREATION_DATE FROM SYSIBM.SYSDUMMY1 where IBMREQD = 'NAN'
+		<if test="strResueltos != null">
+		UNION
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM
+			SABANA.TICKET_INCSRS
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strBackLog != null"> 
+		UNION
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM
+			SABANA.TICKET_INCSRS_BACKLOG
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION 
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM 
+			SABANA.TICKET_PRO 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strBackLog != null">
+		UNION 
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM 
+			SABANA.TICKET_PRO_BACKLOG 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION 
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM 
+			(SELECT * FROM SABANA.TICKET_WORKORDER_CAN WHERE LENGTH(VCREATION_DATE) > 0) 
+		WHERE 
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION 
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM 
+			SABANA.WORKORDER_CHAWORACT 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strBackLog != null">
+		UNION
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM
+			SABANA.WORKORDER_CHAWORACT_BACKLOG
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS}) 
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1})
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2})
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3})
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4})
+			</if>
+		</if>
+	</select>
+	
+	<resultMap id="resultTicketsDiario" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketPais" column="PAIS"/>
+		<result property="idTicket" column="VCOD_TICKET"/>
+		<result property="ticketEstado" column="VSTATUS"/>
+		<result property="ticketCliente" column="VPARENT_CLIENT"/>
+		<result property="ticketTitulo" column="VSUMMARY"/>
+		<result property="ticketFechaCreacion" column="VCREATION_DATE"/>
+	</resultMap>	
+	<select id="getTicketsDiario" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultTicketsDiario">
+		SELECT
+			'' PAIS, '' VCOD_TICKET, '' VSTATUS, '' VPARENT_CLIENT, '' VSUMMARY, '' VCREATION_DATE FROM SYSIBM.SYSDUMMY1 where IBMREQD = 'NAN'
+		<if test="strResueltos != null">
+		UNION
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM
+			SABANA.TICKET_INCSRS
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strBackLog != null"> 
+		UNION
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM
+			SABANA.TICKET_INCSRS_BACKLOG
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION 
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM 
+			SABANA.TICKET_PRO 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strBackLog != null">
+		UNION 
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM 
+			SABANA.TICKET_PRO_BACKLOG 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION 
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM 
+			(SELECT * FROM SABANA.TICKET_WORKORDER_CAN WHERE LENGTH(VCREATION_DATE) > 0) 
+		WHERE 
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION 
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM 
+			SABANA.WORKORDER_CHAWORACT 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strBackLog != null">
+		UNION
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM
+			SABANA.WORKORDER_CHAWORACT_BACKLOG
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS}) 
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1})
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2})
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3})
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4})
+			</if>
+		</if>
+	</select>
+
+	<resultMap id="resultTicketsTendenciaActual" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketPais" column="PAIS"/>
+		<result property="idTicket" column="VCOD_TICKET"/>
+		<result property="ticketEstado" column="VSTATUS"/>
+		<result property="ticketCliente" column="VPARENT_CLIENT"/>
+		<result property="ticketTitulo" column="VSUMMARY"/>
+		<result property="ticketFechaCreacion" column="VCREATION_DATE"/>
+	</resultMap>	
+	<select id="getTicketsTendenciaActual" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultTicketsTendenciaActual">
+		SELECT
+			'' PAIS, '' VCOD_TICKET, '' VSTATUS, '' VPARENT_CLIENT, '' VSUMMARY, '' VCREATION_DATE FROM SYSIBM.SYSDUMMY1 where IBMREQD = 'NAN'
+		<if test="strResueltos != null">
+		UNION
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM
+			SABANA.TICKET_INCSRS
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strBackLog != null"> 
+		UNION
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM
+			SABANA.TICKET_INCSRS_BACKLOG
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION 
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM 
+			SABANA.TICKET_PRO 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strBackLog != null">
+		UNION 
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM 
+			SABANA.TICKET_PRO_BACKLOG 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION 
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM 
+			(SELECT * FROM SABANA.TICKET_WORKORDER_CAN WHERE LENGTH(VCREATION_DATE) > 0) 
+		WHERE 
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strResueltos != null">
+		UNION 
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM 
+			SABANA.WORKORDER_CHAWORACT 
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS})
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1}) 
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2}) 
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3}) 
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4}) 
+			</if>
+		</if>
+		<if test="strBackLog != null">
+		UNION
+		SELECT
+			CASE WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' ELSE '' END PAIS,VCOD_TICKET,VSTATUS,VPARENT_CLIENT,VSUMMARY,VCREATION_DATE
+		FROM
+			SABANA.WORKORDER_CHAWORACT_BACKLOG
+		WHERE
+			DATE(VCREATION_DATE) BETWEEN DATE(${strdateE}) AND DATE(${strdateS}) 
+			<if test="strValor1 != null">
+			AND VCLASS IN (${strValor1})
+			</if>
+			<if test="strValor2 != null">
+			AND VSOURCE IN (${strValor2})
+			</if>
+			<if test="strValor3 != null">
+			AND VCREATOR_GROUP IN (${strValor3})
+			</if>
+			<if test="strValor4 != null">
+			AND VRESOLVER_GROUP IN (${strValor4})
+			</if>
+		</if>
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+	
+	<resultMap id="resultTICKET_INCSRS" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketPais" column="PAIS" />
+		<result property="idTicket" column="VCOD_TICKET" />
+		<result property="ticketClass" column="VCLASS" />
+		<result property="ticketEstado" column="VSTATUS" />
+		<result property="ticketIdGrupoPropietario" column="VCREATOR_GROUP" />
+		<result property="ticketGrupoPropietario" column="VOWNER_GROUP" />
+		<result property="ticketPropietario" column="VOWNER" />
+		<result property="ticketIdCliente" column="VPARENT_CLIENT_ID" />
+		<result property="ticketCliente" column="VPARENT_CLIENT" />
+		<result property="ticketFechaCreacion" column="VCREATION_DATE" />
+	</resultMap>
+	<select id="getTICKET_INCSRS" resultMap="resultTICKET_INCSRS">
+		SELECT 
+		CASE 
+			WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' 
+			WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' 
+			ELSE '' END PAIS, 
+		VCOD_TICKET, 
+		VCLASS,
+		VSTATUS,
+		VCREATOR_GROUP,
+		VOWNER_GROUP,
+		VOWNER_ID,
+		VOWNER,
+		VPARENT_CLIENT_ID,
+		VPARENT_CLIENT,
+		VCREATION_DATE 
+		FROM 
+		SABANA.TICKET_INCSRS 
+		WHERE 
+		VARCHAR_FORMAT(VCREATION_DATE,'YYYY-MM-DD') <![CDATA[ >= ]]> #{strdateE} AND VARCHAR_FORMAT(VCREATION_DATE,'YYYY-MM-DD') <![CDATA[ <= ]]> #{strdateS} AND 
+		VCREATOR_GROUP IN (${strValor1})
+		<if test="strValor3 != null"> 
+			AND VSOURCE IN (${strValor3}) 
+			</if> 
+	</select>
+	
+	<resultMap id="resultTICKET_INCSRS_BACKLOG" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketPais" column="PAIS" />
+		<result property="idTicket" column="VCOD_TICKET" />
+		<result property="ticketClass" column="VCLASS" />
+		<result property="ticketEstado" column="VSTATUS" />
+		<result property="ticketIdGrupoPropietario" column="VCREATOR_GROUP" />
+		<result property="ticketGrupoPropietario" column="VOWNER_GROUP" />
+		<result property="ticketPropietario" column="VOWNER" />
+		<result property="ticketIdCliente" column="VPARENT_CLIENT_ID" />
+		<result property="ticketCliente" column="VPARENT_CLIENT" />
+		<result property="ticketFechaCreacion" column="VCREATION_DATE" />
+	</resultMap>
+	<select id="getTICKET_INCSRS_BACKLOG" resultMap="resultTICKET_INCSRS_BACKLOG">
+		SELECT 
+		CASE 
+			WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' 
+			WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' 
+			ELSE '' END PAIS, 
+		VCOD_TICKET, 
+		VCLASS,
+		VSTATUS,
+		VCREATOR_GROUP,
+		VOWNER_GROUP,
+		VOWNER_ID,
+		VOWNER,
+		VPARENT_CLIENT_ID,
+		VPARENT_CLIENT,
+		VCREATION_DATE 
+		FROM 
+		SABANA.TICKET_INCSRS_BACKLOG 
+		WHERE 
+		VARCHAR_FORMAT(VCREATION_DATE,'YYYY-MM-DD') <![CDATA[ >= ]]> #{strdateE} AND VARCHAR_FORMAT(VCREATION_DATE,'YYYY-MM-DD') <![CDATA[ <= ]]> #{strdateS} AND 
+		VCREATOR_GROUP IN (${strValor1})
+		<if test="strValor3 != null"> 
+			AND VSOURCE IN (${strValor3}) 
+			</if> 
+	</select>
+	
+	<resultMap id="resultTICKET_PRO" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketPais" column="PAIS" />
+		<result property="idTicket" column="VCOD_TICKET" />
+		<result property="ticketClass" column="VCLASS" />
+		<result property="ticketEstado" column="VSTATUS" />
+		<result property="ticketIdGrupoPropietario" column="VCREATOR_GROUP" />
+		<result property="ticketGrupoPropietario" column="VOWNER_GROUP" />
+		<result property="ticketPropietario" column="VOWNER" />
+		<result property="ticketIdCliente" column="VPARENT_CLIENT_ID" />
+		<result property="ticketCliente" column="VPARENT_CLIENT" />
+		<result property="ticketFechaCreacion" column="VCREATION_DATE" />
+	</resultMap>
+	<select id="getTICKET_PRO" resultMap="resultTICKET_PRO">
+		SELECT 
+		CASE 
+			WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' 
+			WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' 
+			ELSE '' END PAIS, 
+		VCOD_TICKET, 
+		VCLASS,
+		VSTATUS,
+		VCREATOR_GROUP,
+		VOWNER_GROUP,
+		VOWNER_ID,
+		VOWNER,
+		VPARENT_CLIENT_ID,
+		VPARENT_CLIENT,
+		VCREATION_DATE 
+		FROM 
+		SABANA.TICKET_PRO 
+		WHERE 
+		VARCHAR_FORMAT(VCREATION_DATE,'YYYY-MM-DD') <![CDATA[ >= ]]> #{strdateE} AND VARCHAR_FORMAT(VCREATION_DATE,'YYYY-MM-DD') <![CDATA[ <= ]]> #{strdateS} AND 
+		VCREATOR_GROUP IN (${strValor1})
+		<if test="strValor3 != null"> 
+			AND VSOURCE IN (${strValor3}) 
+			</if> 
+	</select>
+	
+	<resultMap id="resultTICKET_PRO_BACKLOG" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketPais" column="PAIS" />
+		<result property="idTicket" column="VCOD_TICKET" />
+		<result property="ticketClass" column="VCLASS" />
+		<result property="ticketEstado" column="VSTATUS" />
+		<result property="ticketIdGrupoPropietario" column="VCREATOR_GROUP" />
+		<result property="ticketGrupoPropietario" column="VOWNER_GROUP" />
+		<result property="ticketPropietario" column="VOWNER" />
+		<result property="ticketIdCliente" column="VPARENT_CLIENT_ID" />
+		<result property="ticketCliente" column="VPARENT_CLIENT" />
+		<result property="ticketFechaCreacion" column="VCREATION_DATE" />
+	</resultMap>
+	<select id="getTICKET_PRO_BACKLOG" resultMap="resultTICKET_PRO_BACKLOG">
+		SELECT 
+		CASE 
+			WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' 
+			WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' 
+			ELSE '' END PAIS, 
+		VCOD_TICKET, 
+		VCLASS,
+		VSTATUS,
+		VCREATOR_GROUP,
+		VOWNER_GROUP,
+		VOWNER_ID,
+		VOWNER,
+		VPARENT_CLIENT_ID,
+		VPARENT_CLIENT,
+		VCREATION_DATE 
+		FROM 
+		SABANA.TICKET_PRO_BACKLOG 
+		WHERE 
+		VARCHAR_FORMAT(VCREATION_DATE,'YYYY-MM-DD') <![CDATA[ >= ]]> #{strdateE} AND VARCHAR_FORMAT(VCREATION_DATE,'YYYY-MM-DD') <![CDATA[ <= ]]> #{strdateS} AND 
+		VCREATOR_GROUP IN (${strValor1})
+		<if test="strValor3 != null"> 
+			AND VSOURCE IN (${strValor3}) 
+			</if> 
+	</select>
+	
+	<resultMap id="resultTICKET_WORKORDER_CAN" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketPais" column="PAIS" />
+		<result property="idTicket" column="VCOD_TICKET" />
+		<result property="ticketClass" column="VCLASS" />
+		<result property="ticketEstado" column="VSTATUS" />
+		<result property="ticketIdGrupoPropietario" column="VCREATOR_GROUP" />
+		<result property="ticketGrupoPropietario" column="VOWNER_GROUP" />
+		<result property="ticketPropietario" column="VOWNER" />
+		<result property="ticketIdCliente" column="VPARENT_CLIENT_ID" />
+		<result property="ticketCliente" column="VPARENT_CLIENT" />
+		<result property="ticketFechaCreacion" column="VCREATION_DATE" />
+	</resultMap>
+	<select id="getTICKET_WORKORDER_CAN" resultMap="resultTICKET_WORKORDER_CAN">
+		SELECT 
+		CASE 
+			WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' 
+			WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' 
+			ELSE '' END PAIS, 
+		VCOD_TICKET, 
+		VCLASS,
+		VSTATUS,
+		VCREATOR_GROUP,
+		VOWNER_GROUP,
+		VOWNER_ID,
+		VOWNER,
+		VPARENT_CLIENT_ID,
+		VPARENT_CLIENT,
+		VCREATION_DATE 
+		FROM 
+		SABANA.TICKET_WORKORDER_CAN
+		WHERE 
+		VARCHAR_FORMAT(VCREATION_DATE,'YYYY-MM-DD') <![CDATA[ >= ]]> #{strdateE} AND VARCHAR_FORMAT(VCREATION_DATE,'YYYY-MM-DD') <![CDATA[ <= ]]> #{strdateS} AND 
+		VCREATOR_GROUP IN (${strValor1})
+		<if test="strValor3 != null"> 
+			AND VSOURCE IN (${strValor3}) 
+			</if> 
+	</select>
+	
+	<resultMap id="resultWORKORDER_CHAWORACT" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketPais" column="PAIS" />
+		<result property="idTicket" column="VCOD_TICKET" />
+		<result property="ticketClass" column="VCLASS" />
+		<result property="ticketEstado" column="VSTATUS" />
+		<result property="ticketIdGrupoPropietario" column="VCREATOR_GROUP" />
+		<result property="ticketGrupoPropietario" column="VOWNER_GROUP" />
+		<result property="ticketPropietario" column="VOWNER" />
+		<result property="ticketIdCliente" column="VPARENT_CLIENT_ID" />
+		<result property="ticketCliente" column="VPARENT_CLIENT" />
+		<result property="ticketFechaCreacion" column="VCREATION_DATE" />
+	</resultMap>
+	<select id="getWORKORDER_CHAWORACT" resultMap="resultWORKORDER_CHAWORACT">
+		SELECT 
+		CASE 
+			WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' 
+			WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' 
+			ELSE '' END PAIS, 
+		VCOD_TICKET, 
+		VCLASS,
+		VSTATUS,
+		VCREATOR_GROUP,
+		VOWNER_GROUP,
+		VOWNER_ID,
+		VOWNER,
+		VPARENT_CLIENT_ID,
+		VPARENT_CLIENT,
+		VCREATION_DATE 
+		FROM 
+		SABANA.WORKORDER_CHAWORACT
+		WHERE 
+		VARCHAR_FORMAT(VCREATION_DATE,'YYYY-MM-DD') <![CDATA[ >= ]]> #{strdateE} AND VARCHAR_FORMAT(VCREATION_DATE,'YYYY-MM-DD') <![CDATA[ <= ]]> #{strdateS} AND 
+		VCREATOR_GROUP IN (${strValor1})
+		<if test="strValor3 != null"> 
+			AND VSOURCE IN (${strValor3}) 
+			</if> 
+	</select>
+		
+	<resultMap id="resultWORKORDER_CHAWORACT_BACKLOG" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketPais" column="PAIS" />
+		<result property="idTicket" column="VCOD_TICKET" />
+		<result property="ticketClass" column="VCLASS" />
+		<result property="ticketEstado" column="VSTATUS" />
+		<result property="ticketIdGrupoPropietario" column="VCREATOR_GROUP" />
+		<result property="ticketGrupoPropietario" column="VOWNER_GROUP" />
+		<result property="ticketPropietario" column="VOWNER" />
+		<result property="ticketIdCliente" column="VPARENT_CLIENT_ID" />
+		<result property="ticketCliente" column="VPARENT_CLIENT" />
+		<result property="ticketFechaCreacion" column="VCREATION_DATE" />
+	</resultMap>
+	<select id="getWORKORDER_CHAWORACT_BACKLOG" resultMap="resultWORKORDER_CHAWORACT_BACKLOG">
+		SELECT 
+		CASE 
+			WHEN LOCATE('PE',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'PERU' 
+			WHEN LOCATE('IN',VCREATOR_GROUP) <![CDATA[ > ]]> 0 THEN 'INDIA' 
+			ELSE '' END PAIS, 
+		VCOD_TICKET, 
+		VCLASS,
+		VSTATUS,
+		VCREATOR_GROUP,
+		VOWNER_GROUP,
+		VOWNER_ID,
+		VOWNER,
+		VPARENT_CLIENT_ID,
+		VPARENT_CLIENT,
+		VCREATION_DATE 
+		FROM 
+		SABANA.WORKORDER_CHAWORACT_BACKLOG
+		WHERE 
+		VARCHAR_FORMAT(VCREATION_DATE,'YYYY-MM-DD') <![CDATA[ >= ]]> #{strdateE} AND VARCHAR_FORMAT(VCREATION_DATE,'YYYY-MM-DD') <![CDATA[ <= ]]> #{strdateS} AND 
+		VCREATOR_GROUP IN (${strValor1})
+		<if test="strValor3 != null"> 
+			AND VSOURCE IN (${strValor3}) 
+		</if> 
+	</select>
+	
+</mapper>

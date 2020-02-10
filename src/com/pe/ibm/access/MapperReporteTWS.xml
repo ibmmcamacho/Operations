@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="reporteTWS">
+
+	<resultMap id="resultMonitorTWS" type="com.pe.ibm.bean.BeanReporteTWS">
+		<result property="strMalla" column="MALLA" />
+		<result property="strJob" column="JOB" />
+		<result property="strFechaProgramada" column="FECHAPROGRAMADA" />
+		<result property="strHoraProgramada" column="HORAPROGRAMADA" />
+		<result property="strFechaEjecutada" column="FECHAEJECUTADA" />
+		<result property="strHoraEjecutada" column="HORAEJECUTADA" />
+		<result property="strResultado" column="RESULTADO" />
+		<result property="strDuracion" column="DURACIONPLANIFICADA" />
+		<result property="strDuracionEjecutada" column="DURACIONEJECUTADA" />
+		<result property="strTendencia" column="TENDENCIA" />
+	</resultMap>
+
+	<select id="getMonitorTWS" parameterType="String" resultMap="resultMonitorTWS">
+		SELECT
+			AJS_NAME MALLA,
+			AJB_NAME JOB,
+			VARCHAR_FORMAT(JHR_START_TIME,'YYYY-MM-DD') FECHAPROGRAMADA,
+			VARCHAR_FORMAT(JHR_START_TIME,'HH24:MI:SS') HORAPROGRAMADA,
+			VARCHAR_FORMAT(JHR_RUN_DATE,'YYYY-MM-DD') FECHAEJECUTADA,
+			VARCHAR_FORMAT(JHR_RUN_DATE,'HH24:MI:SS') HORAEJECUTADA,
+			CASE WHEN JHR_RETURN_CODE = '1' THEN 'ERROR' ELSE 'OK' END RESULTADO,
+			VARCHAR(VARCHAR_FORMAT((TIMESTAMP ('1970-01-01-00.00.00.00000') + (JHR_PLANNED_DURATION/1000) SECOND), 'HH24:MI:SS'), 8) DURACIONPLANIFICADA,
+			VARCHAR(VARCHAR_FORMAT((TIMESTAMP ('1970-01-01-00.00.00.00000') + (JHR_TOTAL_ELAPSED_TIME/1000) SECOND), 'HH24:MI:SS'), 8) DURACIONEJECUTADA,
+			CASE WHEN (JHR_TOTAL_ELAPSED_TIME > 0 AND JHR_PLANNED_DURATION > 0) THEN CAST(ROUND((JHR_TOTAL_ELAPSED_TIME / JHR_PLANNED_DURATION)*100,0) AS INTEGER) ELSE 0 END TENDENCIA
+		FROM
+			OPERACION.HISTORICO_TWS
+		WHERE
+			AJS_NAME IN (#{pstrMalla})
+			AND VARCHAR_FORMAT(JHR_START_TIME, 'YYYY-MM-DD') = VARCHAR_FORMAT((SELECT MAX(JHR_START_TIME) FROM OPERACION.HISTORICO_TWS WHERE AJS_NAME IN (#{pstrMalla})), 'YYYY-MM-DD')
+		ORDER BY JHR_RUN_DATE  DESC, AJB_NAME ASC
+	</select>
+	
+	
+	
+	<resultMap id="resultReporteTWS" type="com.pe.ibm.bean.BeanReporteTWS">
+		<result property="strMalla" column="MALLA" />
+		<result property="strJob" column="JOB" />
+		<result property="strFechaProgramada" column="FECHAPROGRAMADA" />
+		<result property="strHoraProgramada" column="HORAPROGRAMADA" />
+		<result property="strFechaEjecutada" column="FECHAEJECUTADA" />
+		<result property="strHoraEjecutada" column="HORAEJECUTADA" />
+		<result property="strResultado" column="RESULTADO" />
+		<result property="strDuracion" column="DURACIONPLANIFICADA" />
+		<result property="strDuracionEjecutada" column="DURACIONEJECUTADA" />
+		<result property="strTendencia" column="TENDENCIA" />
+	</resultMap>
+
+	<select id="getReporteTWS" parameterType="String" resultMap="resultReporteTWS">
+		SELECT
+			AJS_NAME MALLA,
+			AJB_NAME JOB,
+			VARCHAR_FORMAT(JHR_START_TIME,'YYYY-MM-DD') FECHAPROGRAMADA,
+			VARCHAR_FORMAT(JHR_START_TIME,'HH24:MI:SS') HORAPROGRAMADA,
+			VARCHAR_FORMAT(JHR_RUN_DATE,'YYYY-MM-DD') FECHAEJECUTADA,
+			VARCHAR_FORMAT(JHR_RUN_DATE,'HH24:MI:SS') HORAEJECUTADA,
+			CASE WHEN JHR_RETURN_CODE = '1' THEN 'ERROR' ELSE 'OK' END RESULTADO,
+			VARCHAR(VARCHAR_FORMAT((TIMESTAMP ('1970-01-01-00.00.00.00000') + (JHR_PLANNED_DURATION/1000) SECOND), 'HH24:MI:SS'), 8) DURACIONPLANIFICADA,
+			VARCHAR(VARCHAR_FORMAT((TIMESTAMP ('1970-01-01-00.00.00.00000') + (JHR_TOTAL_ELAPSED_TIME/1000) SECOND), 'HH24:MI:SS'), 8) DURACIONEJECUTADA,
+			CASE WHEN (JHR_TOTAL_ELAPSED_TIME > 0 AND JHR_PLANNED_DURATION > 0) THEN CAST(ROUND((JHR_TOTAL_ELAPSED_TIME / JHR_PLANNED_DURATION)*100,0) AS INTEGER) ELSE 0 END TENDENCIA
+		FROM 
+<!-- 			MDL.JHR_JOB_HISTORY_RUNS -->
+			OPERACION.HISTORICO_TWS
+		WHERE 
+			AJS_NAME IN (#{pstrMalla})
+			AND VARCHAR_FORMAT(JHR_START_TIME, 'YYYY-MM-DD') BETWEEN '2018-02-01' AND '2018-08-01'
+		ORDER BY JHR_RUN_DATE  DESC, AJB_NAME ASC
+</select>	
+</mapper>

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="Login">
+
+    <resultMap id="resultLogin" type="com.pe.ibm.bean.BeanEmpleado">
+    	<result property="iIdEmpleado" column="IDEMPLEADO"/>
+    	<result property="strIdLogin" column="IDLOGIN"/>
+    	<result property="strNombre" column="NOMBRE"/>
+    	<result property="strApPaterno" column="AP_PATERNO"/>
+    	<result property="strApMaterno" column="AP_MATERNO"/>
+    	<result property="strPerfil" column="DESCRIPCION"/>
+    	<result property="iTeam" column="IDTEAM"/>
+    	<result property="strTeam" column="TEAM"/>
+    	<result property="strCodCliente" column="CODCLIENTE"/>
+    	<result property="strCodCliente2" column="CODCLIENTE2"/>
+    	<result property="strCargo" column="CARGO"/>
+    	<result property="strPhoto" column="PHOTO"/>
+    </resultMap>
+    
+    <select id="getLogin" parameterType="com.pe.ibm.bean.BeanEmpleado" resultMap="resultLogin">
+    SELECT 
+			A.IDEMPLEADO,
+			A.IDLOGIN, 
+			A.NOMBRE,
+			A.AP_PATERNO,
+			A.AP_MATERNO,
+			B.DESCRIPCION,
+			C.IDTEAM,
+			C.DESCRIPCION TEAM, 
+			(SELECT D.DESCRIPCION FROM OPERACION.OPTIONS D WHERE D.IDOPTION = A.IDCARGO) CARGO,
+			(SELECT D.VALOR1 FROM OPERACION.OPTIONS D WHERE D.IDOPTION = A.IDAREA) CODCLIENTE,
+			(SELECT D.VALOR2 FROM OPERACION.OPTIONS D WHERE D.IDOPTION = A.IDAREA) CODCLIENTE2,
+			A.PHOTO
+		FROM 
+			OPERACION.EMPLEADO A 
+			INNER JOIN OPERACION.PERFIL B ON A.IDPERFIL = B.IDPERFIL
+			INNER JOIN OPERACION.TEAM C ON A.IDTEAM = C.IDTEAM
+		WHERE
+			UPPER(A.IDLOGIN) = UPPER(#{strIdLogin}) AND 
+			A.ESTADO = 1 AND
+			B.IDTEAM = #{iTeam}
+			FETCH FIRST 1 ROWS ONLY
+    </select>
+    
+    
+    
+    
+    <resultMap id="resultLoginCliente" type="com.pe.ibm.bean.BeanEmpleado">
+    	<result property="iIdEmpleado" column="IDEMPLEADO"/>
+    	<result property="strIdLogin" column="IDLOGIN"/>
+    	<result property="strNombre" column="NOMBRE"/>
+    	<result property="strApPaterno" column="AP_PATERNO"/>
+    	<result property="strApMaterno" column="AP_MATERNO"/>
+    	<result property="strPerfil" column="DESCRIPCION"/>
+    	<result property="iTeam" column="IDTEAM"/>
+    	<result property="strTeam" column="TEAM"/>
+    	<result property="strCodCliente" column="CODCLIENTE"/>
+    	<result property="strCargo" column="CARGO"/>
+    	<result property="strPhoto" column="PHOTO"/>
+    </resultMap>
+    
+    
+    <select id="getLoginCliente" parameterType="com.pe.ibm.bean.BeanEmpleado" resultMap="resultLoginCliente">
+    SELECT 
+			A.IDEMPLEADO,
+			A.IDLOGIN, 
+			A.NOMBRE,
+			A.AP_PATERNO,
+			A.AP_MATERNO,
+			B.DESCRIPCION,
+			C.IDTEAM,
+			C.DESCRIPCION TEAM, 
+			(SELECT D.DESCRIPCION FROM OPERACION.OPTIONS D WHERE D.IDOPTION = A.IDCARGO) CARGO,
+			(SELECT D.VALOR1 FROM OPERACION.OPTIONS D WHERE D.IDOPTION = A.IDAREA) CODCLIENTE,
+			A.PHOTO
+		FROM 
+			OPERACION.EMPLEADO A 
+			INNER JOIN OPERACION.PERFIL B ON A.IDPERFIL = B.IDPERFIL
+			INNER JOIN OPERACION.TEAM C ON A.IDTEAM = C.IDTEAM
+		WHERE
+			UPPER(A.IDLOGIN) = UPPER(#{strIdLogin}) AND
+			A.CLAVE = #{strClave} AND 
+			A.ESTADO = 1
+			FETCH FIRST 1 ROWS ONLY
+    </select>
+    
+    <resultMap id="resultMenu" type="com.pe.ibm.bean.BeanMenu">
+	    <result property="strDescripcion" column="DESCRIPCION"/>
+	    <result property="strUrl" column="URL"/>
+	    <result property="strIconIzq" column="ICONIZQ"/>
+	    <result property="strIconDer" column="ICONDER"/>
+	    <result property="strNivel" column="NIVEL"/>
+	    <result property="iOrden" column="ORDEN"/>
+	</resultMap>
+	
+    <select id="getMenuUsuario" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultMenu">
+    	SELECT
+			B.DESCRIPCION,B.URL,B.ICONIZQ,B.ICONDER,B.NIVEL,B.ORDEN
+		FROM
+			OPERACION.EMPLEADO A
+			INNER JOIN OPERACION.PERFILDET B ON A.IDPERFIL = B.IDPERFIL
+		WHERE
+			A.IDEMPLEADO = #{iIdEmpleado} AND A.ESTADO = 1 AND B.ESTADO = 1 AND A.IDTEAM = #{iTeam}
+		ORDER BY B.ORDEN ASC
+	</select>
+    
+</mapper>

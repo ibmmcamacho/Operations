@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="horarioEmpleado">
+
+	<resultMap id="resultHorario" type="com.pe.ibm.bean.BeanHorarioEmpleado">
+		<result property="id" column="IDHORARIOEMPLEADO" />
+		<result property="idempleado" column="IDEMPLEADO" />
+		<result property="empleado" column="EMPLEADO" />
+		<result property="fechayhorainicio" column="INICIO" />
+		<result property="fechayhorafin" column="FIN" />
+		<result property="observaciones" column="OBSERVACIONES" />
+	</resultMap>
+	
+	<select id="getHorarioEmpleados" parameterType="com.pe.ibm.bean.BeanHorarioEmpleado" resultMap="resultHorario">
+		SELECT A.ID IDHORARIOEMPLEADO, A.IDEMPLEADO, B.NOMBRE || ' ' || B.AP_PATERNO EMPLEADO, A.INICIO, A.FIN, A.OBSERVACIONES 
+		FROM OPERACION.HORARIOEMPLEADOV2 A INNER JOIN OPERACION.EMPLEADO B ON A.IDEMPLEADO = B.IDEMPLEADO
+		WHERE A.IDTEAM = #{idteam} AND A.ESTADO = 1
+		AND (IDAREA = (SELECT IDAREA FROM OPERACION.EMPLEADO WHERE IDEMPLEADO = #{idRegistrador}) OR (SELECT DESCRIPCION FROM OPERACION.PERFIL WHERE IDPERFIL = (SELECT IDPERFIL FROM OPERACION.EMPLEADO WHERE IDEMPLEADO = #{idRegistrador})) IN('ADMINISTRADOR','SUPERVISOR'))
+	</select>
+	
+	
+	
+	
+	<insert id="save" parameterType="com.pe.ibm.bean.BeanHorarioEmpleado">
+		insert into operacion.horarioempleadov2(idempleado,inicio,fin,observaciones,idteam,idregistrador)
+		values(#{idempleado},#{fechayhorainicio},#{fechayhorafin},#{observaciones},#{idteam},#{idRegistrador})
+	</insert>
+
+	<update id="update" parameterType="com.pe.ibm.bean.BeanHorarioEmpleado">
+		update operacion.horarioempleadov2 set 
+		idempleado = #{idempleado}, inicio = #{fechayhorainicio}, fin = #{fechayhorafin}, observaciones = #{observaciones}, idregistrador = #{idRegistrador}
+		where id = #{id} and idteam = #{idteam}
+	</update>
+
+	<update id="delete" parameterType="com.pe.ibm.bean.BeanHorarioEmpleado">
+		update operacion.horarioempleadov2 set estado = 0, idregistrador = #{idRegistrador} where id = #{id} and idteam = #{idteam}
+	</update>
+	
+</mapper>

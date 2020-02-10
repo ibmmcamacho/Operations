@@ -1,0 +1,29 @@
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="grupo">
+	  
+	<resultMap id="resultGrupo" type="com.pe.ibm.bean.BeanGrupo">
+		<result property="iIdGrupo" column="IDGRUPO" />
+		<result property="strDescripcion" column="DESCRIPCION" />
+	</resultMap>
+	
+	<select id="getGrupo" parameterType="com.pe.ibm.bean.BeanGrupo" resultMap="resultGrupo">
+		SELECT 
+			DISTINCT G.IDGRUPO, DESCRIPCION
+		FROM
+			SCHEDULEPM.GRUPO AS G 
+		JOIN 
+			SCHEDULEPM.GRUPO_DETALLE AS GD ON GD.IDGRUPO = G.IDGRUPO
+		JOIN 
+			OPERACION.EMPLEADO AS E ON GD.IDEMPLEADO = E.IDEMPLEADO 
+		WHERE 
+			G.ESTADO = 1 AND 
+			E.IDTEAM = #{iTeam}
+		ORDER BY 
+			DESCRIPCION
+		ASC
+	</select>
+
+</mapper>

@@ -1,0 +1,1265 @@
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="reports">
+	
+	
+	<resultMap id="resultTardanzaConsolidadoSemanal" type="com.pe.ibm.bean.BeanReporte">
+		<result property="strArea" column="AREA"/>
+		<result property="strModalidad" column="MODALIDAD"/>
+		<result property="strCargo" column="CARGO"/>
+		<result property="strIdLogin" column="IDLOGIN"/>
+		<result property="strEmpleado" column="PERSONAL"/>
+		<result property="strEmail" column="EMAIL"/>
+		<result property="strHorario" column="HORARIO"/>
+		<result property="strMes" column="MES"/>
+		<result property="strSemana" column="SEMANA"/>
+		<result property="strMinutos" column="MINUTOS"/>
+	</resultMap>
+	<select id="getTardanzaConsolidadoSemanal" parameterType="String" resultMap="resultTardanzaConsolidadoSemanal">
+		SELECT 
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.IDAREA) AREA,
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.IDMODALIDAD) MODALIDAD,
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.IDCARGO) CARGO,
+			A.IDLOGIN, 
+			A.NOMBRE || ' ' || A.AP_PATERNO || ' ' || A.AP_MATERNO PERSONAL,
+			A.EMAIL,
+			C.HORARIO_E HORARIO,
+			UPPER(MONTHNAME(C.FECHA_E,'es_PE')) MES,
+			'SEMANA ' || ((WEEK_ISO(date(C.FECHA_E))) - (WEEK_ISO(DATE(1) + (YEAR(C.FECHA_E)-1) YEARS + (MONTH(C.FECHA_E)-1) MONTHS )) + 1 ) SEMANA,
+			CASE WHEN TIME(C.FECHA_E) > CASE WHEN HOUR(C.HORARIO_E) = 0 AND HOUR(C.FECHA_E) >= 12 THEN TIME('24:00:00') ELSE TIME(C.HORARIO_E) END 
+				THEN
+				      HOUR(TIME(C.FECHA_E) -
+				      CASE WHEN HOUR(C.HORARIO_E) = 0 AND HOUR(C.FECHA_E) >= 12 
+				      THEN TIME('24:00:00') 
+				      ELSE TIME(C.HORARIO_E) END) || ':' ||
+				      MINUTE(TIME(C.FECHA_E) -
+				      CASE WHEN HOUR(C.HORARIO_E) = 0 AND HOUR(C.FECHA_E) >= 12 
+				      THEN TIME('24:00:00') 
+				      ELSE TIME(C.HORARIO_E) END)
+			ELSE '00' || ':' || '00'
+			END MINUTOS
+		FROM 
+			OPERACION.EMPLEADO A 
+			INNER JOIN OPERACION.REG C ON A.IDEMPLEADO = C.IDEMPLEADO
+		<where>
+			<if test="strdate1 != null">
+				A.ESTADO = 1 AND DATE(C.FECHA_E) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2})
+			</if>
+			<if test="iTeam != null">
+				AND A.IDTEAM = #{iTeam}
+			</if>
+		</where>
+	</select>
+	
+	<resultMap id="resultTardanzaDetalle" type="com.pe.ibm.bean.BeanReporte">
+		<result property="strArea" column="AREA"/>
+		<result property="strModalidad" column="MODALIDAD"/>
+		<result property="strCargo" column="CARGO"/>
+		<result property="strIdLogin" column="IDLOGIN"/>
+		<result property="strEmpleado" column="PERSONAL"/>
+		<result property="strEmail" column="EMAIL"/>
+		<result property="strHorario" column="HORARIO"/>
+		<result property="strMes" column="MES"/>
+		<result property="strFechaEntrada" column="FECHA_ENTRADA"/>
+		<result property="strHoraEntrada" column="HORA_ENTRADA"/>
+		<result property="strFechaSalida" column="FECHA_SALIDA"/>
+		<result property="strHoraSalida" column="HORA_SALIDA"/>
+		<result property="strMinutos" column="MINUTOS"/>
+		<result property="strObs" column="OBSERVACION"/>
+		<result property="strIp" column="IP_ENTRADA"/>
+		<result property="strSo" column="SO_ENTRADA"/>
+		<result property="strBrowser" column="BROWSER_ENTRADA"/>
+	</resultMap>
+	<select id="getTardanzaDetalle" parameterType="String" resultMap="resultTardanzaDetalle">
+		SELECT 
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.IDAREA) AREA,
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.IDMODALIDAD) MODALIDAD,
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.IDCARGO) CARGO,
+			A.IDLOGIN, 
+			A.NOMBRE || ' ' || A.AP_PATERNO || ' ' || A.AP_MATERNO PERSONAL,
+			A.EMAIL,
+			C.HORARIO_E HORARIO,
+			UPPER(MONTHNAME(C.FECHA_E,'es_PE')) MES,
+			VARCHAR_FORMAT(DATE(C.FECHA_E),'YYYY-MM-DD') FECHA_ENTRADA,
+			TIME(C.FECHA_E) HORA_ENTRADA,
+			VARCHAR_FORMAT(DATE(C.FECHA_S),'YYYY-MM-DD') FECHA_SALIDA,
+			TIME(C.FECHA_S) HORA_SALIDA,
+			CASE WHEN TIME(C.FECHA_E) > CASE WHEN HOUR(C.HORARIO_E) = 0 AND HOUR(C.FECHA_E) >= 12 THEN TIME('24:00:00') ELSE TIME(C.HORARIO_E) END 
+				THEN
+				      HOUR(TIME(C.FECHA_E) -
+				      CASE WHEN HOUR(C.HORARIO_E) = 0 AND HOUR(C.FECHA_E) >= 12 
+				      THEN TIME('24:00:00') 
+				      ELSE TIME(C.HORARIO_E) END) || ':' ||
+				      MINUTE(TIME(C.FECHA_E) -
+				      CASE WHEN HOUR(C.HORARIO_E) = 0 AND HOUR(C.FECHA_E) >= 12 
+				      THEN TIME('24:00:00') 
+				      ELSE TIME(C.HORARIO_E) END)
+			ELSE '00' || ':' || '00'
+			END MINUTOS,
+			C.OBS OBSERVACION,
+			C.IP_ENTRADA,
+			C.SO_ENTRADA,
+			C.BROWSER_ENTRADA
+		FROM 
+			OPERACION.EMPLEADO A 
+			INNER JOIN OPERACION.REG C ON A.IDEMPLEADO = C.IDEMPLEADO
+		<where>
+			<if test="strdate1 != null">
+				A.ESTADO = 1  AND DATE(C.FECHA_E) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2})
+			</if>
+			<if test="iTeam != null">
+				AND C.IDTEAM = #{iTeam}
+			</if>
+		</where>
+	</select>
+		
+		
+	<resultMap id="resultAsistencia" type="com.pe.ibm.bean.BeanReporte">
+		<result property="strIdLogin" column="IDLOGIN"/>
+		<result property="strEmpleado" column="PERSONAL"/>
+		<result property="strEmail" column="EMAIL"/>
+		<result property="strDia" column="DIA"/>
+		<result property="strFechaEntrada" column="FECHA"/>
+		<result property="strHorario" column="HORARIO"/>
+		<result property="strAsistencia" column="ASISTENCIA"/>
+		<result property="strObs" column="OBSERVACIONES"/>
+	</resultMap>
+	
+	<select id="getAsistencia" parameterType="String" resultMap="resultAsistencia">
+		SELECT 
+			A.IDLOGIN,
+			A.NOMBRE || ' ' || A.AP_PATERNO || ' ' || A.AP_MATERNO PERSONAL,
+			A.EMAIL,
+			OPERACION.GET_NAMEDAY(B.FECHA) DIA,
+			B.FECHA FECHA,
+			COALESCE((SELECT VARCHAR_FORMAT(INICIO, 'HH24:MI:SS') FROM OPERACION.HORARIOEMPLEADOV2 WHERE ESTADO = 1 AND DATE(INICIO) = DATE(B.FECHA) AND IDEMPLEADO = A.IDEMPLEADO ORDER BY ID DESC FETCH FIRST 1 ROWS ONLY),'SIN HORARIO') HORARIO,
+			CASE WHEN (SELECT COUNT(1) FROM OPERACION.REG WHERE DATE(FECHA_E) = DATE(B.FECHA) AND IDEMPLEADO = A.IDEMPLEADO) <![CDATA[ > ]]> 0 THEN 'ASISTIO' ELSE 'FALTO' END ASISTENCIA,
+			COALESCE((SELECT OBSERVACIONES FROM OPERACION.HORARIOEMPLEADOV2 WHERE ESTADO = 1 AND DATE(INICIO) = DATE(B.FECHA) AND IDEMPLEADO = A.IDEMPLEADO ORDER BY ID DESC FETCH FIRST 1 ROWS ONLY),'') OBSERVACIONES 
+		FROM 
+			OPERACION.EMPLEADO A 
+			INNER JOIN (SELECT d.min + num.n DAYS AS FECHA FROM (VALUES(DATE(#{strdate1}), DATE(#{strdate2}))) AS d(min, max) INNER JOIN (SELECT n1.n + n10.n + n100.n AS n FROM (VALUES(0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) AS n1(n) CROSS JOIN (VALUES(0),(10),(20),(30),(40),(50),(60),(70),(80),(90)) AS n10(n) CROSS JOIN (VALUES(0),(100),(200),(300),(400),(500),(600),(700),(800),(900)) AS n100(n)) AS num ON d.min + num.n DAYS <![CDATA[ <= ]]> d.max ORDER BY num.n) B ON 1 = 1
+		WHERE
+			A.ESTADO = 1 
+			AND LOCATE('@',A.IDLOGIN) = 0 
+		<if test="iTeam != null">
+			AND A.IDTEAM = #{iTeam}
+		</if>
+	</select>
+	
+	
+	
+	
+	<resultMap id="resulTardanzaAnual" type="com.pe.ibm.bean.BeanReporte">
+		<result property="strArea" column="AREA"/>
+		<result property="strIdEmpleado" column="IDEMPLEADO"/>
+		<result property="strIdLogin" column="IDLOGIN"/>
+		<result property="strEmpleado" column="PERSONAL"/>
+		<result property="strEnero" column="ENERO"/>
+		<result property="strFebrero" column="FEBRERO"/>
+		<result property="strMarzo" column="MARZO"/>
+		<result property="strAbril" column="ABRIL"/>
+		<result property="strMayo" column="MAYO"/>
+		<result property="strJunio" column="JUNIO"/>
+		<result property="strJulio" column="JULIO"/>
+		<result property="strAgosto" column="AGOSTO"/>
+		<result property="strSeptiembre" column="SEPTIEMBRE"/>
+		<result property="strOctubre" column="OCTUBRE"/>
+		<result property="strNoviembre" column="NOVIEMBRE"/>
+		<result property="strDiciembre" column="DICIEMBRE"/>
+	</resultMap>
+	<select id="getTardanzaAnual" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resulTardanzaAnual">
+		SELECT 
+		(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = C.IDAREA) AREA,C.IDLOGIN,C.IDEMPLEADO, C.NOMBRE || ' ' || C.AP_PATERNO || ' ' || C.AP_MATERNO PERSONAL,
+		(
+		SELECT 
+			  SUM(CASE WHEN TIME(B.FECHA_E) <![CDATA[ > ]]> CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) <![CDATA[ >= ]]> 12 THEN TIME('24:00:00') ELSE TIME(B.HORARIO_E) END 
+			  THEN
+		   	     TIMESTAMPDIFF(8,CHAR(TIME(B.FECHA_E) -
+		      	     CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) <![CDATA[ >= ]]> 12 
+		      	     THEN TIME('24:00:00')
+		      	     ELSE TIME(B.HORARIO_E)
+			     END))
+			  ELSE 0 END
+			  )
+			  FROM 
+			  OPERACION.EMPLEADO A INNER JOIN OPERACION.REG B ON A.IDEMPLEADO = B.IDEMPLEADO
+			  WHERE A.ESTADO = 1 AND A.IDEMPLEADO = C.IDEMPLEADO AND MONTH(B.FECHA_E) = 1 AND YEAR(B.FECHA_E) = YEAR(#{strdate1}) AND B.IDTEAM = #{iTeam}
+		) ENERO,
+		
+		(
+		SELECT 
+			  SUM(CASE WHEN TIME(B.FECHA_E) <![CDATA[ > ]]> CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) <![CDATA[ >= ]]> 12 THEN TIME('24:00:00') ELSE TIME(B.HORARIO_E) END 
+			  THEN
+		   	     TIMESTAMPDIFF(8,CHAR(TIME(B.FECHA_E) -
+		      	     CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) <![CDATA[ >= ]]> 12
+		      	     THEN TIME('24:00:00') 
+		      	     ELSE TIME(B.HORARIO_E) 
+			     END))
+			  ELSE 0 END
+			  )
+			  FROM
+			  OPERACION.EMPLEADO A INNER JOIN OPERACION.REG B ON A.IDEMPLEADO = B.IDEMPLEADO
+			  WHERE A.ESTADO = 1 AND A.IDEMPLEADO = C.IDEMPLEADO AND MONTH(B.FECHA_E) = 2 AND YEAR(B.FECHA_E) = YEAR(#{strdate1}) AND B.IDTEAM = #{iTeam}
+		) FEBRERO,
+		
+		(
+		SELECT 
+			  SUM(CASE WHEN TIME(B.FECHA_E) <![CDATA[ > ]]> CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) <![CDATA[ >= ]]> 12 THEN TIME('24:00:00') ELSE TIME(B.HORARIO_E) END 
+			  THEN
+		   	     TIMESTAMPDIFF(8,CHAR(TIME(B.FECHA_E) -
+		      	     CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) <![CDATA[ >= ]]> 12
+		      	     THEN TIME('24:00:00') 
+		      	     ELSE TIME(B.HORARIO_E) 
+			     END))
+			  ELSE 0 END
+			  )
+			  FROM 
+			  OPERACION.EMPLEADO A INNER JOIN OPERACION.REG B ON A.IDEMPLEADO = B.IDEMPLEADO
+			  WHERE A.ESTADO = 1 AND A.IDEMPLEADO = C.IDEMPLEADO AND MONTH(B.FECHA_E) = 3 AND YEAR(B.FECHA_E) = YEAR(#{strdate1}) AND B.IDTEAM = #{iTeam}
+		) MARZO,
+		
+		(
+		SELECT 
+			  SUM(CASE WHEN TIME(B.FECHA_E) <![CDATA[ > ]]> CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) <![CDATA[ >= ]]> 12 THEN TIME('24:00:00') ELSE TIME(B.HORARIO_E) END 
+			  THEN
+		   	     TIMESTAMPDIFF(8,CHAR(TIME(B.FECHA_E) -
+		      	     CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) <![CDATA[ >= ]]> 12
+		      	     THEN TIME('24:00:00') 
+		      	     ELSE TIME(B.HORARIO_E) 
+			     END))
+			  ELSE 0 END
+			  )
+			  FROM 
+			  OPERACION.EMPLEADO A INNER JOIN OPERACION.REG B ON A.IDEMPLEADO = B.IDEMPLEADO
+			  WHERE A.ESTADO = 1 AND A.IDEMPLEADO = C.IDEMPLEADO AND MONTH(B.FECHA_E) = 4 AND YEAR(B.FECHA_E) = YEAR(#{strdate1}) AND B.IDTEAM = #{iTeam}
+		) ABRIL,
+		
+		(
+		SELECT 
+			  SUM(CASE WHEN TIME(B.FECHA_E) <![CDATA[ > ]]> CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) <![CDATA[ >= ]]> 12 THEN TIME('24:00:00') ELSE TIME(B.HORARIO_E) END 
+			  THEN
+		   	     TIMESTAMPDIFF(8,CHAR(TIME(B.FECHA_E) -
+		      	     CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) <![CDATA[ >= ]]> 12
+		      	     THEN TIME('24:00:00') 
+		      	     ELSE TIME(B.HORARIO_E) 
+			     END))
+			  ELSE 0 END
+			  )
+			  FROM 
+			  OPERACION.EMPLEADO A INNER JOIN OPERACION.REG B ON A.IDEMPLEADO = B.IDEMPLEADO
+			  WHERE A.ESTADO = 1 AND A.IDEMPLEADO = C.IDEMPLEADO AND MONTH(B.FECHA_E) = 5 AND YEAR(B.FECHA_E) = YEAR(#{strdate1}) AND B.IDTEAM = #{iTeam}
+		) MAYO,
+		
+		(
+		SELECT 
+			  SUM(CASE WHEN TIME(B.FECHA_E) <![CDATA[ > ]]> CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) <![CDATA[ >= ]]> 12 THEN TIME('24:00:00') ELSE TIME(B.HORARIO_E) END 
+			  THEN
+		   	     TIMESTAMPDIFF(8,CHAR(TIME(B.FECHA_E) -
+		      	     CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) <![CDATA[ >= ]]> 12
+		      	     THEN TIME('24:00:00') 
+		      	     ELSE TIME(B.HORARIO_E) 
+			     END))
+			  ELSE 0 END
+			  )
+			  FROM 
+			  OPERACION.EMPLEADO A INNER JOIN OPERACION.REG B ON A.IDEMPLEADO = B.IDEMPLEADO
+			  WHERE A.ESTADO = 1 AND A.IDEMPLEADO = C.IDEMPLEADO AND MONTH(B.FECHA_E) = 6 AND YEAR(B.FECHA_E) = YEAR(#{strdate1}) AND B.IDTEAM = #{iTeam}
+		) JUNIO,
+		
+		(
+		SELECT 
+			  SUM(CASE WHEN TIME(B.FECHA_E) <![CDATA[ > ]]> CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) <![CDATA[ >= ]]> 12 THEN TIME('24:00:00') ELSE TIME(B.HORARIO_E) END 
+			  THEN
+		   	     TIMESTAMPDIFF(8,CHAR(TIME(B.FECHA_E) -
+		      	     CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) <![CDATA[ >= ]]> 12
+		      	     THEN TIME('24:00:00') 
+		      	     ELSE TIME(B.HORARIO_E) 
+			     END))
+			  ELSE 0 END
+			  )
+			  FROM 
+			  OPERACION.EMPLEADO A INNER JOIN OPERACION.REG B ON A.IDEMPLEADO = B.IDEMPLEADO
+			  WHERE A.ESTADO = 1 AND A.IDEMPLEADO = C.IDEMPLEADO AND MONTH(B.FECHA_E) = 7 AND YEAR(B.FECHA_E) = YEAR(#{strdate1}) AND B.IDTEAM = #{iTeam}
+		) JULIO,
+		
+		(
+		SELECT 
+			  SUM(CASE WHEN TIME(B.FECHA_E) <![CDATA[ > ]]> CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) <![CDATA[ >= ]]> 12 THEN TIME('24:00:00') ELSE TIME(B.HORARIO_E) END 
+			  THEN
+		   	     TIMESTAMPDIFF(8,CHAR(TIME(B.FECHA_E) -
+		      	     CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) <![CDATA[ >= ]]> 12
+		      	     THEN TIME('24:00:00') 
+		      	     ELSE TIME(B.HORARIO_E) 
+			     END))
+			  ELSE 0 END
+			  )
+			  FROM 
+			  OPERACION.EMPLEADO A INNER JOIN OPERACION.REG B ON A.IDEMPLEADO = B.IDEMPLEADO
+			  WHERE A.ESTADO = 1 AND A.IDEMPLEADO = C.IDEMPLEADO AND MONTH(B.FECHA_E) = 8 AND YEAR(B.FECHA_E) = YEAR(#{strdate1}) AND B.IDTEAM = #{iTeam}
+		) AGOSTO,
+		
+		(
+		SELECT 
+			  SUM(CASE WHEN TIME(B.FECHA_E) <![CDATA[ > ]]> CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) <![CDATA[ >= ]]> 12 THEN TIME('24:00:00') ELSE TIME(B.HORARIO_E) END 
+			  THEN
+		   	     TIMESTAMPDIFF(8,CHAR(TIME(B.FECHA_E) -
+		      	     CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) <![CDATA[ >= ]]> 12
+		      	     THEN TIME('24:00:00') 
+		      	     ELSE TIME(B.HORARIO_E) 
+			     END))
+			  ELSE 0 END
+			  )
+			  FROM 
+			  OPERACION.EMPLEADO A INNER JOIN OPERACION.REG B ON A.IDEMPLEADO = B.IDEMPLEADO
+			  WHERE A.ESTADO = 1 AND A.IDEMPLEADO = C.IDEMPLEADO AND MONTH(B.FECHA_E) = 9 AND YEAR(B.FECHA_E) = YEAR(#{strdate1}) AND B.IDTEAM = #{iTeam}
+		) SEPTIEMBRE,
+		
+		(
+		SELECT 
+			  SUM(CASE WHEN TIME(B.FECHA_E) <![CDATA[ > ]]> CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) <![CDATA[ >= ]]> 12 THEN TIME('24:00:00') ELSE TIME(B.HORARIO_E) END 
+			  THEN
+		   	     TIMESTAMPDIFF(8,CHAR(TIME(B.FECHA_E) -
+		      	     CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) <![CDATA[ >= ]]> 12
+		      	     THEN TIME('24:00:00') 
+		      	     ELSE TIME(B.HORARIO_E) 
+			     END))
+			  ELSE 0 END
+			  )
+			  FROM 
+			  OPERACION.EMPLEADO A INNER JOIN OPERACION.REG B ON A.IDEMPLEADO = B.IDEMPLEADO
+			  WHERE A.ESTADO = 1 AND A.IDEMPLEADO = C.IDEMPLEADO AND MONTH(B.FECHA_E) = 10 AND YEAR(B.FECHA_E) = YEAR(#{strdate1}) AND B.IDTEAM = #{iTeam}
+		) OCTUBRE,
+		
+		(
+		SELECT 
+			  SUM(CASE WHEN TIME(B.FECHA_E) <![CDATA[ > ]]> CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) <![CDATA[ >= ]]> 12 THEN TIME('24:00:00') ELSE TIME(B.HORARIO_E) END 
+			  THEN
+		   	     TIMESTAMPDIFF(8,CHAR(TIME(B.FECHA_E) -
+		      	     CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) <![CDATA[ >= ]]> 12
+		      	     THEN TIME('24:00:00') 
+		      	     ELSE TIME(B.HORARIO_E) 
+			     END))
+			  ELSE 0 END
+			  )
+			  FROM 
+			  OPERACION.EMPLEADO A INNER JOIN OPERACION.REG B ON A.IDEMPLEADO = B.IDEMPLEADO
+			  WHERE A.ESTADO = 1 AND A.IDEMPLEADO = C.IDEMPLEADO AND MONTH(B.FECHA_E) = 11 AND YEAR(B.FECHA_E) = YEAR(#{strdate1}) AND B.IDTEAM = #{iTeam}
+		) NOVIEMBRE,
+		
+		(
+		SELECT 
+			  SUM(CASE WHEN TIME(B.FECHA_E) <![CDATA[ > ]]> CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) <![CDATA[ >= ]]> 12 THEN TIME('24:00:00') ELSE TIME(B.HORARIO_E) END 
+			  THEN
+		   	     TIMESTAMPDIFF(8,CHAR(TIME(B.FECHA_E) -
+		      	     CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) <![CDATA[ >= ]]> 12
+		      	     THEN TIME('24:00:00') 
+		      	     ELSE TIME(B.HORARIO_E) 
+			     END))
+			  ELSE 0 END
+			  )
+			  FROM 
+			  OPERACION.EMPLEADO A INNER JOIN OPERACION.REG B ON A.IDEMPLEADO = B.IDEMPLEADO
+			  WHERE A.ESTADO = 1 AND A.IDEMPLEADO = C.IDEMPLEADO AND MONTH(B.FECHA_E) = 12 AND YEAR(B.FECHA_E) = YEAR(#{strdate1}) AND B.IDTEAM = #{iTeam}
+		) DICIEMBRE
+		
+		FROM 
+		OPERACION.EMPLEADO C
+		WHERE C.IDTEAM = #{iTeam}
+	</select>
+	
+	
+	
+	
+	<resultMap id="resultTopTardanza" type="com.pe.ibm.bean.BeanReporte">
+		<result property="strIdEmpleado" column="USUARIO"/>
+		<result property="strEmpleado" column="EMPLEADO"/>
+		<result property="iMinutos" column="MINUTOS"/>
+	</resultMap>
+	<select id="getTopTardanza" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultTopTardanza">
+		SELECT
+		A.IDLOGIN AS USUARIO,
+		A.NOMBRE || ' ' || A.AP_PATERNO || ' ' || A.AP_MATERNO AS EMPLEADO,
+		TIMESTAMPDIFF(8,CHAR(
+				      	     CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) >= 12
+				      	     THEN TIME('24:00:00')
+				      	     ELSE TIME(B.HORARIO_E)
+					     END - TIME(B.FECHA_E))
+		) AS MINUTOS
+		FROM OPERACION.EMPLEADO A INNER JOIN OPERACION.REG B ON A.IDEMPLEADO = B.IDEMPLEADO
+		<where>
+			<if test="strValor1 == null">
+				A.ESTADO = 1 AND DATE(B.FECHA_E) =  DATE(strdate1) AND 
+			</if>
+			<if test="strValor1 != null">
+				YEAR(B.FECHA_E) = YEAR(strdate1) AND MOUNTH(B.FECHA_E) =  MOUNTH(strdate1) AND
+			</if>
+		TIMESTAMPDIFF(8,CHAR(
+		      	     CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) >= 12
+		      	     THEN TIME('24:00:00')
+		      	     ELSE TIME(B.HORARIO_E)
+			     	END - TIME(B.FECHA_E))
+					) > 0
+					AND B.IDTEAM = #{iTeam}
+		</where>
+					ORDER BY 3 DESC
+					FETCH FIRST 10 ROWS ONLY
+	</select>
+	
+	<resultMap id="resultTopAsistencia" type="com.pe.ibm.bean.BeanReporte">
+		<result property="strIdEmpleado" column="USUARIO"/>
+		<result property="strEmpleado" column="EMPLEADO"/>
+		<result property="iMinutos" column="MINUTOS"/>
+	</resultMap>
+	<select id="getTopAsistencia" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultTopAsistencia">
+		SELECT 
+		A.IDLOGIN AS USUARIO,
+		A.NOMBRE || ' ' || A.AP_PATERNO || ' ' || A.AP_MATERNO AS EMPLEADO,
+		TIMESTAMPDIFF(8,CHAR(
+				      	     TIME(B.FECHA_E) - CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) >= 12
+				      	     THEN TIME('24:00:00')
+				      	     ELSE TIME(B.HORARIO_E)
+					     END )
+		) AS MINUTOS
+		FROM OPERACION.EMPLEADO A INNER JOIN OPERACION.REG B ON A.IDEMPLEADO = B.IDEMPLEADO
+		<where>
+			<if test="strValor1 == null">
+				A.ESTADO = 1 AND DATE(B.FECHA_E) =  DATE(strdate1) AND 
+			</if>
+			<if test="strValor1 != null">
+				YEAR(B.FECHA_E) = YEAR(strdate1) AND MOUNTH(B.FECHA_E) =  MOUNTH(strdate1) AND 
+			</if>
+		TIMESTAMPDIFF(8,CHAR(
+		      	     CASE WHEN HOUR(B.HORARIO_E) = 0 AND HOUR(B.FECHA_E) >= 12 
+		      	     THEN TIME('24:00:00') 
+		      	     ELSE TIME(B.HORARIO_E) 
+			     	END - TIME(B.FECHA_E))
+					) >= 0
+					AND B.IDTEAM = #{iTeam}
+		</where>			
+					ORDER BY 3 DESC
+					FETCH FIRST 10 ROWS ONLY
+	</select>
+	
+	
+	
+	<resultMap id="resultAsistenciaConsolidado" type="com.pe.ibm.bean.BeanReporte">
+		<result property="strArea" column="AREA"/>
+		<result property="strIdEmpleado" column="IDEMPLEADO"/>
+		<result property="strEmpleado" column="PERSONAL"/>
+		<result property="strEmail" column="EMAIL"/>
+		<result property="iDia" column="DIA"/>
+		<result property="iMinutos" column="MINUTOS"/>
+	</resultMap>
+	<select id="getAsistenciaConsolidado" parameterType="String" resultMap="resultAsistenciaConsolidado">
+		SELECT
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = EMP.IDAREA) AREA, 
+			EMP.IDEMPLEADO,
+			EMP.NOMBRE || ' ' || EMP.AP_PATERNO || ' ' || EMP.AP_MATERNO PERSONAL,
+			EMP.EMAIL,
+			DAY(REG.FECHA_E) DIA,
+			MAX(MINUTE(TIME(REG.FECHA_E) -
+			    CASE WHEN HOUR(REG.HORARIO_E) = 0 AND HOUR(REG.FECHA_E) <![CDATA[>=]]> 12 
+			    THEN TIME('24:00:00')
+			    ELSE TIME(REG.HORARIO_E) END)) MINUTOS
+		FROM
+			OPERACION.REG REG INNER JOIN OPERACION.EMPLEADO EMP ON REG.IDEMPLEADO = EMP.IDEMPLEADO
+		WHERE
+			EMP.ESTADO = 1 AND DATE(B.FECHA_E) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2})
+		GROUP BY
+			EMP.IDAREA, EMP.IDEMPLEADO, EMP.NOMBRE || ' ' || EMP.AP_PATERNO || ' ' || EMP.AP_MATERNO, REG.FECHA_E
+	</select>
+	
+	
+	<resultMap id="resultTeam" type="com.pe.ibm.bean.BeanReporte">
+		<result property="strArea" column="AREA"/>
+	</resultMap>
+	<select id="getTeams" parameterType="String" resultMap="resultTeam">
+		SELECT DISTINCT AREA FROM OPERACION.EMPLEADO WHERE ESTADO = 1
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	<resultMap id="resultSLA_Rimac" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="idTicket" column="COD_TICKET"/>
+		<result property="ticketClass" column="CLASS"/>
+		<result property="ticketPrioridad" column="INTERNAL_PRIORITY"/>
+		<result property="ticketFechaCreacion" column="CREATE_DATE"/>
+		<result property="strValor1" column="TIEMPO"/>
+		<result property="strValor2" column="SLA"/>
+		<result property="strValor3" column="STATUSLA"/>
+		<result property="ticketEstado" column="STATUS"/>
+		
+		<result property="ticketEmailCreador" column="CREATOR_ID"/>
+		<result property="ticketEmailNotificador" column="NOTIFIER"/>
+		
+		<result property="ticketIdGrupoPropietario" column="OWNER_GROUP_ID"/>
+		<result property="ticketGrupoPropietario" column="OWNER_GROUP"/>
+		<result property="ticketPropietario" column="OWNER"/>
+		<result property="ticketEmailPropietario" column="OWNER_ID"/>
+		<result property="ticketTitulo" column="SUMMARY"/>
+		<result property="strValor4" column="WORKLOG"/>
+		<result property="strValor5" column="RES_COUNTRY"/>
+		
+	</resultMap>
+	
+	<select id="getSLA_Rimac" resultMap="resultSLA_Rimac">
+	
+	<if test="strTeam == 'RIMAC'">
+	
+	SELECT 
+	COD_TICKET, CLASS, INTERNAL_PRIORITY, CREATION_DATE CREATE_DATE,
+	CAST(TIME_TO_RESOLVE/24 AS INT) || ' días ' || CAST(MOD(TIME_TO_RESOLVE,24) AS INT) || ' horas ' || MOD(CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT),60) || ' minutos.' TIEMPO,
+	CASE WHEN INTERNAL_PRIORITY = 1 THEN '2 HORAS'
+	WHEN INTERNAL_PRIORITY = 2 THEN '4 HORAS'
+	WHEN INTERNAL_PRIORITY = 3 THEN '5 HORAS'
+	WHEN INTERNAL_PRIORITY = 4 THEN '7 HORAS' END SLA,
+	CASE WHEN INTERNAL_PRIORITY = 1 THEN 
+	        CASE WHEN CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT) > 120 THEN 'VENCIDO'
+	        WHEN CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT) > 60 AND CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT) <![CDATA[<=]]> 120 THEN 'POR VENCER'
+	        WHEN CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT) <![CDATA[<=]]> 60 THEN 'VIGENTE' END
+	WHEN INTERNAL_PRIORITY = 2 THEN 
+	        CASE WHEN CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT) > 240 THEN 'VENCIDO'
+	        WHEN CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT) > 180 AND CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT) <![CDATA[<=]]> 240 THEN 'POR VENCER'
+	        WHEN CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT) <![CDATA[<=]]> 180 THEN 'VIGENTE' END
+	WHEN INTERNAL_PRIORITY = 3 THEN 
+	        CASE WHEN CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT) > 300 THEN 'VENCIDO'
+	        WHEN CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT) > 240 AND CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT) <![CDATA[<=]]> 300 THEN 'POR VENCER'
+	        WHEN CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT) <![CDATA[<=]]> 240 THEN 'VIGENTE' END 
+	WHEN INTERNAL_PRIORITY = 4 THEN 
+	        CASE WHEN CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT) > 420 THEN 'VENCIDO'
+	        WHEN CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT) > 360 AND CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT) <![CDATA[<=]]> 420 THEN 'POR VENCER'
+	        WHEN CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT) <![CDATA[<=]]> 360 THEN 'VIGENTE' END 
+	END STATUSLA,
+	STATUS,CREATOR_ID, NOTIFIER, OWNER_GROUP_ID, OWNER_GROUP, OWNER, OWNER_ID, SUMMARY, WORKLOG, RES_COUNTRY
+	FROM CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2 
+	WHERE 
+		PARENT_CLIENT_ID = 'PE-RIMAC-SO' AND CLASS = 'INCIDENT' AND DATE(CREATION_DATE) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2}) 
+	AND OWNER_GROUP_ID NOT LIKE '%-CLI-%' AND OWNER_GROUP_ID NOT LIKE '%-DCS-%' AND OWNER_GROUP_ID NOT LIKE '%-HWT-%' AND OWNER_GROUP_ID NOT LIKE '%-SDD-%'
+	
+	</if>
+	
+	<if test="strTeam == 'CENTRIA'">
+	
+	SELECT
+	COD_TICKET, CLASS, INTERNAL_PRIORITY, CREATION_DATE CREATE_DATE,
+	CAST(TIME_TO_DISPATCH/24 AS INT) || ' días ' || CAST(MOD(TIME_TO_DISPATCH,24) AS INT) || ' horas ' || MOD(CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT),60) || ' minutos.' TIEMPO,
+	CASE WHEN INTERNAL_PRIORITY = 1 THEN 'SLA 26 | 1 HORAS'
+				WHEN INTERNAL_PRIORITY = 2 THEN 'SLA 27 | 4 HORAS'
+				WHEN INTERNAL_PRIORITY = 3 THEN 'SLA 28 | 16 HORAS'
+				WHEN INTERNAL_PRIORITY = 4 THEN 'SLA 29 | 96 HORAS' END SLA,
+	CASE WHEN INTERNAL_PRIORITY = 1 THEN 
+	        CASE WHEN CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) > 60 THEN 'VENCIDO'
+	        WHEN CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) > 30 AND CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) <![CDATA[<=]]> 60 THEN 'POR VENCER'
+	        WHEN CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) <![CDATA[<=]]> 30 THEN 'VIGENTE' END
+	WHEN INTERNAL_PRIORITY = 2 THEN 
+	        CASE WHEN CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) > 240 THEN 'VENCIDO'
+	        WHEN CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) > 180 AND CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) <![CDATA[<=]]> 240 THEN 'POR VENCER'
+	        WHEN CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) <![CDATA[<=]]> 180 THEN 'VIGENTE' END
+	WHEN INTERNAL_PRIORITY = 3 THEN 
+	        CASE WHEN CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) > 960 THEN 'VENCIDO'
+	        WHEN CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) > 900 AND CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) <![CDATA[<=]]> 960 THEN 'POR VENCER'
+	        WHEN CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) <![CDATA[<=]]> 900 THEN 'VIGENTE' END 
+	WHEN INTERNAL_PRIORITY = 4 THEN 
+	        CASE WHEN CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) > 5760 THEN 'VENCIDO'
+	        WHEN CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) > 5700 AND CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) <![CDATA[<=]]> 5760 THEN 'POR VENCER'
+	        WHEN CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) <![CDATA[<=]]> 5700 THEN 'VIGENTE' END 
+	END STATUSLA,
+	STATUS,CREATOR_ID, NOTIFIER, OWNER_GROUP_ID, OWNER_GROUP, OWNER, OWNER_ID, SUMMARY, WORKLOG, RES_COUNTRY
+	FROM
+	
+	CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2
+	
+	WHERE
+	
+	PARENT_CLIENT_ID = 'PE-CTRA-ITS' 
+	AND CLASS = 'INCIDENT' 
+	AND DATE(CREATION_DATE) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2})
+	AND (OWNER_ID = 'NULL' OR OWNER_ID IS NULL)	
+	AND OWNER_GROUP_ID LIKE 'I-RET-PE-VIR01'
+	AND UPPER(SUMMARY) NOT LIKE '%ANEXO%'
+	AND UPPER(SUMMARY) NOT LIKE '%TELEF%' 
+
+UNION ALL
+
+SELECT 
+	COD_TICKET, CLASS, INTERNAL_PRIORITY, CREATION_DATE CREATE_DATE,
+	CAST(TIME_TO_RESOLVE/24 AS INT) || ' días ' || CAST(MOD(TIME_TO_RESOLVE,24) AS INT) || ' horas ' || MOD(CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT),60) || ' minutos.' TIEMPO,
+	'SLA 32 | 8 HORAS' SLA,
+	        CASE WHEN CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT) > 480 THEN 'VENCIDO'
+	        WHEN CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT) > 400 AND CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT) <![CDATA[<=]]> 480 THEN 'POR VENCER'
+	        WHEN CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT) <![CDATA[<=]]> 400 THEN 'VIGENTE' END STATUSLA,
+	STATUS,CREATOR_ID, NOTIFIER, OWNER_GROUP_ID, OWNER_GROUP, OWNER, OWNER_ID, SUMMARY, WORKLOG, RES_COUNTRY
+	FROM 
+	CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2
+	WHERE
+	
+	PARENT_CLIENT_ID = 'PE-CTRA-ITS' 
+	AND CLASS = 'SR' 
+	AND DATE(CREATION_DATE) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2}) 
+	AND OWNER_GROUP_ID LIKE 'I-RET-PE-VIR01'
+	AND (UPPER(SUMMARY) LIKE '%CONFIGURACI%'
+	OR UPPER(SUMMARY) LIKE '%CAMB%'
+	OR UPPER(DETAILS) LIKE '%CONFIGURACI%'
+	OR UPPER(DETAILS) LIKE '%CAMB%')
+	AND (UPPER(SUMMARY) LIKE '%ANEXO%' OR UPPER(DETAILS) LIKE '%ANEXO%')
+	
+	</if>
+	
+	<if test="strTeam == 'SURA'">
+	
+	SELECT 
+	COD_TICKET, CLASS, STATUS, INTERNAL_PRIORITY, CREATION_DATE CREATE_DATE, ACTUAL_FINISH, SUMMARY, CREATOR, CREATOR_ID, OWNER, OWNER_ID, WORKLOG, OWNER_GROUP, TIME_TO_RESOLVE,
+	CAST(TIME_TO_RESOLVE/24 AS INT) || ' días ' || CAST(MOD(TIME_TO_RESOLVE,24) AS INT) || ' horas ' || MOD(CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT),60) || ' minutos.' TIEMPO,
+	CASE WHEN INTERNAL_PRIORITY = 1 THEN 'P1 | 95% <![CDATA[<=]]> 3 hrs' 
+	WHEN INTERNAL_PRIORITY = 2 THEN 'P2 | 95% <![CDATA[<=]]> 8 hrs'
+	WHEN INTERNAL_PRIORITY = 3 THEN 'P3 | 95% <![CDATA[<=]]> 24 hrs'
+	WHEN INTERNAL_PRIORITY = 4 THEN 'P4 | 95% <![CDATA[<=]]> 48 hrs'
+	END SLA,
+	CASE WHEN COMPLIANCE_SLA_RESOLVE = 'In criteria' THEN 'VIGENTE' ELSE 'VENCIDO' END STATUSLA,
+	NOTIFIER, OWNER_GROUP_ID, OWNER_GROUP, WORKLOG, RES_COUNTRY
+	
+	FROM CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2
+	WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+	AND DATE(CREATION_DATE) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2}) AND GLOBAL_TICKET IS NULL
+	
+	UNION ALL
+	
+	SELECT 
+	COD_TICKET, CLASS, STATUS, INTERNAL_PRIORITY, CREATION_DATE CREATE_DATE, ACTUAL_FINISH, SUMMARY, CREATOR, CREATOR_ID, OWNER, OWNER_ID, WORKLOG, OWNER_GROUP, TIME_TO_RESOLVE,
+	CAST(TIME_TO_RESOLVE/24 AS INT) || ' días ' || CAST(MOD(TIME_TO_RESOLVE,24) AS INT) || ' horas ' || MOD(CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT),60) || ' minutos.' TIEMPO,
+	CASE WHEN INTERNAL_PRIORITY = 1 THEN 'P1 | 90% <![CDATA[<=]]> 4 hrs' 
+	WHEN INTERNAL_PRIORITY = 2 THEN 'P2 | 90% <![CDATA[<=]]> 12 hrs'
+	WHEN INTERNAL_PRIORITY = 3 THEN 'P3 | 90% <![CDATA[<=]]> 36 hrs'
+	WHEN INTERNAL_PRIORITY = 4 THEN 'P4 | 90% <![CDATA[<=]]> 48 hrs'
+	WHEN INTERNAL_PRIORITY = 5 THEN 'P5 | 90% <![CDATA[<=]]> 72 hrs'
+	END SLA,
+	CASE WHEN COMPLIANCE_SLA_RESOLVE = 'In criteria' THEN 'VIGENTE' ELSE 'VENCIDO' END STATUSLA,
+	NOTIFIER, OWNER_GROUP_ID, OWNER_GROUP, WORKLOG, RES_COUNTRY
+	
+	FROM CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2
+	WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_RESOLVE IS NOT NULL AND CLASS IN ('SR') AND RES_COUNTRY IN ('Peru', 'India')
+	AND DATE(CREATION_DATE) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2}) AND GLOBAL_TICKET IS NULL
+	
+	
+	UNION ALL
+	
+	SELECT 
+	COD_TICKET, CLASS, STATUS, INTERNAL_PRIORITY, CREATION_DATE CREATE_DATE, ACTUAL_FINISH, SUMMARY, CREATOR, CREATOR_ID, OWNER, OWNER_ID, WORKLOG, OWNER_GROUP, TIME_TO_RESOLVE,
+	CAST(TIME_TO_RESOLVE/24 AS INT) || ' días ' || CAST(MOD(TIME_TO_RESOLVE,24) AS INT) || ' horas ' || MOD(CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT),60) || ' minutos.' TIEMPO,
+	CASE WHEN INTERNAL_PRIORITY = 1 THEN 'P1 | 95% <![CDATA[<=]]> 15 min' 
+	WHEN INTERNAL_PRIORITY = 2 THEN 'P2 | 95% <![CDATA[<=]]> 60 min'
+	WHEN INTERNAL_PRIORITY = 3 THEN 'P3 | 95% <![CDATA[<=]]> 4 hrs'
+	WHEN INTERNAL_PRIORITY = 4 THEN 'P4 | 95% <![CDATA[<=]]> 12 hrs'
+	END SLA,
+	CASE WHEN COMPLIANCE_SLA_DISPATCH = 'In criteria' THEN 'VIGENTE' ELSE 'VENCIDO' END STATUSLA,
+	NOTIFIER, OWNER_GROUP_ID, OWNER_GROUP, WORKLOG, RES_COUNTRY
+	
+	FROM CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2
+	WHERE PARENT_CLIENT_ID = 'PE-SURA-SO' AND COMPLIANCE_SLA_DISPATCH IS NOT NULL AND CLASS IN ('INCIDENT') AND RES_COUNTRY IN ('Peru', 'India')
+	AND DATE(CREATION_DATE) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2}) AND GLOBAL_TICKET IS NULL
+	
+	</if>
+	
+	</select>
+	
+	
+	
+	
+	
+	<resultMap id="resultSLA_Promedio" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketPrioridad" column="INTERNAL_PRIORITY"/>
+		<result property="ticketFechaCreacion" column="CREATE_DATE"/>
+		<result property="strValor1" column="PROMEDIO"/>
+	</resultMap>
+	
+	<select id="getSLA_Promedio" resultMap="resultSLA_Promedio">
+		<if test="strTeam == 'RIMAC'">
+		SELECT INTERNAL_PRIORITY, DATE(CREATION_DATE) CREATE_DATE,
+		CAST(AVG(TIME_TO_RESOLVE) AS DECIMAL(8,2)) PROMEDIO
+		FROM 
+			CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS
+		WHERE 
+			STATUS_GROUP = 'Closed' AND (GLOBAL_TICKET NOT LIKE '%IN%' OR GLOBAL_TICKET IS NULL) AND PARENT_CLIENT_ID = 'PE-RIMAC-SO' AND CLASS = 'INCIDENT' 
+			AND DATE(CREATION_DATE) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2})
+			AND OWNER_GROUP_ID NOT LIKE '%-CLI-%' AND OWNER_GROUP_ID NOT LIKE '%-DCS-%' 
+			AND OWNER_GROUP_ID NOT LIKE '%-HWT-%' AND OWNER_GROUP_ID NOT LIKE '%-SDD-%'
+			AND OWNER_GROUP_ID NOT LIKE '%-CMS-%' AND OWNER_GROUP_ID NOT LIKE '%-GSB-%' 
+			AND OWNER_GROUP_ID NOT LIKE '%-SDM-%' AND OWNER_GROUP_ID NOT LIKE '%-SDM-%'
+			AND COD_TICKET NOT IN (
+			SELECT COD_TICKET FROM CONSUMOS.V_SAB_SCCD_TICKET_WORKORDER_CANCELADOS WHERE STATUS = 'CANCELLED'
+		    AND PARENT_CLIENT_ID = 'PE-RIMAC-SO' AND CLASS = 'INCIDENT' 
+			AND DATE(CREATION_DATE) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2})
+			AND OWNER_GROUP_ID NOT LIKE '%-CLI-%' AND OWNER_GROUP_ID NOT LIKE '%-DCS-%' 
+			AND OWNER_GROUP_ID NOT LIKE '%-HWT-%' AND OWNER_GROUP_ID NOT LIKE '%-SDD-%'
+			AND OWNER_GROUP_ID NOT LIKE '%-CMS-%' AND OWNER_GROUP_ID NOT LIKE '%-GSB-%' 
+			AND OWNER_GROUP_ID NOT LIKE '%-SDM-%' AND OWNER_GROUP_ID NOT LIKE '%-SDM-%'
+			)
+		GROUP BY INTERNAL_PRIORITY, DATE(CREATION_DATE)
+		</if>
+		
+		<if test="strTeam == 'CENTRIA'">
+		SELECT 'TOTAL' INTERNAL_PRIORITY, DATE(CREATION_DATE) CREATE_DATE,
+		CAST(AVG(TIME_TO_RESOLVE) AS DECIMAL(8,2)) PROMEDIO
+		FROM 
+			CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS
+		WHERE 
+			STATUS_GROUP = 'Closed' AND (GLOBAL_TICKET NOT LIKE '%IN%' OR GLOBAL_TICKET IS NULL) AND PARENT_CLIENT_ID = 'PE-CTRA-ITS'  
+			AND CLASS = 'SR' 
+			AND DATE(CREATION_DATE) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2}) 
+			AND OWNER_GROUP_ID LIKE 'I-RET-PE-VIR01'
+			AND (UPPER(SUMMARY) LIKE '%CONFIGURACI%'
+			OR UPPER(SUMMARY) LIKE '%CAMB%'
+			OR UPPER(DETAILS) LIKE '%CONFIGURACI%'
+			OR UPPER(DETAILS) LIKE '%CAMB%')
+			AND (UPPER(SUMMARY) LIKE '%ANEXO%' OR UPPER(DETAILS) LIKE '%ANEXO%')
+		GROUP BY DATE(CREATION_DATE)
+		</if>
+	</select>
+	
+	
+	<resultMap id="resultSLA_PromedioTotal" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketPrioridad" column="INTERNAL_PRIORITY"/>
+		<result property="strValor1" column="SLA"/>
+		<result property="strValor2" column="ESTADO"/>
+		<result property="strValor3" column="TOTAL"/>
+		<result property="strValor4" column="PROMEDIO"/>
+	</resultMap>
+	
+	<select id="getSLA_PromedioTotal" resultMap="resultSLA_PromedioTotal">
+		<if test="strTeam == 'RIMAC'">
+		SELECT 
+			COALESCE(CAST(INTERNAL_PRIORITY AS VARCHAR(30)),'TOTAL') INTERNAL_PRIORITY, 
+			CASE INTERNAL_PRIORITY WHEN 1 THEN '2 HORAS' WHEN 2 THEN '4 HORAS' WHEN 3 THEN '5 HORAS' WHEN 4 THEN '7 HORAS' ELSE '' END SLA,
+			CASE INTERNAL_PRIORITY WHEN 1 THEN CASE WHEN CAST(AVG(TIME_TO_RESOLVE) AS DECIMAL(8,2)) > 2 THEN 'VENCIDO' ELSE 'VIGENTE' END
+			WHEN 2 THEN CASE WHEN CAST(AVG(TIME_TO_RESOLVE) AS DECIMAL(8,2)) > 4 THEN 'VENCIDO' ELSE 'VIGENTE' END
+			WHEN 3 THEN CASE WHEN CAST(AVG(TIME_TO_RESOLVE) AS DECIMAL(8,2)) > 5 THEN 'VENCIDO' ELSE 'VIGENTE' END
+			WHEN 4 THEN CASE WHEN CAST(AVG(TIME_TO_RESOLVE) AS DECIMAL(8,2)) > 7 THEN 'VENCIDO' ELSE 'VIGENTE' END
+			ELSE '' END ESTADO,
+			COUNT(1) TOTAL, CAST(AVG(TIME_TO_RESOLVE) AS DECIMAL(8,2)) PROMEDIO
+		FROM 
+			CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS
+		WHERE 
+			STATUS_GROUP = 'Closed' AND (GLOBAL_TICKET NOT LIKE '%IN%' OR GLOBAL_TICKET IS NULL) AND PARENT_CLIENT_ID = 'PE-RIMAC-SO' AND CLASS = 'INCIDENT' AND DATE(CREATION_DATE) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2})
+			AND OWNER_GROUP_ID NOT LIKE '%-CLI-%' AND OWNER_GROUP_ID NOT LIKE '%-DCS-%' 
+			AND OWNER_GROUP_ID NOT LIKE '%-HWT-%' AND OWNER_GROUP_ID NOT LIKE '%-SDD-%'
+			AND OWNER_GROUP_ID NOT LIKE '%-CMS-%' AND OWNER_GROUP_ID NOT LIKE '%-GSB-%' 
+			AND OWNER_GROUP_ID NOT LIKE '%-SDM-%' AND OWNER_GROUP_ID NOT LIKE '%-SDM-%'
+			AND COD_TICKET NOT IN (
+			SELECT COD_TICKET FROM CONSUMOS.V_SAB_SCCD_TICKET_WORKORDER_CANCELADOS WHERE STATUS = 'CANCELLED'
+		    AND PARENT_CLIENT_ID = 'PE-RIMAC-SO' AND CLASS = 'INCIDENT' 
+			AND DATE(CREATION_DATE) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2})
+			AND OWNER_GROUP_ID NOT LIKE '%-CLI-%' AND OWNER_GROUP_ID NOT LIKE '%-DCS-%' 
+			AND OWNER_GROUP_ID NOT LIKE '%-HWT-%' AND OWNER_GROUP_ID NOT LIKE '%-SDD-%'
+			AND OWNER_GROUP_ID NOT LIKE '%-CMS-%' AND OWNER_GROUP_ID NOT LIKE '%-GSB-%' 
+			AND OWNER_GROUP_ID NOT LIKE '%-SDM-%' AND OWNER_GROUP_ID NOT LIKE '%-SDM-%'
+			)
+		GROUP BY INTERNAL_PRIORITY
+		ORDER BY 1 ASC
+		</if>
+		
+		<if test="strTeam == 'CENTRIA'">
+		SELECT 
+			INTERNAL_PRIORITY,
+				CASE WHEN INTERNAL_PRIORITY = 1 THEN 'SLA 26 | 1 HORAS'
+				WHEN INTERNAL_PRIORITY = 2 THEN 'SLA 27 | 4 HORAS'
+				WHEN INTERNAL_PRIORITY = 3 THEN 'SLA 28 | 16 HORAS'
+				WHEN INTERNAL_PRIORITY = 4 THEN 'SLA 29 | 96 HORAS' END SLA,
+				CASE WHEN INTERNAL_PRIORITY = 1 THEN 
+				        CASE WHEN CAST(AVG(TIME_TO_DISPATCH) * 60 AS DECIMAL(8,2)) > 60 THEN 'VENCIDO'
+				        WHEN CAST(AVG(TIME_TO_DISPATCH) * 60 AS DECIMAL(8,2)) > 30 AND CAST(AVG(TIME_TO_DISPATCH) * 60 AS DECIMAL(8,2)) <![CDATA[<=]]> 60 THEN 'POR VENCER'
+				        WHEN CAST(AVG(TIME_TO_DISPATCH) * 60 AS DECIMAL(8,2)) <![CDATA[<=]]> 30 THEN 'VIGENTE' END
+				WHEN INTERNAL_PRIORITY = 2 THEN 
+				        CASE WHEN CAST(AVG(TIME_TO_DISPATCH) * 60 AS DECIMAL(8,2)) > 240 THEN 'VENCIDO'
+				        WHEN CAST(AVG(TIME_TO_DISPATCH) * 60 AS DECIMAL(8,2)) > 200 AND CAST(AVG(TIME_TO_DISPATCH) * 60 AS DECIMAL(8,2)) <![CDATA[<=]]> 240 THEN 'POR VENCER'
+				        WHEN CAST(AVG(TIME_TO_DISPATCH) * 60 AS DECIMAL(8,2)) <![CDATA[<=]]> 200 THEN 'VIGENTE' END
+				WHEN INTERNAL_PRIORITY = 3 THEN 
+				        CASE WHEN CAST(AVG(TIME_TO_DISPATCH) * 60 AS DECIMAL(8,2)) > 960 THEN 'VENCIDO'
+				        WHEN CAST(AVG(TIME_TO_DISPATCH) * 60 AS DECIMAL(8,2)) > 900 AND CAST(AVG(TIME_TO_DISPATCH) * 60 AS DECIMAL(8,2)) <![CDATA[<=]]> 960 THEN 'POR VENCER'
+				        WHEN CAST(AVG(TIME_TO_DISPATCH) * 60 AS DECIMAL(8,2)) <![CDATA[<=]]> 900 THEN 'VIGENTE' END 
+				WHEN INTERNAL_PRIORITY = 4 THEN 
+				        CASE WHEN CAST(AVG(TIME_TO_DISPATCH) * 60 AS DECIMAL(8,2)) > 5760 THEN 'VENCIDO'
+				        WHEN CAST(AVG(TIME_TO_DISPATCH) * 60 AS DECIMAL(8,2)) > 5700 AND CAST(AVG(TIME_TO_DISPATCH) * 60 AS DECIMAL(8,2)) <![CDATA[<=]]> 5760 THEN 'POR VENCER'
+				        WHEN CAST(AVG(TIME_TO_DISPATCH) * 60 AS DECIMAL(8,2)) <![CDATA[<=]]> 5700 THEN 'VIGENTE' END
+				END ESTADO,
+				COUNT(1) TOTAL, CAST(AVG(TIME_TO_DISPATCH) AS DECIMAL(8,2)) PROMEDIO
+				FROM
+				CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS
+				WHERE 
+				STATUS_GROUP = 'Closed' AND (GLOBAL_TICKET NOT LIKE '%IN%' OR GLOBAL_TICKET IS NULL) AND PARENT_CLIENT_ID = 'PE-CTRA-ITS'
+				AND CLASS IN ('INCIDENT')
+				AND DATE(CREATION_DATE) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2})
+				AND OWNER_GROUP_ID = 'I-RET-PE-VIR01'
+				AND UPPER(SUMMARY) NOT LIKE '%TELEF%'
+				AND UPPER(SUMMARY) NOT LIKE '%LLAM%'
+			    AND UPPER(SUMMARY) NOT LIKE '%ANEXO%'
+			    GROUP BY INTERNAL_PRIORITY
+		
+		UNION ALL
+		
+		SELECT 
+			0 INTERNAL_PRIORITY,
+			'SLA 32 | 8 HRS' SLA, 
+			CASE WHEN CAST(AVG(TIME_TO_RESOLVE) AS DECIMAL(8,2)) > 8 THEN 'VENCIDO' ELSE 'VIGENTE' END ESTADO,
+			COUNT(1) TOTAL, CAST(AVG(TIME_TO_RESOLVE) AS DECIMAL(8,2)) PROMEDIO
+		FROM 
+			CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS
+		WHERE 
+			STATUS_GROUP = 'Closed' AND (GLOBAL_TICKET NOT LIKE '%IN%' OR GLOBAL_TICKET IS NULL) AND PARENT_CLIENT_ID = 'PE-CTRA-ITS'
+			AND CLASS = 'SR'
+			AND DATE(CREATION_DATE) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2})
+			AND OWNER_GROUP_ID LIKE 'I-RET-PE-VIR01'
+			AND (UPPER(SUMMARY) LIKE '%CONFIGURACI%'
+			OR UPPER(SUMMARY) LIKE '%CAMB%'
+			OR UPPER(DETAILS) LIKE '%CONFIGURACI%'
+			OR UPPER(DETAILS) LIKE '%CAMB%')
+			AND (UPPER(SUMMARY) LIKE '%ANEXO%' OR UPPER(DETAILS) LIKE '%ANEXO%')
+		
+		</if>
+	</select>
+	
+	
+	
+	<resultMap id="resultReportSLA_PromedioTotal" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="idTicket" column="COD_TICKET"/>
+		<result property="ticketClass" column="CLASS"/>
+		<result property="ticketEstado" column="STATUS"/>
+		<result property="ticketPrioridad" column="INTERNAL_PRIORITY"/>
+		<result property="ticketFechaCreacion" column="CREATE_DATE"/>
+		<result property="ticketFechaFin" column="ACTUAL_FINISH"/>
+		<result property="ticketTitulo" column="SUMMARY"/>
+		<result property="ticketCreador" column="CREATOR"/>
+		<result property="ticketEmailCreador" column="CREATOR_ID"/>
+		<result property="ticketPropietario" column="OWNER"/>
+		<result property="ticketEmailPropietario" column="OWNER_ID"/>
+		<result property="ticketLastWorkLog" column="WORKLOG"/>
+		<result property="ticketGrupoPropietario" column="OWNER_GROUP"/>
+		<result property="ticketTimeToResolve" column="TIME_TO_RESOLVE"/>
+		<result property="strValor1" column="TIEMPO"/>
+		<result property="strValor2" column="SLA"/>
+		<result property="strValor3" column="STATUSLA"/>
+	</resultMap>
+	
+	<select id="getReportSLA_PromedioTotal" resultMap="resultReportSLA_PromedioTotal">
+		<if test="strTeam == 'RIMAC'">
+		SELECT 
+			COD_TICKET, CLASS, STATUS, INTERNAL_PRIORITY, CREATION_DATE CREATE_DATE, ACTUAL_FINISH, SUMMARY, CREATOR, CREATOR_ID, OWNER, OWNER_ID, WORKLOG, OWNER_GROUP, TIME_TO_RESOLVE,
+			 
+			CAST(TIME_TO_RESOLVE/24 AS INT) || ' días ' || CAST(MOD(TIME_TO_RESOLVE,24) AS INT) || ' horas ' || MOD(CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT),60) || ' minutos.' TIEMPO,
+			CASE INTERNAL_PRIORITY WHEN 1 THEN '2 HORAS' WHEN 2 THEN '4 HORAS' WHEN 3 THEN '5 HORAS' WHEN 4 THEN '7 HORAS' ELSE '' END SLA,
+			CASE INTERNAL_PRIORITY WHEN 1 THEN CASE WHEN CAST(TIME_TO_RESOLVE AS DECIMAL(8,2)) > 2 THEN 'VENCIDO' ELSE 'VIGENTE' END
+			WHEN 2 THEN CASE WHEN CAST(TIME_TO_RESOLVE AS DECIMAL(8,2)) > 4 THEN 'VENCIDO' ELSE 'VIGENTE' END
+			WHEN 3 THEN CASE WHEN CAST(TIME_TO_RESOLVE AS DECIMAL(8,2)) > 5 THEN 'VENCIDO' ELSE 'VIGENTE' END
+			WHEN 4 THEN CASE WHEN CAST(TIME_TO_RESOLVE AS DECIMAL(8,2)) > 7 THEN 'VENCIDO' ELSE 'VIGENTE' END
+			ELSE '' END STATUSLA
+		FROM 
+			CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS
+		WHERE 
+			STATUS_GROUP = 'Closed' AND (GLOBAL_TICKET NOT LIKE '%IN%' OR GLOBAL_TICKET IS NULL) AND PARENT_CLIENT_ID = 'PE-RIMAC-SO' AND CLASS = 'INCIDENT' AND DATE(CREATION_DATE) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2})
+			AND OWNER_GROUP_ID NOT LIKE '%-CLI-%' AND OWNER_GROUP_ID NOT LIKE '%-DCS-%' 
+			AND OWNER_GROUP_ID NOT LIKE '%-HWT-%' AND OWNER_GROUP_ID NOT LIKE '%-SDD-%'
+			AND OWNER_GROUP_ID NOT LIKE '%-CMS-%' AND OWNER_GROUP_ID NOT LIKE '%-GSB-%' 
+			AND OWNER_GROUP_ID NOT LIKE '%-SDM-%' AND OWNER_GROUP_ID NOT LIKE '%-SDM-%'
+			AND COD_TICKET NOT IN (
+			SELECT COD_TICKET FROM CONSUMOS.V_SAB_SCCD_TICKET_WORKORDER_CANCELADOS WHERE STATUS = 'CANCELLED'
+		    AND PARENT_CLIENT_ID = 'PE-RIMAC-SO' AND CLASS = 'INCIDENT' 
+			AND DATE(CREATION_DATE) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2})
+			AND OWNER_GROUP_ID NOT LIKE '%-CLI-%' AND OWNER_GROUP_ID NOT LIKE '%-DCS-%' 
+			AND OWNER_GROUP_ID NOT LIKE '%-HWT-%' AND OWNER_GROUP_ID NOT LIKE '%-SDD-%'
+			AND OWNER_GROUP_ID NOT LIKE '%-CMS-%' AND OWNER_GROUP_ID NOT LIKE '%-GSB-%' 
+			AND OWNER_GROUP_ID NOT LIKE '%-SDM-%' AND OWNER_GROUP_ID NOT LIKE '%-SDM-%'
+			)
+		ORDER BY 1 ASC
+		</if>
+		
+		<if test="strTeam == 'CENTRIA'">
+		SELECT 
+			COD_TICKET, CLASS, STATUS, INTERNAL_PRIORITY, CREATION_DATE CREATE_DATE, ACTUAL_START ACTUAL_FINISH, SUMMARY, CREATOR, CREATOR_ID, OWNER, OWNER_ID, WORKLOG, OWNER_GROUP, TIME_TO_DISPATCH TIME_TO_RESOLVE,
+			CAST(TIME_TO_DISPATCH/24 AS INT) || ' días ' || CAST(MOD(TIME_TO_DISPATCH,24) AS INT) || ' horas ' || MOD(CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT),60) || ' minutos.' TIEMPO,
+			CASE WHEN INTERNAL_PRIORITY = 1 THEN 'SLA 26 | 1 HORAS'
+			WHEN INTERNAL_PRIORITY = 2 THEN 'SLA 27 | 4 HORAS'
+			WHEN INTERNAL_PRIORITY = 3 THEN 'SLA 28 | 16 HORAS'
+			WHEN INTERNAL_PRIORITY = 4 THEN 'SLA 29 | 96 HORAS' END SLA,
+			CASE WHEN INTERNAL_PRIORITY = 1 THEN 
+			        CASE WHEN CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) > 60 THEN 'VENCIDO'
+			        WHEN CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) > 30 AND CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) <![CDATA[<=]]> 60 THEN 'POR VENCER'
+			        WHEN CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) <![CDATA[<=]]> 30 THEN 'VIGENTE' END
+			WHEN INTERNAL_PRIORITY = 2 THEN 
+			        CASE WHEN CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) > 240 THEN 'VENCIDO'
+			        WHEN CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) > 200 AND CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) <![CDATA[<=]]> 240 THEN 'POR VENCER'
+			        WHEN CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) <![CDATA[<=]]> 200 THEN 'VIGENTE' END
+ 			WHEN INTERNAL_PRIORITY = 3 THEN
+			        CASE WHEN CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) > 960 THEN 'VENCIDO'
+			        WHEN CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) > 900 AND CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) <![CDATA[<=]]> 960 THEN 'POR VENCER'
+			        WHEN CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) <![CDATA[<=]]> 900 THEN 'VIGENTE' END 
+			WHEN INTERNAL_PRIORITY = 4 THEN 
+			        CASE WHEN CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) > 5760 THEN 'VENCIDO'
+			        WHEN CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) > 5700 AND CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) <![CDATA[<=]]> 5760 THEN 'POR VENCER'
+			        WHEN CAST(ROUND(TIME_TO_DISPATCH * 60) AS INT) <![CDATA[<=]]> 5700 THEN 'VIGENTE' END
+			END STATUSLA
+			FROM
+			CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS
+			WHERE 
+			STATUS_GROUP = 'Closed' AND (GLOBAL_TICKET NOT LIKE '%IN%' OR GLOBAL_TICKET IS NULL) AND PARENT_CLIENT_ID = 'PE-CTRA-ITS'
+			AND CLASS IN ('INCIDENT')
+			AND DATE(CREATION_DATE) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2})
+			AND OWNER_GROUP_ID = 'I-RET-PE-VIR01'
+			AND UPPER(SUMMARY) NOT LIKE '%TELEF%'
+			AND UPPER(SUMMARY) NOT LIKE '%LLAM%'
+		    AND UPPER(SUMMARY) NOT LIKE '%ANEXO%'
+		
+		UNION ALL
+		
+		SELECT		 
+			COD_TICKET, CLASS, STATUS, INTERNAL_PRIORITY, CREATION_DATE CREATE_DATE, ACTUAL_FINISH, SUMMARY, CREATOR, CREATOR_ID, OWNER, OWNER_ID, WORKLOG, OWNER_GROUP, TIME_TO_RESOLVE,
+			CAST(TIME_TO_RESOLVE/24 AS INT) || ' días ' || CAST(MOD(TIME_TO_RESOLVE,24) AS INT) || ' horas ' || MOD(CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT),60) || ' minutos.' TIEMPO,
+			CASE WHEN CLASS = 'INCIDENT' THEN 'SLA 32 | 8 HORAS' END SLA,
+			CASE WHEN CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT) > 480 THEN 'VENCIDO'
+			     WHEN CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT) > 400 AND CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT) <![CDATA[<=]]> 480 THEN 'POR VENCER'
+			     WHEN CAST(ROUND(TIME_TO_RESOLVE * 60) AS INT) <![CDATA[<=]]> 400 THEN 'VIGENTE' END STATUSLA
+			FROM
+			CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS
+			WHERE
+			STATUS_GROUP = 'Closed' AND (GLOBAL_TICKET NOT LIKE '%IN%' OR GLOBAL_TICKET IS NULL) AND PARENT_CLIENT_ID = 'PE-CTRA-ITS'
+			AND CLASS IN ('SR')
+			AND DATE(CREATION_DATE) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2})
+			AND OWNER_GROUP_ID LIKE 'I-RET-PE-VIR01'
+			AND (UPPER(SUMMARY) LIKE '%CONFIGURACI%'
+			OR UPPER(SUMMARY) LIKE '%CAMB%'
+			OR UPPER(DETAILS) LIKE '%CONFIGURACI%'
+			OR UPPER(DETAILS) LIKE '%CAMB%')
+			AND (UPPER(SUMMARY) LIKE '%ANEXO%' OR UPPER(DETAILS) LIKE '%ANEXO%')
+		</if>
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	<resultMap id="resultSLA_EspecialistasPrioridad" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="ticketEmailPropietario" column="OWNER_ID"/>
+		<result property="ticketPropietario" column="OWNER"/>
+		<result property="strValor1" column="TOTAL"/>
+		<result property="strValor2" column="PROMEDIO"/>
+	</resultMap>
+	
+	<select id="getSLA_EspecialistasPrioridad" resultMap="resultSLA_EspecialistasPrioridad">
+	
+	<if test="strTeam == 'RIMAC'">
+	SELECT 
+		OWNER_ID, OWNER, COUNT(1) TOTAL, AVG(TIME_TO_RESOLVE) PROMEDIO
+	FROM 
+		CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS
+	WHERE 
+		STATUS_GROUP = 'Closed' AND (GLOBAL_TICKET NOT LIKE '%IN%' OR GLOBAL_TICKET IS NULL) AND PARENT_CLIENT_ID = 'PE-RIMAC-SO' AND CLASS = 'INCIDENT' AND DATE(CREATION_DATE) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2})
+		AND OWNER_GROUP_ID NOT LIKE '%-CLI-%' AND OWNER_GROUP_ID NOT LIKE '%-DCS-%' 
+		AND OWNER_GROUP_ID NOT LIKE '%-HWT-%' AND OWNER_GROUP_ID NOT LIKE '%-SDD-%'
+		AND OWNER_GROUP_ID NOT LIKE '%-CMS-%' AND OWNER_GROUP_ID NOT LIKE '%-GSB-%' 
+		AND OWNER_GROUP_ID NOT LIKE '%-SDM-%' AND OWNER_GROUP_ID NOT LIKE '%-SDM-%'
+		AND COD_TICKET NOT IN (
+			SELECT COD_TICKET FROM CONSUMOS.V_SAB_SCCD_TICKET_WORKORDER_CANCELADOS WHERE STATUS = 'CANCELLED'
+		    AND PARENT_CLIENT_ID = 'PE-RIMAC-SO' AND CLASS = 'INCIDENT' 
+			AND DATE(CREATION_DATE) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2})
+			AND OWNER_GROUP_ID NOT LIKE '%-CLI-%' AND OWNER_GROUP_ID NOT LIKE '%-DCS-%' 
+			AND OWNER_GROUP_ID NOT LIKE '%-HWT-%' AND OWNER_GROUP_ID NOT LIKE '%-SDD-%'
+			AND OWNER_GROUP_ID NOT LIKE '%-CMS-%' AND OWNER_GROUP_ID NOT LIKE '%-GSB-%' 
+			AND OWNER_GROUP_ID NOT LIKE '%-SDM-%' AND OWNER_GROUP_ID NOT LIKE '%-SDM-%'
+			)
+	GROUP BY OWNER_ID, OWNER ORDER BY 4 DESC
+	</if>
+	<if test="strTeam == 'CENTRIA'">
+	SELECT 
+		OWNER_ID, OWNER, COUNT(1) TOTAL, AVG(TIME_TO_RESOLVE) PROMEDIO
+	FROM 
+		CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS
+	WHERE 
+		STATUS_GROUP = 'Closed' AND (GLOBAL_TICKET NOT LIKE '%IN%' OR GLOBAL_TICKET IS NULL) AND PARENT_CLIENT_ID = 'PE-CTRA-ITS'  
+		AND CLASS = 'SR' 
+		AND DATE(CREATION_DATE) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2}) 
+		AND OWNER_GROUP_ID LIKE 'I-RET-PE-VIR01'
+		AND (UPPER(SUMMARY) LIKE '%CONFIGURACI%'
+		OR UPPER(SUMMARY) LIKE '%CAMB%'
+		OR UPPER(DETAILS) LIKE '%CONFIGURACI%'
+		OR UPPER(DETAILS) LIKE '%CAMB%')
+		AND (UPPER(SUMMARY) LIKE '%ANEXO%' OR UPPER(DETAILS) LIKE '%ANEXO%')
+	GROUP BY OWNER_ID, OWNER ORDER BY 4 DESC
+	</if>
+	</select>
+	
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	<!-- SLA PASES -->
+	
+	<resultMap id="resultPasesNoProductivos" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="idTicket" column="COD_TICKET"/>
+		<result property="ticketIdEstado" column="STATUS"/>
+		<result property="ticketCreador" column="CREATOR"/>
+		<result property="ticketGrupoPropietario" column="OWNER_GROUP"/>
+		<result property="ticketPropietario" column="OWNER"/>
+		<result property="ticketTitulo" column="SUMMARY"/>
+		<result property="ticketLastWorkLog" column="WORKLOG"/>
+		<result property="ticketFechaCreacion" column="CREATION_DATE"/>
+		<result property="strValor1" column="HORARIOCREACION"/>
+		<result property="strValor2" column="FECHALIMITE"/>
+		<result property="strValor3" column="ESTADO"/>
+		<result property="strValor4" column="TIEMPOREST"/>
+		<result property="ticketFechaFin" column="ACTUAL_FINISH"/>
+		<result property="ticketTimeToResolve" column="TIME_TO_RESOLVE"/>
+		
+	</resultMap>
+	
+	<select id="getPasesNoProductivos" resultMap="resultPasesNoProductivos">
+	
+	SELECT COD_TICKET, STATUS,CREATOR,OWNER_GROUP,OWNER, SUMMARY,WORKLOG,CREATION_DATE,HORARIOCREACION,FECHALIMITE,ACTUAL_FINISH,TIME_TO_RESOLVE,
+		CASE WHEN TIEMPOREST <![CDATA[<=]]> 0 AND STATUS = 'SLAHOLD' THEN 'EN ESPERA' WHEN TIEMPOREST <![CDATA[<=]]> 0 THEN 'VENCIDO' ELSE 'VIGENTE' END ESTADO,
+		CASE WHEN TIEMPOREST <![CDATA[<=]]> 0 AND STATUS = 'SLAHOLD' THEN 0 WHEN TIEMPOREST <![CDATA[<=]]> 0 THEN 0 ELSE TIEMPOREST END TIEMPOREST
+		FROM
+		(
+		SELECT COD_TICKET, STATUS,CREATOR,OWNER_GROUP,OWNER, SUMMARY,WORKLOG,CREATION_DATE,HORARIOCREACION,FECHALIMITE,ACTUAL_FINISH,TIME_TO_RESOLVE,
+		
+		<if test="strValor1 == 'BACKLOG'">
+        	TIMESTAMPDIFF(4,CHAR(TIMESTAMP(FECHALIMITE) - TIMESTAMP(CURRENT_TIMESTAMP))) TIEMPOREST
+        </if>
+        <if test="strValor1 == 'RESUELTOS'">
+        	TIMESTAMPDIFF(4,CHAR(TIMESTAMP(FECHALIMITE) - TIMESTAMP(ACTUAL_FINISH))) TIEMPOREST
+        </if>
+		
+		FROM
+		(
+		SELECT COD_TICKET, STATUS,CREATOR,OWNER_GROUP,OWNER, SUMMARY,WORKLOG,CREATION_DATE,HORARIOCREACION,ACTUAL_FINISH,TIME_TO_RESOLVE,
+		CASE WHEN HORARIOCREACION = 'PRIMER TURNO' THEN VARCHAR_FORMAT(CREATION_DATE, 'YYYY-MM-DD') || ' ' || '16:00:00'
+		WHEN HORARIOCREACION = 'SEGUNDO TURNO' THEN VARCHAR_FORMAT(CREATION_DATE, 'YYYY-MM-DD') || ' ' || '22:00:00'
+		WHEN HORARIOCREACION = 'FUERA DE HORARIO1' THEN 
+		      CASE WHEN DAYOFWEEK_ISO(CREATION_DATE) >= 1 AND DAYOFWEEK_ISO(CREATION_DATE) <![CDATA[<=]]> 5 THEN VARCHAR_FORMAT(CREATION_DATE, 'YYYY-MM-DD') || ' ' || '12:00:00'
+		      WHEN DAYOFWEEK_ISO(CREATION_DATE) = 6 THEN VARCHAR_FORMAT(CREATION_DATE + 2 DAY, 'YYYY-MM-DD') || ' ' || '12:00:00'
+                      WHEN DAYOFWEEK_ISO(CREATION_DATE) = 7 THEN VARCHAR_FORMAT(CREATION_DATE + 1 DAY, 'YYYY-MM-DD') || ' ' || '12:00:00' END
+                WHEN HORARIOCREACION = 'FUERA DE HORARIO2' THEN 
+		      CASE WHEN DAYOFWEEK_ISO(CREATION_DATE) >= 1 AND DAYOFWEEK_ISO(CREATION_DATE) <![CDATA[<=]]> 4 THEN VARCHAR_FORMAT(CREATION_DATE + 1 DAY, 'YYYY-MM-DD') || ' ' || '12:00:00'
+		      WHEN DAYOFWEEK_ISO(CREATION_DATE) = 5 THEN VARCHAR_FORMAT(CREATION_DATE + 3 DAY, 'YYYY-MM-DD') || ' ' || '12:00:00'
+		      WHEN DAYOFWEEK_ISO(CREATION_DATE) = 6 THEN VARCHAR_FORMAT(CREATION_DATE + 2 DAY, 'YYYY-MM-DD') || ' ' || '12:00:00'
+                      WHEN DAYOFWEEK_ISO(CREATION_DATE) = 7 THEN VARCHAR_FORMAT(CREATION_DATE + 1 DAY, 'YYYY-MM-DD') || ' ' || '12:00:00' END
+                      END FECHALIMITE
+		FROM
+		(
+		SELECT COD_TICKET, STATUS,CREATOR,OWNER_GROUP,OWNER, SUMMARY,WORKLOG,CREATION_DATE,ACTUAL_FINISH,TIME_TO_RESOLVE,
+		CASE WHEN DAYOFWEEK_ISO(CREATION_DATE) BETWEEN 1 AND 5 AND TIMESTAMP(CREATION_DATE) BETWEEN TIMESTAMP(DATE(CREATION_DATE) || ' 08:00:00') AND TIMESTAMP(DATE(CREATION_DATE) || ' 11:59:59') THEN 'PRIMER TURNO'
+		WHEN DAYOFWEEK_ISO(CREATION_DATE) BETWEEN 1 AND 5 AND TIMESTAMP(CREATION_DATE) BETWEEN TIMESTAMP(DATE(CREATION_DATE) || ' 12:00:00') AND TIMESTAMP(DATE(CREATION_DATE) || ' 17:59:59') THEN 'SEGUNDO TURNO'
+                WHEN TIMESTAMP(CREATION_DATE) BETWEEN TIMESTAMP(DATE(CREATION_DATE) || ' 00:00:00') AND TIMESTAMP(DATE(CREATION_DATE) || ' 07:59:59') THEN 'FUERA DE HORARIO1'
+                WHEN TIMESTAMP(CREATION_DATE) BETWEEN TIMESTAMP(DATE(CREATION_DATE) || ' 18:00:00') AND TIMESTAMP(DATE(CREATION_DATE) || ' 23:59:59') THEN 'FUERA DE HORARIO2'
+                WHEN DAYOFWEEK_ISO(CREATION_DATE) BETWEEN 6 AND 7 AND TIMESTAMP(CREATION_DATE) BETWEEN TIMESTAMP(DATE(CREATION_DATE) || ' 08:00:00') AND TIMESTAMP(DATE(CREATION_DATE) || ' 17:59:59') THEN 'FUERA DE HORARIO1'
+                END HORARIOCREACION
+        
+        <if test="strValor1 == 'BACKLOG'">
+        	FROM CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2
+        </if>
+        <if test="strValor1 == 'RESUELTOS'">
+        	FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS
+        </if>
+		
+		WHERE PARENT_CLIENT_ID = 'PE-RIMAC-SO' AND CLASS = 'SR' 
+		<if test="strValor1 == 'RESUELTOS'">
+        	AND STATUS_GROUP = 'Closed' AND DATE(CREATION_DATE) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2})
+        </if>
+	    AND UPPER(SUMMARY) LIKE '%PASE NO P%'
+		)
+		)
+		)
+		
+	</select>
+	
+	
+	<resultMap id="resultPasesProductivos" type="com.pe.ibm.bean.BeanMaximo">
+		<result property="idTicket" column="COD_TICKET"/>
+		<result property="ticketIdEstado" column="STATUS"/>
+		<result property="ticketCreador" column="CREATOR"/>
+		<result property="ticketGrupoPropietario" column="OWNER_GROUP"/>
+		<result property="ticketPropietario" column="OWNER"/>
+		<result property="ticketTitulo" column="SUMMARY"/>
+		<result property="ticketLastWorkLog" column="WORKLOG"/>
+		<result property="ticketFechaCreacion" column="CREATION_DATE"/>
+		<result property="strValor1" column="HORARIOCREACION"/>
+		<result property="strValor2" column="FECHALIMITE"/>
+		<result property="strValor3" column="ESTADO"/>
+		<result property="strValor4" column="TIEMPOREST"/>
+		<result property="ticketFechaFin" column="ACTUAL_FINISH"/>
+		<result property="ticketTimeToResolve" column="TIME_TO_RESOLVE"/>
+	</resultMap>
+	
+	<select id="getPasesProductivos" resultMap="resultPasesProductivos">
+		SELECT COD_TICKET, STATUS,CREATOR,OWNER_GROUP,OWNER, SUMMARY,WORKLOG,CREATION_DATE,HORARIOCREACION,FECHALIMITE,ACTUAL_FINISH,TIME_TO_RESOLVE,
+		CASE WHEN TIEMPOREST <![CDATA[<=]]> 0 AND STATUS = 'SLAHOLD' THEN 'EN ESPERA' WHEN TIEMPOREST <![CDATA[<=]]> 0 THEN 'VENCIDO' ELSE 'VIGENTE' END ESTADO,
+		CASE WHEN TIEMPOREST <![CDATA[<=]]> 0 AND STATUS = 'SLAHOLD' THEN 0 WHEN TIEMPOREST <![CDATA[<=]]> 0 THEN 0 ELSE TIEMPOREST END TIEMPOREST
+		FROM
+		(
+		SELECT COD_TICKET, STATUS,CREATOR,OWNER_GROUP,OWNER, SUMMARY,WORKLOG,CREATION_DATE,HORARIOCREACION,FECHALIMITE,ACTUAL_FINISH,TIME_TO_RESOLVE,
+		
+		<if test="strValor1 == 'BACKLOG'">
+        	TIMESTAMPDIFF(4,CHAR(TIMESTAMP(FECHALIMITE) - TIMESTAMP(CURRENT_TIMESTAMP))) TIEMPOREST
+        </if>
+        <if test="strValor1 == 'RESUELTOS'">
+        	TIMESTAMPDIFF(4,CHAR(TIMESTAMP(FECHALIMITE) - TIMESTAMP(ACTUAL_FINISH))) TIEMPOREST
+        </if>
+		
+		FROM
+		(
+		SELECT COD_TICKET, STATUS,CREATOR,OWNER_GROUP,OWNER, SUMMARY,WORKLOG,CREATION_DATE,HORARIOCREACION,ACTUAL_FINISH,TIME_TO_RESOLVE,
+		CASE WHEN HORARIOCREACION = 'EN TURNO' THEN VARCHAR_FORMAT(CREATION_DATE, 'YYYY-MM-DD') || ' ' || '23:00:00'
+		WHEN HORARIOCREACION = 'FUERA DE HORARIO1' THEN
+		      CASE WHEN DAYOFWEEK_ISO(CREATION_DATE) = 6 THEN VARCHAR_FORMAT(CREATION_DATE + 2 DAY, 'YYYY-MM-DD') || ' ' || '12:00:00'
+                      WHEN DAYOFWEEK_ISO(CREATION_DATE) = 7 THEN VARCHAR_FORMAT(CREATION_DATE + 1 DAY, 'YYYY-MM-DD') || ' ' || '12:00:00' END
+		WHEN HORARIOCREACION = 'FUERA DE HORARIO2' THEN
+		      CASE WHEN DAYOFWEEK_ISO(CREATION_DATE) >= 1 AND DAYOFWEEK_ISO(CREATION_DATE) <![CDATA[<=]]> 4 THEN VARCHAR_FORMAT(CREATION_DATE + 1 DAY, 'YYYY-MM-DD') || ' ' || '12:00:00'
+		      WHEN DAYOFWEEK_ISO(CREATION_DATE) = 5 THEN VARCHAR_FORMAT(CREATION_DATE + 3 DAY, 'YYYY-MM-DD') || ' ' || '12:00:00'
+		      WHEN DAYOFWEEK_ISO(CREATION_DATE) = 6 THEN VARCHAR_FORMAT(CREATION_DATE + 2 DAY, 'YYYY-MM-DD') || ' ' || '12:00:00'
+                      WHEN DAYOFWEEK_ISO(CREATION_DATE) = 7 THEN VARCHAR_FORMAT(CREATION_DATE + 1 DAY, 'YYYY-MM-DD') || ' ' || '12:00:00' END
+                END FECHALIMITE
+		FROM
+		(
+		SELECT COD_TICKET, STATUS,CREATOR,OWNER_GROUP,OWNER, SUMMARY,WORKLOG,CREATION_DATE,ACTUAL_FINISH,TIME_TO_RESOLVE,
+		CASE
+		WHEN DAYOFWEEK_ISO(CREATION_DATE) BETWEEN 1 AND 5 AND TIMESTAMP(CREATION_DATE) BETWEEN TIMESTAMP(DATE(CREATION_DATE) || ' 00:00:00') AND TIMESTAMP(DATE(CREATION_DATE) || ' 18:00:00') THEN 'EN TURNO'
+		WHEN DAYOFWEEK_ISO(CREATION_DATE) BETWEEN 6 AND 7 AND TIMESTAMP(CREATION_DATE) BETWEEN TIMESTAMP(DATE(CREATION_DATE) || ' 00:00:00') AND TIMESTAMP(DATE(CREATION_DATE) || ' 18:00:00') THEN 'FUERA DE HORARIO1'
+                ELSE 'FUERA DE HORARIO2'
+                END HORARIOCREACION
+        
+		<if test="strValor1 == 'BACKLOG'">
+        	FROM CONSUMOS.V_SAB_SCCD_TICKET_BACKLOG_V2
+        </if>
+        <if test="strValor1 == 'RESUELTOS'">
+        	FROM CONSUMOS.V_SAB_SCCD_TICKET_RESUELTOS
+        </if>
+        
+		WHERE PARENT_CLIENT_ID = 'PE-RIMAC-SO' AND CLASS = 'SR' 
+		<if test="strValor1 == 'RESUELTOS'">
+        	AND STATUS_GROUP = 'Closed' AND DATE(CREATION_DATE) BETWEEN DATE(#{strdate1}) AND DATE(#{strdate2})
+        </if>
+		AND UPPER(SUMMARY) LIKE '%PASE A P%'
+		)
+		)
+		)
+	</select>
+	
+		
+	
+	
+</mapper>

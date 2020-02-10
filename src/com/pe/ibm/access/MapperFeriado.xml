@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="com.pe.ibm.access.MapperFeriado">
+  
+	<resultMap id="resultadoFeriado" type="com.pe.ibm.bean.Feriado">
+		 <result property="fecha" column="FECHA"/>
+		 <result property="descripcion" column="DESCRIPCION"/>
+	</resultMap>
+  
+    <select id="consultaFeriado" parameterType="com.pe.ibm.bean.Feriado" resultMap="resultadoFeriado">
+	SELECT 
+	FECHA, DESCRIPCION
+	
+	FROM
+	SMARTDESK.FERIADO 
+
+	WHERE 
+	FECHA = #{fecha}  
+
+    </select>
+    
+    <select id="consultaTodosFeriado" parameterType="String" resultMap="resultadoFeriado">
+	SELECT 
+	F.FECHA, F.DESCRIPCION
+	FROM
+	SMARTDESK.FERIADO F
+
+	WHERE 
+	TO_CHAR(F.FECHA,'YYYY') = TO_CHAR(CURRENT_TIMESTAMP,'YYYY') OR
+	TO_CHAR(F.FECHA,'YYYY') = TO_CHAR(CURRENT_TIMESTAMP - 1 YEARS,'YYYY')
+
+    </select>
+    
+</mapper>

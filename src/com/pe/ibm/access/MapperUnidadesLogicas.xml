@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="com.pe.ibm.access.MapperUnidadesLogicas">
+	<resultMap id = "result" type = "com.pe.ibm.bean.BeanUnidadesLogicas">
+	  <result property = "id" column = "ID"/>
+	  <result property = "resourceid" column = "RESOURCE_ID"/>
+	  <result property = "ip" column = "IP"/>
+	  <result property = "tower" column = "TOWER"/>
+	  <result property = "towerdesc" column = "TOWERDESC"/>
+	  <result property = "disk" column = "DISK"/>
+	  <result property = "customercode" column = "CUSTOMERCODE"/>
+	  <result property = "customer" column = "CUSTOMER"/>
+   	</resultMap>
+     
+    <select id = "listarunidadeslogicas" resultMap = "result" parameterType = "com.pe.ibm.bean.BeanUnidadesLogicas">     
+     	SELECT W.ID,W.RESOURCE_ID,W.IP,W.TOWER,CASE WHEN W.TOWER = 'cl' then 'Cliente'
+		WHEN W.TOWER = 'wm' then 'wme'
+		WHEN W.TOWER = 'dm' then 'data managment'
+		WHEN W.TOWER = 'w2' then 'wme de rimac'
+		WHEN W.TOWER = 'sa' then 'SAP'
+		WHEN W.TOWER = 'bk' then 'backups'
+		WHEN W.TOWER = 'ec' then 'email colaboration'
+		WHEN W.TOWER = 'c2' then 'Cliente gromero Microsoft'
+		WHEN W.TOWER = 'nw' then 'networking'
+		WHEN W.TOWER = 'web' then 'web'
+		ELSE 'NO TIENE'
+		END as TOWERDESC,
+		W.DISK,C.CUSTOMERCODE,C.CUSTOMER FROM DB2LDS.WINDISKSCAL W
+		INNER JOIN DB2LDS.COMPUTERSYSTEM CS ON CS.RESOURCEID = W.RESOURCE_ID
+		INNER JOIN DB2LDS.CUSTOMER C ON C.CUSTOMERCODE = CS.CUSTOMERCODE
+    </select>
+    
+    <resultMap id = "resultComboResource" type = "com.pe.ibm.bean.BeanUnidadesLogicas">
+	  <result property = "resourceid" column = "RESOURCEID"/>
+   	</resultMap>
+     
+    <select id = "listarcomboresource" resultMap = "resultComboResource" parameterType = "com.pe.ibm.bean.BeanUnidadesLogicas">     
+     	SELECT RESOURCEID FROM DB2LDS.COMPUTERSYSTEM
+    </select> 
+    
+    <insert  id="Insert_Update" parameterType="com.pe.ibm.bean.BeanUnidadesLogicas" statementType="CALLABLE">
+     {call DB2LDS.RUD_UNIDADES_LOGICAS(
+        #{id,javaType=Integer,jdbcType=INTEGER,mode=IN},
+        #{resourceid,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{ip,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{tower,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{disk,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{userMod,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{operacion,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{resultado,javaType=Integer,jdbcType=INTEGER,mode=OUT}
+     )}
+	</insert>
+    
+    
+</mapper>

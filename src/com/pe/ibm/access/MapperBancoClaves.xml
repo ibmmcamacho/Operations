@@ -1,0 +1,50 @@
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="bancoClaves">
+	
+	<resultMap id="resultBancoClaves" type="com.pe.ibm.bean.BeanBancoClaves">
+		<result property="iIdBancoClaves" column="IDBANCOCLAVES" />
+		<result property="strCliente" column="CLIENTE" />
+		<result property="strServidor" column="SERVIDOR" />
+		<result property="strIp" column="IP" />
+		<result property="strInstancia" column="INSTANCIA" />
+		<result property="strMandante" column="MANDANTE" />
+		<result property="strSisSubSis" column="SIS_SUBSIS" />
+		<result property="strUsuario" column="USUARIO" />
+		<result property="strContrasena" column="CONTRASENA" />
+		<result property="strObservaciones" column="OBSERVACIONES" />
+	</resultMap>
+	
+	<select id="getBancoClaves" parameterType="com.pe.ibm.bean.BeanBancoClaves" resultMap="resultBancoClaves">
+		SELECT IDBANCOCLAVES, CLIENTE, SERVIDOR, IP, INSTANCIA, MANDANTE, SIS_SUBSIS, USUARIO, CONTRASENA, OBSERVACIONES FROM OPERACION.BANCOCLAVES WHERE ESTADO = 1
+	</select>
+
+	<insert id="saveBancoClaves" parameterType="com.pe.ibm.bean.BeanBancoClaves">
+		INSERT INTO OPERACION.BANCOCLAVES (CLIENTE, SERVIDOR, IP, INSTANCIA, MANDANTE, SIS_SUBSIS, USUARIO, CONTRASENA, OBSERVACIONES)
+		VALUES(#{strCliente},#{strServidor},#{strIp},#{strInstancia},#{strMandante},#{strSisSubSis},#{strUsuario},#{strContrasena},#{strObservaciones})
+	</insert>
+
+	<update id="updateBancoClaves" parameterType="com.pe.ibm.bean.BeanBancoClaves">
+		UPDATE OPERACION.BANCOCLAVES SET 
+		CLIENTE = #{strCliente},
+		SERVIDOR = #{strServidor},
+		IP = #{strIp},
+		INSTANCIA = #{strInstancia},
+		MANDANTE = #{strMandante},
+		SIS_SUBSIS = #{strSisSubSis},
+		USUARIO = #{strUsuario},
+		CONTRASENA = #{strContrasena},
+		OBSERVACIONES = #{strObservaciones}
+		WHERE IDBANCOCLAVES = #{iIdBancoClaves}
+	</update>
+	
+	<update id="deleteBancoClaves" parameterType="com.pe.ibm.bean.BeanBancoClaves">
+		UPDATE OPERACION.BANCOCLAVES SET 
+			ESTADO = 0
+		WHERE 
+			IDBANCOCLAVES = #{iIdBancoClaves}
+	</update>
+	
+</mapper>

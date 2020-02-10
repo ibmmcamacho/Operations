@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration
+PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<environments default="development">
+		<environment id="development">
+			<transactionManager type="JDBC" />
+			<dataSource type="POOLED">
+				<property name="driver" value="com.ibm.db2.jcc.DB2Driver" />
+				<!--  local -->
+<!-- 				<property name="url" value="jdbc:db2://9.6.100.121:50000/SISTOPER" /> -->
+<!-- 				<property name="username" value="db2inst2" /> -->
+<!-- 				<property name="password" value="p4ssw0rd2017%p4ssw0rd2017%" /> -->
+	
+				<!--  BlueMix -->
+<!-- 				<property name="url" value="jdbc:db2://cap-sg-prd-3.integration.ibmcloud.com:16824/SISTOPER:securityMechanism=13;" /> -->
+<!-- 				<property name="username" value="db2inst1" /> -->
+<!-- 				<property name="password" value="p4ssw0rd" /> -->
+	
+				<!--  Server Test -->
+<!-- 				<property name="url" value="jdbc:db2://129.39.179.204:50000/SISTOPER:securityMechanism=13;" /> -->
+<!-- 				<property name="username" value="db2inst1" /> -->
+<!-- 				<property name="password" value="_M3f$345m" /> -->
+	
+				<!--  Server PRD -->
+				<property name="url" value="jdbc:db2://129.39.179.15:50000/SISTOPER:securityMechanism=13;" />
+				<property name="username" value="db2inst1" />
+				<property name="password" value="p4ssw0rd" />
+				<property name="poolMaximumActiveConnections" value="3"></property>
+				<property name="poolMaximumIdleConnections" value="3"></property>
+				<property name="poolPingQuery" value="true" />
+				<property name="poolTimeToWait" value="1000"/>
+				<property name="poolMaximumCheckoutTime" value="120000"/>
+			</dataSource>
+		</environment>
+	</environments>
+	
+	<mappers>
+		<mapper resource="com/pe/ibm/access/MapperWtime.xml" />
+		<mapper resource="com/pe/ibm/access/MapperLogin.xml" />
+		<mapper resource="com/pe/ibm/access/MapperReportes.xml" />
+		
+		<mapper resource="com/pe/ibm/access/MapperHorario.xml" />
+		<mapper resource="com/pe/ibm/access/MapperPerfil.xml" />
+<!-- 		<mapper resource="com/pe/ibm/access/MapperAcceso.xml" /> -->
+		<mapper resource="com/pe/ibm/access/MapperPersonal.xml" />
+		<mapper resource="com/pe/ibm/access/MapperOptions.xml" />
+		<mapper resource="com/pe/ibm/access/MapperTeam.xml" />
+		<mapper resource="com/pe/ibm/access/MapperAlertasEjecutivas.xml" />
+		<mapper resource="com/pe/ibm/access/MapperReportesAlertaEjecutiva.xml" />
+		<mapper resource="com/pe/ibm/access/MapperAlertasEjecutivas.xml" />
+		<mapper resource="com/pe/ibm/access/MapperNotificacion.xml" />
+		<mapper resource="com/pe/ibm/access/MapperMaximoMobility.xml"/>
+		
+		<mapper resource="com/pe/ibm/access/MapperUsuario.xml" /> 
+		<mapper resource="com/pe/ibm/access/MapperTurno.xml" /> 
+		<mapper resource="com/pe/ibm/access/MapperActividad.xml" /> 
+		<mapper resource="com/pe/ibm/access/MapperPeriodo.xml" />
+		<mapper resource="com/pe/ibm/access/MapperSchedule.xml" /> 
+		<mapper resource="com/pe/ibm/access/MapperScheduleActividad.xml" /> 
+		<mapper resource="com/pe/ibm/access/MapperRendimiento.xml" /> 
+		
+		<mapper resource="com/pe/ibm/access/MapperTarea.xml" />
+		<mapper resource="com/pe/ibm/access/MapperConsumos.xml" />
+		<mapper resource="com/pe/ibm/access/MapperHorarioEmpleado.xml" />
+		<mapper resource="com/pe/ibm/access/MapperOptionsCont.xml" />
+		<mapper resource="com/pe/ibm/access/MapperFeedBack.xml" />
+		
+<!-- 		Modulo SmartRequest -->
+		<!--  <mapper resource="com/pe/ibm/access/MapperSolicitud.xml" />
+		<mapper resource="com/pe/ibm/access/MapperEmpleadoEmpresa.xml" />-->
+		
+		<mapper resource="com/pe/ibm/access/MapperReporteTWS.xml" />
+		<mapper resource="com/pe/ibm/access/MapperReporteDispatch.xml" />
+		<mapper resource="com/pe/ibm/access/MapperReporteTSM.xml" />
+		<mapper resource="com/pe/ibm/access/MapperAuditoria.xml" />
+		<mapper resource="com/pe/ibm/access/MapperGrupo.xml" />
+		<mapper resource="com/pe/ibm/access/MapperBancoClaves.xml" />
+		
+		<mapper resource="com/pe/ibm/access/MapperMaximoOPER.xml" />
+		<mapper resource="com/pe/ibm/access/MapperUAT.xml" />
+	</mappers>
+
+</configuration>

@@ -1,0 +1,181 @@
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="personal">
+
+	<resultMap id="resultPersonal" type="com.pe.ibm.bean.BeanEmpleado">
+		<result property="iIdEmpleado" column="IDEMPLEADO" />
+		<result property="strIdLogin" column="IDLOGIN" />
+		<result property="strNombre" column="NOMBRE" />
+		<result property="strApPaterno" column="AP_PATERNO" />
+		<result property="strApMaterno" column="AP_MATERNO" />
+		<result property="strEmail" column="EMAIL" />
+		<result property="strModalidad" column="MODALIDAD" />
+		<result property="strClave" column="CLAVE" />
+		<result property="strArea" column="AREA" />
+		<result property="strCargo" column="CARGO" />
+		<result property="strPerfil" column="DESCRIPCION" />
+		<result property="strEstado" column="ESTADO" />
+		
+		<result property="iModalidad" column="IDMODALIDAD" />
+		<result property="iArea" column="IDAREA" />
+		<result property="iCargo" column="IDCARGO" />
+		<result property="iPerfil" column="IDPERFIL" />
+	</resultMap>
+
+	<select id="getPersonal" parameterType="com.pe.ibm.bean.BeanEmpleado" resultMap="resultPersonal">
+		SELECT 
+			A.IDEMPLEADO,A.IDLOGIN,A.NOMBRE,A.AP_PATERNO,A.AP_MATERNO,A.EMAIL,
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.IDMODALIDAD) MODALIDAD,
+			A.CLAVE,
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.IDAREA) AREA,
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.IDCARGO) CARGO,
+			B.DESCRIPCION,
+			CASE WHEN A.ESTADO = 1 THEN 'ACTIVO' ELSE 'DESACTIVADO' END ESTADO,
+			A.IDMODALIDAD, A.IDAREA, A.IDCARGO, B.IDPERFIL
+		FROM
+			OPERACION.EMPLEADO A  
+			INNER JOIN OPERACION.PERFIL B ON A.IDPERFIL = B.IDPERFIL
+		WHERE
+			A.IDTEAM = #{iTeam}<!--  AND A.ESTADO = 1 ME--> 
+		ORDER BY 
+			A.NOMBRE
+	</select>
+	
+	
+	<resultMap id="resultPersonal_horario" type="com.pe.ibm.bean.BeanOptions">
+		<result property="iIdOption" column="IDEMPLEADO" />
+		<result property="strDescripcion" column="NOMBRE" />
+	</resultMap>
+
+	<select id="getPersonal_horario" parameterType="com.pe.ibm.bean.BeanEmpleado" resultMap="resultPersonal_horario">
+		SELECT A.IDEMPLEADO,A.IDLOGIN || ' - ' || A.AP_PATERNO || ' ' || A.AP_MATERNO || ', ' || A.NOMBRE AS NOMBRE
+		FROM OPERACION.EMPLEADO A INNER JOIN OPERACION.PERFIL B ON A.IDPERFIL = B.IDPERFIL
+		WHERE 
+		A.IDTEAM = (SELECT IDTEAM FROM OPERACION.EMPLEADO WHERE IDEMPLEADO = #{iIdEmpleado}) 
+		AND (IDAREA = (SELECT IDAREA FROM OPERACION.EMPLEADO WHERE IDEMPLEADO = #{iIdEmpleado}) OR (SELECT DESCRIPCION FROM OPERACION.PERFIL WHERE IDPERFIL = (SELECT IDPERFIL FROM OPERACION.EMPLEADO WHERE IDEMPLEADO = #{iIdEmpleado})) IN('ADMINISTRADOR','SUPERVISOR'))
+		AND A.ESTADO = 1 AND A.IDLOGIN NOT LIKE '%@%'
+		ORDER BY A.AP_PATERNO, A.AP_MATERNO, A.NOMBRE ASC
+	</select>
+	
+	
+	<resultMap id="resultPersonalIdLogin" type="com.pe.ibm.bean.BeanEmpleado">
+		<result property="iIdEmpleado" column="IDEMPLEADO" />
+		<result property="strIdLogin" column="IDLOGIN" />
+		<result property="strNombre" column="NOMBRE" />
+		<result property="strApPaterno" column="AP_PATERNO" />
+		<result property="strApMaterno" column="AP_MATERNO" />
+		<result property="strEmail" column="EMAIL" />
+		<result property="strModalidad" column="MODALIDAD" />
+		<result property="strClave" column="CLAVE" />
+		<result property="strArea" column="AREA" />
+		<result property="strCargo" column="CARGO" />
+		<result property="strPerfil" column="DESCRIPCION" />
+		<result property="strEstado" column="ESTADO" />
+		
+		<result property="iModalidad" column="IDMODALIDAD" />
+		<result property="iArea" column="IDAREA" />
+		<result property="iCargo" column="IDCARGO" />
+		<result property="iPerfil" column="IDPERFIL" />
+	</resultMap>
+
+	<select id="getPersonalIdLogin" parameterType="com.pe.ibm.bean.BeanEmpleado" resultMap="resultPersonalIdLogin">
+		SELECT 
+			A.IDEMPLEADO,A.IDLOGIN,A.NOMBRE,A.AP_PATERNO,A.AP_MATERNO,A.EMAIL,
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.IDMODALIDAD) MODALIDAD,
+			A.CLAVE,
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.IDAREA) AREA,
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.IDCARGO) CARGO,
+			B.DESCRIPCION,
+			CASE WHEN A.ESTADO = 1 THEN 'ACTIVO' ELSE 'DESACTIVADO' END ESTADO,
+			A.IDMODALIDAD, A.IDAREA, A.IDCARGO, B.IDPERFIL
+		FROM
+			OPERACION.EMPLEADO A  
+			INNER JOIN OPERACION.PERFIL B ON A.IDPERFIL = B.IDPERFIL
+		WHERE
+			A.IDTEAM = #{iTeam} AND A.ESTADO = 1 AND IDLOGIN = #{strIdLogin} FETCH FIRST 1 ROWS ONLY
+	</select>
+	
+	
+	
+
+
+
+	<resultMap id="resultResponsablesChatbot" type="com.pe.ibm.bean.BeanOptions">
+		<result property="strDescripcion" column="IDLOGIN" />
+		<result property="strValor2" column="CARGO" />
+	</resultMap>
+	
+	<select id="getResponsablesChatbot" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultResponsablesChatbot">
+	SELECT E.IDLOGIN, (SELECT O.DESCRIPCION FROM OPERACION.OPTIONS O WHERE O.IDOPTION = E.IDCARGO) CARGO FROM OPERACION.EMPLEADO E WHERE IDTEAM = #{iTeam} AND IDAREA IN(
+		SELECT IDOPTION FROM OPERACION.OPTIONS WHERE TIPO = 'AREA' AND IDTEAM = #{iTeam} AND VALOR1 IN (#{strValor1},'SUPERVISION')
+	) AND IDCARGO IN (
+		SELECT IDOPTION FROM OPERACION.OPTIONS WHERE TIPO = 'CARGO' AND IDTEAM = #{iTeam} AND DESCRIPCION IN ('SUPERVISOR','TEAM LEADER')
+	)
+	</select>
+	
+
+	<resultMap id="resultImage" type="com.pe.ibm.bean.BeanEmpleado">
+		<result property="strPhoto" column="PHOTO" />
+	</resultMap>
+	
+	<select id="getImage" parameterType="com.pe.ibm.bean.BeanEmpleado" resultMap="resultImage">
+		SELECT 
+			CASE WHEN A.PHOTO IS NULL 
+				THEN 'resources/image/personal/default_avatar.jpg'
+			WHEN LENGTH(A.PHOTO) = 0
+				THEN 'resources/image/personal/default_avatar.jpg'
+			ELSE 
+				A.PHOTO
+			END PHOTO
+		FROM	
+			OPERACION.EMPLEADO A
+		WHERE
+			A.IDEMPLEADO = #{iIdEmpleado}
+	</select>
+ 	
+	<insert id="savePersonal" parameterType="com.pe.ibm.bean.BeanEmpleado">
+		INSERT INTO OPERACION.EMPLEADO(IDLOGIN,NOMBRE,AP_PATERNO,AP_MATERNO,EMAIL,CLAVE,IDMODALIDAD,IDAREA,IDCARGO,IDTEAM,IDPERFIL)
+		VALUES(#{strIdLogin},#{strNombre},#{strApPaterno},#{strApMaterno},#{strEmail},#{strClave},#{iModalidad},#{iArea},#{iCargo},#{iTeam},#{iPerfil})
+	</insert>
+	
+	<insert id="updateImage" parameterType="com.pe.ibm.bean.BeanEmpleado">
+		UPDATE OPERACION.EMPLEADO SET PHOTO = #{strPhoto}
+		WHERE IDLOGIN = #{strIdLogin} AND IDTEAM = #{iTeam}
+	</insert>
+	
+	<update id="updatePersonal" parameterType="com.pe.ibm.bean.BeanEmpleado">
+		UPDATE OPERACION.EMPLEADO SET 
+		NOMBRE = #{strNombre},
+		AP_PATERNO = #{strApPaterno},
+		AP_MATERNO = #{strApMaterno},
+		EMAIL = #{strEmail},
+		IDMODALIDAD = #{iModalidad},
+		IDAREA = #{iArea},
+		IDPERFIL = #{iPerfil}, 
+		IDCARGO = #{iCargo}
+		WHERE IDEMPLEADO = #{iIdEmpleado}
+	</update>
+	
+	<update id="changeClave" parameterType="com.pe.ibm.bean.BeanEmpleado">
+		UPDATE OPERACION.EMPLEADO SET 
+		CLAVE = #{strClave}
+		WHERE IDEMPLEADO = #{iIdEmpleado}
+	</update>
+	
+	<update id="deletePersonal" parameterType="com.pe.ibm.bean.BeanEmpleado">
+		UPDATE OPERACION.EMPLEADO SET ESTADO = 0 WHERE IDEMPLEADO = #{iIdEmpleado} 
+	</update>
+	
+	
+	
+	<!-- ME -->	
+	<update id="cambiarestado1" parameterType="com.pe.ibm.bean.BeanEmpleado">
+		UPDATE OPERACION.EMPLEADO SET 
+		ESTADO = 1
+		WHERE IDEMPLEADO = #{iIdEmpleado}
+	</update>
+	<!-- ME -->
+	
+</mapper>

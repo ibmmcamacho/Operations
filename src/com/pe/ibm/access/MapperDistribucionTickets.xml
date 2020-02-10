@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="com.pe.ibm.access.MapperDistribucionTickets">
+  
+	<resultMap id="resultAll" type="com.pe.ibm.bean.BeanDistribucionTickets">
+		<result property="mes" column="MES"/>
+		<result property="anio" column="ANIO"/>
+	    <result property="nombre" column="NOMBRE"/>
+	    <result property="telefono" column="TELEFONO"/>
+	    <result property="correo" column="CORREO"/>
+	    <result property="catalogo" column="CATALOGO"/>
+	    <result property="adicional" column="ADICIONAL"/>
+	    <result property="chat" column="CHAT"/>
+	    <result property="total" column="TOTAL"/>
+	    <result property="correobuzon" column="CORREOBUZON"/>  
+	    <result property="totalinputs" column="TOTALINPUTS"/> 
+	</resultMap>
+  
+    <select id="getTicketsByProject"  resultMap="resultAll">
+	SELECT DIST.TELEFONO, DIST.CORREO, DIST.CATALOGO, DIST.ADICIONAL, DIST.CHAT, DIST.TOTAL, DIST.CORREOBUZON, DIST.TOTALINPUTS
+	FROM SMARTDESK.DISTRIBUCION_MENSUAL_TICKETS DIST
+	WHERE DIST.ID_PROYECTO=#{nombre}
+	AND DIST.MES=CAST(CAST(#{mes} AS INTEGER) AS VARCHAR(2))
+	AND DIST.ANIO=#{anio}
+    </select>
+    
+    <select id="getLineaBaseSDDHistorico"  resultMap="resultAll">
+	SELECT DIST.MES,DIST.ANIO,DIST.TELEFONO, DIST.CORREO, DIST.CATALOGO, DIST.ADICIONAL, DIST.CHAT, DIST.TOTAL, DIST.CORREOBUZON, DIST.TOTALINPUTS
+	FROM SMARTDESK.DISTRIBUCION_MENSUAL_TICKETS DIST
+	WHERE DIST.ID_PROYECTO=#{idproyecto}
+	AND (DATE(CAST(DIST.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(DIST.ID,17,2) AS VARCHAR)||'-01') <![CDATA[<=]]> DATE(#{fechaInicio}) )
+	<!-- 	Luego cambiar a - 6 MONTHS -->
+	AND (DATE(CAST(DIST.ANIO AS VARCHAR)||'-'||CAST (SUBSTR(DIST.ID,17,2) AS VARCHAR)||'-01') > DATE(#{fechaInicio}) - 6 MONTHS )
+	ORDER BY CAST(DIST.ANIO AS INTEGER) ASC, CAST(DIST.MES AS INTEGER) ASC 
+    </select>
+    
+    <select id="consultarDistribucionTicketsHistorico"  resultMap="resultAll">
+	SELECT B.NOMBRE as NOMBRE,TELEFONO, CORREO, CATALOGO, ADICIONAL, CHAT, TOTAL, C.NOMBRE as MES
+	
+	FROM SMARTDESK.DISTRIBUCION_MENSUAL_TICKETS as A
+	
+	LEFT JOIN SMARTDESK.PROYECTO as B ON A.ID_PROYECTO=B.IDPROYECTO 
+	LEFT JOIN SMARTDESK.MES_DETALLE as C ON A.MES=C.ID_MES
+	
+	WHERE B.ESTADO=1
+	AND B.NOMBRE=#{nombre}
+	AND (A.FECHA  BETWEEN #{fechainicio} AND #{fechafin})
+	ORDER BY A.FECHA ASC
+    </select>
+    
+    
+</mapper>

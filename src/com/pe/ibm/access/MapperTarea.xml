@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="com.pe.ibm.access.MapperTarea">
+  
+   <insert  id="Insert_Update" parameterType="com.pe.ibm.bean.BeanTarea" statementType="CALLABLE">
+     {call SCHEDULEPM.RUD_TAREA2_V2(
+        #{idTarea,javaType=Integer,jdbcType=INTEGER,mode=IN},
+        #{idTipoTarea,javaType=Integer,jdbcType=INTEGER,mode=IN},
+        #{tarea,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{idOwner,javaType=Integer,jdbcType=INTEGER,mode=IN},
+        #{idAprobador,javaType=Integer,jdbcType=INTEGER,mode=IN},
+        #{frecuencia,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{programacion,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{idPeriodo,javaType=Integer,jdbcType=INTEGER,mode=IN},
+        #{avisoIn,javaType=Integer,jdbcType=INTEGER,mode=IN},
+        #{avisoFin,javaType=Integer,jdbcType=INTEGER,mode=IN},
+        #{estado,javaType=Integer,jdbcType=INTEGER,mode=IN},
+        #{userMod,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{operacion,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{iTeam,javaType=Integer,jdbcType=INTEGER,mode=IN},        
+        #{fecha,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{resultado,javaType=Integer,jdbcType=INTEGER,mode=OUT}
+     )}
+	</insert>
+	
+	<insert  id="Insert_Update_Gestor" parameterType="com.pe.ibm.bean.BeanTarea" statementType="CALLABLE">
+     {call SCHEDULEPM.RUD_TAREA_GESTOR_V2(
+        #{idTarea,javaType=Integer,jdbcType=INTEGER,mode=IN},
+        #{idEmpleado,javaType=Integer,jdbcType=INTEGER,mode=IN},
+        #{tipo,javaType=Integer,jdbcType=INTEGER,mode=IN},
+        #{operacion,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{resultado,javaType=Integer,jdbcType=INTEGER,mode=OUT}
+     )}
+	</insert>
+
+	<resultMap id = "resultTarea" type = "com.pe.ibm.bean.BeanTarea">
+      <result property = "idTarea" column = "IDTAREA"/>
+      <result property = "idTipoTarea" column = "IDTIPOTAREA"/>
+      <result property = "tipoTarea" column = "TIPOTAREA"/>
+      <result property = "tarea" column = "TAREA"/>
+      <result property = "idOwner" column = "IDOWNER"/>
+      <result property = "owner" column = "OWNER"/>
+      <result property = "idAprobador" column = "IDAPROBADOR"/>
+      <result property = "aprobador" column = "APROBADOR"/>
+      <result property = "frecuencia" column = "FRECUENCIA"/>
+      <result property = "programacion" column = "PROGRAMACION"/>
+      <result property = "idPeriodo" column = "IDPERIODO"/>
+      <result property = "periodo" column = "PERIODO"/>
+      <result property = "avisoIn" column = "AVISOIN"/>
+      <result property = "avisoFin" column = "AVISOFIN"/>
+      <result property = "estado" column = "ESTADO"/>
+      <!-- <result property = "selPeriodo" column = "SELPERIODO"/> -->
+   	</resultMap>
+
+    <select id = "listarTareas" resultMap = "resultTarea" parameterType="com.pe.ibm.bean.BeanTareaAsignada" statementType = "CALLABLE">
+      {call SCHEDULEPM.SELECT_TAREAS_V2(
+      #{iTeam,javaType=Integer,jdbcType=INTEGER,mode=IN}
+      )}
+    </select>
+    
+    <resultMap id = "resultTareaGestor" type = "com.pe.ibm.bean.BeanTarea">
+      <result property = "idEmpleado" column = "IDUSUARIO"/>
+      <result property = "aprobador" column = "USUARIO"/>
+      <result property = "tipo" column = "TIPO"/>
+   	</resultMap>
+
+    <select id = "listarTareasGestor" resultMap = "resultTareaGestor" parameterType="com.pe.ibm.bean.BeanTarea" statementType = "CALLABLE">
+      {call SCHEDULEPM.SELECT_TAREAS_GESTOR_V2(
+      #{idTarea,javaType=Integer,jdbcType=INTEGER,mode=IN}
+      )}
+    </select>
+    
+    <resultMap id = "resultTareaAsignada" type = "com.pe.ibm.bean.BeanTareaAsignada">
+      <result property = "idTareaGenerada" column = "IDTAREAGENERADA"/>
+      <result property = "tarea" column = "TAREA"/>
+      <result property = "owner" column = "OWNER"/>
+      <result property = "aprobador" column = "APROBADOR"/>
+      <result property = "frecuencia" column = "FRECUENCIA"/>
+      <result property = "programacion" column = "PROGRAMACION"/>
+      <result property = "periodo" column = "PERIODO"/>
+      <result property = "avisoIn" column = "AVISOIN"/>
+      <result property = "avisoFin" column = "AVISOFIN"/>
+      <result property = "fechaGenerada" column = "FECHAGEN"/>
+      <result property = "fechaPeriodo" column = "FECHAPER"/>
+      <result property = "fechaRealizada" column = "FECHAREALIZADA"/>
+      <result property = "fechaAprobada" column = "FECHAAPROBADA"/>
+      <result property = "fechaCancelada" column = "FECHACANCELADA"/>
+      <result property = "fechaReprogramada" column = "FECHAREPROGRAMADA"/>
+      <result property = "observaciones" column = "OBSERVACIONES"/>
+      <result property = "archivo" column = "ARCHIVO"/>
+      <result property = "archivoNombre" column = "ARCHIVONOMBRE"/>
+      <result property = "strEstado" column = "ESTADO"/>
+   	</resultMap>
+   	
+    <select id = "listarTareaAsignada" resultMap = "resultTareaAsignada"  parameterType="com.pe.ibm.bean.BeanTareaAsignada" statementType = "CALLABLE">
+      {call SCHEDULEPM.SELECT_TAREAS_POR_EMPLEADO1(
+      #{idEmpleado,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      #{estado,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      #{idOperacion,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      #{idTeam,javaType=Integer,jdbcType=INTEGER,mode=IN}
+      )}
+    </select> 
+    <select id = "listarTareaGenerada" resultMap = "resultTareaAsignada" parameterType="com.pe.ibm.bean.BeanTarea" statementType = "CALLABLE">
+      {call SCHEDULEPM.SELECT_TAREAS_GENERADAS1(
+       #{estado,javaType=Integer,jdbcType=INTEGER,mode=IN},
+       #{iTeam,javaType=Integer,jdbcType=INTEGER,mode=IN}
+      )}
+    </select>
+    
+    <resultMap id = "resultBusqueda" type = "com.pe.ibm.bean.BeanTareaAsignada">
+      <result property = "idTareaGenerada" column = "IDTAREAGEN"/>
+      <result property = "fechaRealizada" column = "FECHAREALIZADA"/>
+      <result property = "fechaAprobada" column = "FECHAAPROBADA"/>
+      <result property = "archivo" column = "ARCHIVO"/>
+      <result property = "archivoNombre" column = "ARCHIVONOMBRE"/>
+   	</resultMap>   
+   
+    <select id ="BuscarTareaAsignada" resultMap = "resultBusqueda"  parameterType="com.pe.ibm.bean.BeanTareaAsignada" statementType = "CALLABLE">
+      {call SCHEDULEPM.SELECT_TAREA_ASIGNDA_POR_IDTAREAGENERADA(
+      #{idTareaGenerada,javaType=Integer,jdbcType=INTEGER,mode=IN}
+      )}
+    </select>
+  	 
+	 <insert  id="Insert_Update_TareaAsignada" parameterType="com.pe.ibm.bean.BeanTareaAsignada" statementType="CALLABLE">
+     {call SCHEDULEPM.RUD_TAREA_GENERADA1(
+        #{idTareaGenerada,javaType=Integer,jdbcType=INTEGER,mode=IN},
+        #{observaciones,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{usuario,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{nuevaFecha,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{archivo,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{archivoNombre,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{operacion,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{resultado,javaType=Integer,jdbcType=INTEGER,mode=OUT}
+     )}
+	</insert>
+	
+	<resultMap id = "resultTareasBacklog" type = "com.pe.ibm.bean.BeanTareaBacklog">
+	  <result property = "squad" column = "SQUAD"/>
+      <result property = "team" column = "TEAM"/>
+      <result property = "tipoTarea" column = "TIPOTAREA"/>
+      <result property = "estado" column = "ESTADO"/>
+      <result property = "fechaVencimiento" column = "FECHA_VENCIMIENTO"/>
+      <result property = "dias" column = "DIAS"/>
+      <result property = "fechaFinalizacion" column = "FECHA_FINALIZACION"/>
+   	</resultMap>
+
+    <select id = "listarTareasBacklog" resultMap = "resultTareasBacklog"  statementType = "CALLABLE">
+     <![CDATA[
+     SELECT --TAREAS ABIERTAS (NO APROBADA Y NO CANCELADA)
+		CASE
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'BCP') THEN 'SQUAD-1'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'INTERBANK') THEN 'SQUAD-1'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'VISANET') THEN 'SQUAD-2'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'CENTRIA') THEN 'SQUAD-2'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'GRUPO ROMERO') THEN 'SQUAD-2'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'PETROPERU') THEN 'SQUAD-2'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'RIMAC') THEN 'SQUAD-2'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'BANCO DE LA NACIÓN') THEN 'SQUAD-3'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'ESSALUD') THEN 'SQUAD-3'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'SCOTIABANK') THEN 'SQUAD-3'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'FERREYROS') THEN 'SQUAD-3'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'GRUPO SALUD') THEN 'SQUAD-3'
+		ELSE 'SQUAD-4' END SQUAD,
+		(SELECT DESCRIPCION FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) TEAM,
+		(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = T.IDTIPOTAREA) TIPOTAREA,
+		CASE 
+		WHEN (TG.FECHAREPROGRAMADA IS NULL) THEN
+		      CASE
+                        WHEN ((DATE(TG.FECHAGEN) + T.AVISOIN DAYS) - CURRENT_DATE) > 0  THEN 'VIGENTE'
+                        WHEN ((DATE(TG.FECHAGEN) + T.AVISOIN DAYS) - CURRENT_DATE) = 0  THEN 'POR VENCER'
+                        WHEN ((DATE(TG.FECHAGEN) + T.AVISOIN DAYS) - CURRENT_DATE) < 0  THEN 'VENCIDO'
+		        ELSE '' END
+		WHEN (TG.FECHAREPROGRAMADA IS NOT NULL) THEN
+		      CASE
+                        WHEN (DATE(TG.FECHAGEN) - CURRENT_DATE) > 0  THEN 'VIGENTE'
+                        WHEN (DATE(TG.FECHAGEN) - CURRENT_DATE) = 0  THEN 'POR VENCER'
+                        WHEN (DATE(TG.FECHAGEN) - CURRENT_DATE) < 0  THEN 'VENCIDO'
+		        ELSE '' END  
+		ELSE '' END ESTADO, 
+		CASE 
+		WHEN (TG.FECHAREPROGRAMADA IS NULL) THEN (DATE(TG.FECHAGEN) + T.AVISOIN DAYS) 
+		WHEN (TG.FECHAREPROGRAMADA IS NOT NULL) THEN (DATE(TG.FECHAGEN))
+		ELSE '' END FECHA_VENCIMIENTO,
+		CASE 
+		WHEN (TG.FECHAREPROGRAMADA IS NULL) THEN (DAYS(DATE(TG.FECHAGEN) + T.AVISOIN DAYS) - DAYS(CURRENT_DATE))
+		WHEN (TG.FECHAREPROGRAMADA IS NOT NULL) THEN (DAYS(DATE(TG.FECHAGEN)) - DAYS(CURRENT_DATE))
+		ELSE '' END DIAS,
+		DATE(TG.FECHAAPROBADA) FECHA_FINALIZACION
+		FROM SCHEDULEPM.TAREA_GENERADA TG 
+		LEFT JOIN SCHEDULEPM.TAREA T ON T.IDTAREA = TG.IDTAREA
+		WHERE T.ESTADO = 1 AND (TG.FECHAAPROBADA IS NULL AND TG.FECHACANCELADA IS NULL)
+		UNION ALL
+		SELECT -- TAREAS APROBADAS (SI APROBADA)
+		CASE
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'BCP') THEN 'SQUAD-1'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'INTERBANK') THEN 'SQUAD-1'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'VISANET') THEN 'SQUAD-2'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'CENTRIA') THEN 'SQUAD-2'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'GRUPO ROMERO') THEN 'SQUAD-2'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'PETROPERU') THEN 'SQUAD-2'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'RIMAC') THEN 'SQUAD-2'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'BANCO DE LA NACIÓN') THEN 'SQUAD-3'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'ESSALUD') THEN 'SQUAD-3'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'SCOTIABANK') THEN 'SQUAD-3'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'FERREYROS') THEN 'SQUAD-3'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'GRUPO SALUD') THEN 'SQUAD-3'
+		ELSE 'SQUAD-4' END SQUAD,
+		(SELECT DESCRIPCION FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) TEAM,
+		(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = T.IDTIPOTAREA) TIPOTAREA,
+		CASE 
+		WHEN (TG.FECHAREPROGRAMADA IS NULL) THEN
+		      CASE 
+                        WHEN ((DATE(TG.FECHAGEN) + T.AVISOIN DAYS) - DATE(TG.FECHAAPROBADA)) > 0  THEN 'APROBADO A TIEMPO'
+                        WHEN ((DATE(TG.FECHAGEN) + T.AVISOIN DAYS) - DATE(TG.FECHAAPROBADA)) = 0  THEN 'APROBADO A TIEMPO'
+                        WHEN ((DATE(TG.FECHAGEN) + T.AVISOIN DAYS) - DATE(TG.FECHAAPROBADA)) < 0  THEN 'APROBADO REGULARIZADO' 
+                        ELSE '' END
+                WHEN (TG.FECHAREPROGRAMADA IS NOT NULL) THEN
+		      CASE 
+                        WHEN ((DATE(TG.FECHAGEN) + T.AVISOIN DAYS) - DATE(TG.FECHAAPROBADA)) > 0  THEN 'APROBADO A TIEMPO'
+                        WHEN ((DATE(TG.FECHAGEN) + T.AVISOIN DAYS) - DATE(TG.FECHAAPROBADA)) = 0  THEN 'APROBADO A TIEMPO'
+                        WHEN ((DATE(TG.FECHAGEN) + T.AVISOIN DAYS) - DATE(TG.FECHAAPROBADA)) < 0  THEN 'APROBADO REGULARIZADO' 
+                        ELSE '' END       
+                ELSE '' END ESTADO,
+		CASE 
+		WHEN (TG.FECHAREPROGRAMADA IS NULL) THEN (DATE(TG.FECHAGEN) + T.AVISOIN DAYS) 
+		WHEN (TG.FECHAREPROGRAMADA IS NOT NULL) THEN (DATE(TG.FECHAGEN))
+		ELSE '' END FECHA_VENCIMIENTO,
+		CASE 
+		WHEN (TG.FECHAREPROGRAMADA IS NULL) THEN (DAYS(DATE(TG.FECHAGEN) + T.AVISOIN DAYS) - DAYS(CURRENT_DATE))
+		WHEN (TG.FECHAREPROGRAMADA IS NOT NULL) THEN (DAYS(DATE(TG.FECHAGEN)) - DAYS(CURRENT_DATE))
+		ELSE '' END DIAS,
+		DATE(TG.FECHAAPROBADA) FECHA_FINALIZACION
+		FROM SCHEDULEPM.TAREA_GENERADA TG 
+		LEFT JOIN SCHEDULEPM.TAREA T ON T.IDTAREA = TG.IDTAREA
+		WHERE T.ESTADO = 1 AND (TG.FECHAAPROBADA IS NOT NULL AND TG.FECHACANCELADA IS NULL)
+		UNION ALL
+		SELECT -- TAREAS CANCELADAS (NO APROBADA Y SI CANCELADA)
+		CASE
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'BCP') THEN 'SQUAD-1'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'INTERBANK') THEN 'SQUAD-1'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'VISANET') THEN 'SQUAD-2'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'CENTRIA') THEN 'SQUAD-2'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'GRUPO ROMERO') THEN 'SQUAD-2'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'PETROPERU') THEN 'SQUAD-2'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'RIMAC') THEN 'SQUAD-2'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'BANCO DE LA NACIÓN') THEN 'SQUAD-3'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'ESSALUD') THEN 'SQUAD-3'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'SCOTIABANK') THEN 'SQUAD-3'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'FERREYROS') THEN 'SQUAD-3'
+		WHEN ((SELECT UPPER(DESCRIPCION) FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) = 'GRUPO SALUD') THEN 'SQUAD-3'
+		ELSE 'SQUAD-4' END SQUAD,
+		(SELECT DESCRIPCION FROM OPERACION.TEAM WHERE IDTEAM = T.IDTEAM) TEAM,
+		(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = T.IDTIPOTAREA) TIPOTAREA,
+		CASE 
+		WHEN (TG.FECHAREPROGRAMADA IS NULL) THEN
+                      CASE 
+                        WHEN ((DATE(TG.FECHAGEN) + T.AVISOIN DAYS) - DATE(TG.FECHACANCELADA)) > 0  THEN 'CANCELADO A TIEMPO'
+                        WHEN ((DATE(TG.FECHAGEN) + T.AVISOIN DAYS) - DATE(TG.FECHACANCELADA)) = 0  THEN 'CANCELADO A TIEMPO'
+                        WHEN ((DATE(TG.FECHAGEN) + T.AVISOIN DAYS) - DATE(TG.FECHACANCELADA)) < 0  THEN 'CANCELADO REGULARIZADO' 
+                        ELSE '' END
+                WHEN (TG.FECHAREPROGRAMADA IS NULL) THEN
+                      CASE 
+                        WHEN ((DATE(TG.FECHAGEN) + T.AVISOIN DAYS) - DATE(TG.FECHACANCELADA)) > 0  THEN 'CANCELADO A TIEMPO'
+                        WHEN ((DATE(TG.FECHAGEN) + T.AVISOIN DAYS) - DATE(TG.FECHACANCELADA)) = 0  THEN 'CANCELADO A TIEMPO'
+                        WHEN ((DATE(TG.FECHAGEN) + T.AVISOIN DAYS) - DATE(TG.FECHACANCELADA)) < 0  THEN 'CANCELADO REGULARIZADO' 
+                        ELSE '' END
+                ELSE '' END ESTADO,       
+		CASE 
+		WHEN (TG.FECHAREPROGRAMADA IS NULL) THEN (DATE(TG.FECHAGEN) + T.AVISOIN DAYS) 
+		WHEN (TG.FECHAREPROGRAMADA IS NOT NULL) THEN (DATE(TG.FECHAGEN))
+		ELSE '' END FECHA_VENCIMIENTO,
+		CASE 
+		WHEN (TG.FECHAREPROGRAMADA IS NULL) THEN (DAYS(DATE(TG.FECHAGEN) + T.AVISOIN DAYS) - DAYS(CURRENT_DATE))
+		WHEN (TG.FECHAREPROGRAMADA IS NOT NULL) THEN (DAYS(DATE(TG.FECHAGEN)) - DAYS(CURRENT_DATE))
+		ELSE '' END DIAS,
+		DATE(TG.FECHACANCELADA) FECHA_FINALIZACION
+		FROM SCHEDULEPM.TAREA_GENERADA TG 
+		LEFT JOIN SCHEDULEPM.TAREA T ON T.IDTAREA = TG.IDTAREA
+		WHERE T.ESTADO = 1 AND (TG.FECHAAPROBADA IS NULL AND TG.FECHACANCELADA IS NOT NULL)
+		]]>
+    </select>
+	
+</mapper>
+

@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="alerta">
+	
+	<resultMap id="resultAlertasEjecutivasP1" type="com.pe.ibm.bean.BeanAlerta">
+		<result property="idAlerta" column="IDALERTA"/>
+		<result property="maximoIdTicket" column="IDTICKET"/>
+		<result property="estadoAlerta" column="ESTADO"/>
+		<result property="maximoCliente" column="CLIENTE"/>
+		<result property="maximoResumen" column="RESUMEN"/>
+		<result property="fecha" column="FECHA_CREACION_MAXIMO"/>
+		<result property="hora" column="HORA_CREACION_MAXIMO"/>
+		<result property="usuarioModificador" column="USUARIOMODIFICADOR"/>
+	</resultMap>
+	
+	<select id="getAlertasEjecutivasP1" parameterType="String" resultMap="resultAlertasEjecutivasP1">
+		SELECT 
+			A.IDALERTA
+			,A.IDTICKET
+			,(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.IDESTADO FETCH FIRST 1 ROWS ONLY) ESTADO
+			,(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE VALOR1 = A.IDCLIENTE FETCH FIRST 1 ROWS ONLY) CLIENTE
+			,A.RESUMEN
+			,DATE(A.FECHACREACION) FECHA_CREACION_MAXIMO
+			,TIME(A.FECHACREACION) HORA_CREACION_MAXIMO
+			,(SELECT NOMBRE || ' ' || AP_PATERNO FROM OPERACION.EMPLEADO WHERE IDEMPLEADO = IDUSUARIO_MODIFICADOR) USUARIOMODIFICADOR
+		FROM
+			INCIDENTES.ALERTAS A
+		WHERE
+			IDESTADO NOT IN (SELECT IDOPTION FROM OPERACION.OPTIONS WHERE DESCRIPCION IN ('FIN','INICIO/FIN') AND TIPO = 'ESTADO_ALERTA' AND IDTEAM = #{strTeam}) AND
+			A.ACTIVADO = 1
+	</select>
+	
+	
+	<resultMap id="resultAlertasEjecutivasP1Closed" type="com.pe.ibm.bean.BeanAlerta">
+		<result property="idAlerta" column="IDALERTA"/>
+		<result property="maximoIdTicket" column="IDTICKET"/>
+		<result property="estadoAlerta" column="ESTADO"/>
+		<result property="maximoCliente" column="CLIENTE"/>
+		<result property="maximoResumen" column="RESUMEN"/>
+		<result property="fecha" column="FECHA_CREACION_MAXIMO"/>
+		<result property="hora" column="HORA_CREACION_MAXIMO"/>
+		<result property="fechaFin" column="FECHA_FIN_ALERTA"/>
+		<result property="horaFin" column="HORA_FIN_ALERTA"/>
+		<result property="usuarioModificador" column="USUARIOMODIFICADOR"/>
+	</resultMap>
+	
+	<select id="getAlertasEjecutivasP1Closed" parameterType="String" resultMap="resultAlertasEjecutivasP1Closed">
+		SELECT 
+			A.IDALERTA
+			,A.IDTICKET
+			,(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.IDESTADO FETCH FIRST 1 ROWS ONLY) ESTADO
+			,(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE VALOR1 = A.IDCLIENTE FETCH FIRST 1 ROWS ONLY) CLIENTE
+			,A.RESUMEN
+			,DATE(A.FECHACREACION) FECHA_CREACION_MAXIMO
+			,TIME(A.FECHACREACION) HORA_CREACION_MAXIMO
+			,DATE(A.FECHA_FIN) FECHA_FIN_ALERTA
+			,TIME(A.FECHA_FIN) HORA_FIN_ALERTA
+			,(SELECT NOMBRE || ' ' || AP_PATERNO FROM OPERACION.EMPLEADO WHERE IDEMPLEADO = IDUSUARIO_MODIFICADOR) USUARIOMODIFICADOR
+		FROM
+			INCIDENTES.ALERTAS A
+		WHERE
+			IDESTADO IN (SELECT IDOPTION FROM OPERACION.OPTIONS WHERE DESCRIPCION IN ('FIN','INICIO/FIN') AND TIPO = 'ESTADO_ALERTA' AND IDTEAM = #{strTeam}) AND
+			A.ACTIVADO = 1 AND TIMESTAMPDIFF(16,CHAR(CURRENT_TIMESTAMP - TIMESTAMP(A.FECHACREACION))) <![CDATA[ <= 30 ]]>
+	</select>
+	
+	
+	<resultMap id="resultListAlertasEjecutivasPorId" type="com.pe.ibm.bean.BeanAlerta">
+		<result property="idAlerta" column="IDALERTA"/>
+		<result property="maximoIdTicket" column="IDTICKET"/>
+		<result property="idEstadoAlerta" column="IDESTADO"/>
+		<result property="maximoIdCliente" column="IDCLIENTE"/>
+		<result property="maximoCliente" column="CLIENTE"/>
+		<result property="maximoResumen" column="RESUMEN"/>
+		<result property="maximoDetalle" column="DETALLE"/>
+		<result property="maximoPrioridad" column="PRIORIDAD"/>
+		<result property="maximoFechaCreacion" column="FECHACREACION"/>
+		<result property="maximoIdEstado" column="MAXIMOIDESTADO"/>
+		<result property="maximoEstado" column="MAXIMOESTADO"/>
+		<result property="maximoIdGrupoPropietario" column="IDGRUPO_PROPIETARIO"/>
+		<result property="maximoGrupoPropietario" column="GRUPO_PROPIETARIO"/>
+		<result property="pm" column="PM"/>
+		<result property="crisisTurno" column="CRISIS_TURNO"/>
+		<result property="fechaNotificacionIbm" column="FECHA_NOTIFICACION_IBM"/>
+		<result property="idDataCenter" column="IDDATA_CENTER"/>
+		<result property="fechaFin" column="FECHA_FIN"/>
+		<result property="strTeamSoporte" column="TEAMSOPORTE"/>
+		<result property="idTipoFalla" column="TIPO_FALLA"/>
+		<result property="concurrencia" column="CONCURRENCIA"/>
+		<result property="otrosClientes" column="OTROS_CLIENTES"/>
+		<result property="propietarioIncidencia" column="PROPIETARIO_INCIDENCIA"/>
+		<result property="servicioImpactado" column="SERVICIO_IMPACTADO"/>
+		<result property="idSla" column="IDSLA"/>
+		<result property="impactoNegocio" column="IMPACTO_NEGOCIO"/>
+		<result property="idticketProblema" column="IDTICKET_PROBLEMA"/>
+		<result property="idticketCambio" column="IDTICKET_CAMBIO"/>
+		<result property="cambioPm" column="CAMBIOPM"/>
+		<result property="recibioAlerta" column="RECIBIO_ALERTA"/>
+		<result property="derivoCambio" column="DERIVO_CAMBIO"/>
+		<result property="desviacionesIncidentes" column="DESVIACIONES_INCIDENTES"/>
+		<result property="evaluacionCrisis" column="EVALUACION_CRISIS"/>
+		<result property="observaciones" column="OBSERVACIONES"/>
+		<result property="distribucion" column="DISTRIBUCION"/>
+		<result property="copiaDistribucion" column="COPIA_DISTRIBUCION"/>
+		<result property="usuarioCreador" column="IDUSUARIO_CREADOR"/>
+		<result property="usuarioModificador" column="IDUSUARIO_MODIFICADOR"/>
+	</resultMap>
+	<select id="getListAlertasEjecutivasPorId" parameterType="int" resultMap="resultListAlertasEjecutivasPorId">
+	SELECT
+		IDALERTA,
+		IDTICKET,
+		IDESTADO,
+		IDCLIENTE,
+		(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE VALOR1 = A.IDCLIENTE FETCH FIRST 1 ROWS ONLY) CLIENTE,
+		RESUMEN,
+		DETALLE,
+		PRIORIDAD,
+		FECHACREACION,
+		ESTADO AS MAXIMOIDESTADO,
+		(SELECT 
+			DESCRIPCION
+		FROM 
+			OPERACION.OPTIONS
+		WHERE 
+			ESTADO = 1 AND 
+			TIPO = UPPER('ESTADOMAXIMO_ALERTA') AND
+			VALOR1 = UPPER(A.ESTADO)) AS MAXIMOESTADO,
+		(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE VALOR1 = A.GRUPO_PROPIETARIO) GRUPO_PROPIETARIO,
+		GRUPO_PROPIETARIO IDGRUPO_PROPIETARIO,
+		PM,
+		CRISIS_TURNO,
+		VARCHAR_FORMAT(FECHA_NOTIFICACION_IBM, 'YYYY-MM-DD HH24:MI') FECHA_NOTIFICACION_IBM,
+		IDDATA_CENTER,
+		VARCHAR_FORMAT(FECHA_FIN, 'YYYY-MM-DD HH24:MI') FECHA_FIN,
+		TEAMSOPORTE,
+		TIPO_FALLA,
+		CONCURRENCIA,
+		OTROS_CLIENTES,
+		PROPIETARIO_INCIDENCIA,
+		SERVICIO_IMPACTADO,
+		IDSLA,
+		IMPACTO_NEGOCIO,
+		IDTICKET_PROBLEMA,
+		IDTICKET_CAMBIO,
+		CAMBIOPM,
+		RECIBIO_ALERTA,
+		DERIVO_CAMBIO,
+		DESVIACIONES_INCIDENTES,
+		EVALUACION_CRISIS,
+		OBSERVACIONES,
+		DISTRIBUCION,
+		COPIA_DISTRIBUCION,
+		COALESCE((SELECT NOMBRE || ' ' || AP_PATERNO FROM OPERACION.EMPLEADO WHERE IDEMPLEADO = IDUSUARIO_CREADOR),'') AS IDUSUARIO_CREADOR,
+		COALESCE((SELECT NOMBRE || ' ' || AP_PATERNO FROM OPERACION.EMPLEADO WHERE IDEMPLEADO = IDUSUARIO_MODIFICADOR),'') AS IDUSUARIO_MODIFICADOR
+	FROM
+		INCIDENTES.ALERTAS A
+	WHERE
+		IDALERTA = #{iAlertaEjecutiva} AND
+		A.ACTIVADO = 1
+	</select>
+	
+	
+	<resultMap id="resultReporteAlertasEjecutivas" type="com.pe.ibm.bean.BeanAlerta">
+		<result property="maximoIdTicket" column="IDTICKET"/>
+		<result property="estadoAlerta" column="ESTADO"/>
+		<result property="maximoCliente" column="CLIENTE"/>
+		<result property="maximoResumen" column="RESUMEN"/>
+		<result property="maximoDetalle" column="DETALLE"/>
+		<result property="maximoPrioridad" column="PRIORIDAD"/>
+		<result property="maximoFechaCreacion" column="FECHACREACION"/>
+		<result property="maximoEstado" column="ESTADO"/>
+		<result property="maximoIdGrupoPropietario" column="IDGRUPO_PROPIETARIO"/>
+		<result property="maximoGrupoPropietario" column="GRUPO_PROPIETARIO"/>
+		<result property="pm" column="PM"/>
+		<result property="crisisTurno" column="CRISIS_TURNO"/>
+		<result property="fechaNotificacionIbm" column="FECHA_NOTIFICACION_IBM"/>
+		<result property="dataCenter" column="DATA_CENTER"/>
+		<result property="fechaFin" column="FECHA_FIN"/>
+		<result property="strTipoFalla" column="TIPO_FALLA"/>
+		<result property="concurrencia" column="CONCURRENCIA"/>
+		<result property="strOtrosClientes" column="OTROS_CLIENTES"/>
+		<result property="propietarioIncidencia" column="PROPIETARIO_INCIDENCIA"/>
+		<result property="servicioImpactado" column="SERVICIO_IMPACTADO"/>
+		<result property="sla" column="SLA"/>
+		<result property="impactoNegocio" column="IMPACTO_NEGOCIO"/>
+		<result property="idticketProblema" column="IDTICKET_PROBLEMA"/>
+		<result property="idticketCambio" column="IDTICKET_CAMBIO"/>
+		<result property="cambioPm" column="CAMBIOPM"/>
+		<result property="strRecibioAlerta" column="RECIBIO_ALERTA"/>
+		<result property="derivoCambio" column="DERIVO_CAMBIO"/>
+		<result property="desviacionesIncidentes" column="DESVIACIONES_INCIDENTES"/>
+		<result property="evaluacionCrisis" column="EVALUACION_CRISIS"/>
+		<result property="observaciones" column="OBSERVACIONES"/>
+		<result property="distribucion" column="DISTRIBUCION"/>
+		<result property="copiaDistribucion" column="COPIA_DISTRIBUCION"/>
+		<result property="usuarioCreador" column="IDUSUARIO_CREADOR"/>
+		<result property="usuarioModificador" column="IDUSUARIO_MODIFICADOR"/>
+	</resultMap>
+	
+	<select id="getReporteAlertasEjecutivas" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultReporteAlertasEjecutivas">
+	SELECT
+			IDTICKET,
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.IDESTADO FETCH FIRST 1 ROWS ONLY) ESTADO,
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE VALOR1 = A.IDCLIENTE FETCH FIRST 1 ROWS ONLY) CLIENTE,
+			RESUMEN,
+			DETALLE,
+			PRIORIDAD,
+			FECHACREACION,
+			ESTADO,
+			GRUPO_PROPIETARIO IDGRUPO_PROPIETARIO,
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE VALOR1 = A.GRUPO_PROPIETARIO FETCH FIRST 1 ROWS ONLY) GRUPO_PROPIETARIO,
+			A.PM,
+			A.CRISIS_TURNO,
+			FECHA_NOTIFICACION_IBM,
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.IDDATA_CENTER FETCH FIRST 1 ROWS ONLY) DATA_CENTER,
+			FECHA_FIN,
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.TIPO_FALLA FETCH FIRST 1 ROWS ONLY) TIPO_FALLA,
+			CONCURRENCIA,
+<!-- 			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.CONCURRENCIA FETCH FIRST 1 ROWS ONLY) CONCURRENCIA, -->
+			OTROS_CLIENTES,
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.PROPIETARIO_INCIDENCIA FETCH FIRST 1 ROWS ONLY) PROPIETARIO_INCIDENCIA,
+			SERVICIO_IMPACTADO,
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.IDSLA FETCH FIRST 1 ROWS ONLY) SLA,
+			IMPACTO_NEGOCIO,
+			IDTICKET_PROBLEMA,
+			IDTICKET_CAMBIO,
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = CASE WHEN A.CAMBIOPM = '' THEN 0 ELSE A.CAMBIOPM END FETCH FIRST 1 ROWS ONLY) CAMBIOPM,
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.RECIBIO_ALERTA FETCH FIRST 1 ROWS ONLY) RECIBIO_ALERTA,
+			DERIVO_CAMBIO,
+			DESVIACIONES_INCIDENTES,
+			EVALUACION_CRISIS,
+			OBSERVACIONES,
+			DISTRIBUCION,
+			COPIA_DISTRIBUCION,
+			COALESCE((SELECT NOMBRE || ' ' || AP_PATERNO FROM OPERACION.EMPLEADO WHERE IDEMPLEADO = A.IDUSUARIO_CREADOR FETCH FIRST 1 ROWS ONLY),'') AS IDUSUARIO_CREADOR,
+			COALESCE((SELECT NOMBRE || ' ' || AP_PATERNO FROM OPERACION.EMPLEADO WHERE IDEMPLEADO = A.IDUSUARIO_MODIFICADOR FETCH FIRST 1 ROWS ONLY),'') AS IDUSUARIO_MODIFICADOR
+	FROM
+			INCIDENTES.ALERTAS A
+	WHERE
+			DATE(FECHACREACION) BETWEEN DATE('${strdate1}') AND DATE('${strdate2}') AND 
+			A.ACTIVADO = 1
+	</select>
+	
+	
+	<resultMap id="resultTicketsNotificacionAlertas" type="com.pe.ibm.bean.BeanAlerta">
+		<result property="maximoCliente" column="CLIENTE"/>
+		<result property="strImgLogo" column="IMGLOGO"/>
+		<result property="strMedalla" column="IMGCLASIFICACION"/>
+		<result property="strClasificacion" column="CLASIFICACION"/>
+		<result property="sla" column="TIENESLA"/>
+		<result property="strOtroCliente" column="OTROSCLIENTES"/>
+		
+		<result property="estadoAlerta" column="ESTADO_ACTUAL"/>
+		<result property="iMinutos" column="MINUTOS"/>
+		<result property="maximoEstado" column="ESTADOMAXIMO_ACTUAL"/>
+		<result property="maximoPrioridad" column="PRIORIDAD_INICIAL"/>
+		<result property="maximoPrioridadPost" column="PRIORIDAD_ACTUAL"/>
+		<result property="maximoFechaCreacion" column="FECHAOCURRENCIA"/>
+		<result property="fechaFin" column="FECHARESTAURACION"/>
+		
+		<result property="servicioImpactado" column="SERVICIO_IMPACTADO"/>
+		<result property="impactoNegocio" column="IMPACTO_NEGOCIO"/>
+		
+		<result property="crisisTurno" column="CRISIS_TURNO"/>
+		<result property="pm" column="PM"/>
+		<result property="usuarioCreador" column="SUPERVISOR"/>
+		<result property="strFalla" column="TIPOFALLA"/>
+		<result property="strTeamSoporte" column="TEAMSOPORTE"/>
+		<result property="propietarioIncidencia" column="ATRIBUCIONINC"/>
+		<result property="dataCenter" column="DATACENTER"/>		
+		<result property="idticketProblema" column="IDTICKET_PROBLEMA"/>
+		<result property="idticketCambio" column="IDTICKET_CAMBIO"/>
+	</resultMap>
+	
+	<select id="getTicketsNotificacionAlertas" parameterType="int" resultMap="resultTicketsNotificacionAlertas">
+	SELECT 
+		(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE TIPO = 'CLIENTE_ALERTA' AND VALOR1 = A.IDCLIENTE AND ESTADO = 1) CLIENTE
+		,(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE TIPO = 'IMAGE_ALERTAS' AND VALOR1 = 'IBMLOGO' AND ESTADO = 1) IMGLOGO
+		,CASE WHEN (SELECT VALOR2 FROM OPERACION.OPTIONS WHERE TIPO = 'CLIENTE_ALERTA' AND VALOR1 = A.IDCLIENTE AND ESTADO = 1) = 'Bronce' THEN
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE TIPO = 'IMAGE_ALERTAS' AND VALOR1 = 'CLASIFICACION_BRONCE' AND ESTADO = 1)
+		WHEN (SELECT VALOR2 FROM OPERACION.OPTIONS WHERE TIPO = 'CLIENTE_ALERTA' AND VALOR1 = A.IDCLIENTE AND ESTADO = 1) = 'Plata' THEN
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE TIPO = 'IMAGE_ALERTAS' AND VALOR1 = 'CLASIFICACION_PLATA' AND ESTADO = 1)
+		WHEN (SELECT VALOR2 FROM OPERACION.OPTIONS WHERE TIPO = 'CLIENTE_ALERTA' AND VALOR1 = A.IDCLIENTE AND ESTADO = 1) = 'Oro' THEN
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE TIPO = 'IMAGE_ALERTAS' AND VALOR1 = 'CLASIFICACION_ORO' AND ESTADO = 1)
+		WHEN (SELECT VALOR2 FROM OPERACION.OPTIONS WHERE TIPO = 'CLIENTE_ALERTA' AND VALOR1 = A.IDCLIENTE AND ESTADO = 1) = 'Platino' THEN
+			(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE TIPO = 'IMAGE_ALERTAS' AND VALOR1 = 'CLASIFICACION_PLATINIUM' AND ESTADO = 1)
+		ELSE
+			'' END IMGCLASIFICACION			
+		,(SELECT VALOR2 FROM OPERACION.OPTIONS WHERE TIPO = 'CLIENTE_ALERTA' AND VALOR1 = A.IDCLIENTE AND ESTADO = 1 AND VALOR2 IN('Bronce','Plata','Oro','Platino')) CLASIFICACION
+		,(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE TIPO = 'SLA_ALERTA' AND IDOPTION = A.IDSLA AND ESTADO = 1) TIENESLA
+		,CASE WHEN A.OTROS_CLIENTES = 1 THEN 'SI' ELSE 'NO' END  OTROSCLIENTES
+		
+		,(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE TIPO = 'ESTADO_ALERTA' AND IDOPTION = A.IDESTADO AND ESTADO = 1) ESTADO_ACTUAL
+		,CAST(TIMESTAMPDIFF(4,CHAR(TIMESTAMP(CURRENT_TIMESTAMP) - TIMESTAMP(A.FECHACREACION))) AS VARCHAR(10)) MINUTOS 
+		,TIMESTAMPDIFF(4,CHAR(TIMESTAMP(CURRENT_TIMESTAMP) - TIMESTAMP(A.FECHACREACION)))
+		
+		,(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE TIPO = 'ESTADOMAXIMO_ALERTA' AND VALOR1 = A.ESTADO AND ESTADO = 1) ESTADOMAXIMO_ACTUAL
+		,A.PRIORIDAD PRIORIDAD_INICIAL
+		,A.PRIORIDADPOST PRIORIDAD_ACTUAL
+		
+		,VARCHAR_FORMAT(A.FECHACREACION, 'YYYY-MM-DD HH24:MI') FECHAOCURRENCIA
+		,VARCHAR_FORMAT(A.FECHA_FIN, 'YYYY-MM-DD HH24:MI') FECHARESTAURACION
+		
+<!-- 		,A.FECHACREACION FECHAOCURRENCIA -->
+<!-- 		,A.FECHA_FIN FECHARESTAURACION -->
+		
+		,A.SERVICIO_IMPACTADO
+		,A.IMPACTO_NEGOCIO
+		
+<!-- 		,(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.CRISIS_TURNO) CRISISTURNO -->
+		,A.CRISIS_TURNO
+		,A.PM
+<!-- 		,(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.IDPM) PM -->
+		,(SELECT NOMBRE || ' ' || AP_PATERNO FROM OPERACION.EMPLEADO WHERE IDEMPLEADO = A.IDUSUARIO_MODIFICADOR AND ESTADO = 1 FETCH FIRST 1 ROWS ONLY) SUPERVISOR
+		,(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.TIPO_FALLA AND ESTADO = 1) TIPOFALLA
+		,A.TEAMSOPORTE
+		,(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.PROPIETARIO_INCIDENCIA AND ESTADO = 1) ATRIBUCIONINC
+		,(SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.IDDATA_CENTER AND ESTADO = 1) DATACENTER
+		
+		,A.IDTICKET_PROBLEMA
+		,A.IDTICKET_CAMBIO
+	FROM 
+		INCIDENTES.ALERTAS A
+	WHERE 
+		A.IDALERTA = #{iAlertaEjecutiva} AND
+		A.ACTIVADO = 1
+	</select>
+	
+	
+	<resultMap id="resultTicketsNotificacionAlertasDetalle" type="com.pe.ibm.bean.BeanAlerta">
+		<result property="fecha" column="FECHA"/>
+		<result property="hora" column="HORA"/>
+		<result property="strMensaje" column="DETALLE"/>
+	</resultMap>
+	
+	<select id="getTicketsNotificacionAlertasDetalle" parameterType="int" resultMap="resultTicketsNotificacionAlertasDetalle">
+	SELECT 
+		DATE(FECHAREGISTRO) FECHA
+		,TIME(FECHAREGISTRO) HORA
+		,DETALLE
+	FROM
+		INCIDENTES.ALERTAS_DETALLE
+	WHERE
+		IDALERTA = #{iAlertaEjecutiva} AND
+		ESTADO = 1
+	ORDER BY FECHAREGISTRO ASC
+	</select>
+		
+</mapper>

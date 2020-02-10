@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="com.pe.ibm.access.MapperRendimiento">
+  
+ <!--   <insert  id="Insert_Update" parameterType="com.pe.ibm.bean.BeanActividad" statementType="CALLABLE">
+     {call SCHEDULE.RUD_ACTIVIDAD(
+        #{idActividad,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{horaEjecucion,javaType=java.sql.Time,jdbcType=TIME,mode=IN},
+      	#{descripcion,javaType=String,jdbcType=VARCHAR,mode=IN},
+      	#{horaTermino,javaType=java.sql.Time,jdbcType=TIME,mode=IN},
+      	#{idPlataforma,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{idTipoRespaldo,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{idPeriodo,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{idSede,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{idProcedimiento,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{idServidor,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{idCliente,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{estado,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{duracion,javaType=java.sql.Time,jdbcType=TIME,mode=IN},
+      	#{jobStream,javaType=String,jdbcType=VARCHAR,mode=IN},
+      	#{comentario,javaType=String,jdbcType=VARCHAR,mode=IN},
+      	#{ventanaMax,javaType=java.sql.Time,jdbcType=TIME,mode=IN},
+      	#{accion,javaType=String,jdbcType=VARCHAR,mode=IN},
+      	#{tws,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{idTipoActividad,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{idturno,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{operacion,javaType=String,jdbcType=VARCHAR,mode=IN},
+      	#{userMod,javaType=String,jdbcType=VARCHAR,mode=IN},
+      	#{team,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{motivo,javaType=String,jdbcType=VARCHAR,mode=IN},
+      	#{resultado,javaType=Integer,jdbcType=INTEGER,mode=OUT}
+     )}
+	</insert>
+--> 
+
+
+	<resultMap id = "result" type = "com.pe.ibm.bean.BeanRendimiento">
+      <result property = "idRendimiento" column = "XML_ID"/>
+      <result property = "name" column = "XML_NAME"/>
+      <result property = "agent" column = "XML_AGENT"/>
+      <result property = "node" column = "XML_NODE_COUNT"/>
+      <result property = "exec" column = "XML_EXEC"/>
+      <result property = "start" column = "XML_START"/>
+      <result property = "aplication" column = "XML_APLICATION"/>
+      <result property = "breakdown" column = "XML_BREAKDOWN"/>
+      <result property = "response" column = "XML_RESPONSE_TIME"/>
+      <result property = "detected" column = "XML_DETECTED_PROBLEM_PATTERNS"/>
+      <result property = "state" column = "XML_STATE"/>
+      <result property = "tipo" column = "XML_TIPO"/>
+      <result property = "fecha" column = "XML_FECHA_REPORTE"/>
+   	</resultMap>   
+   
+    <select id = "listar" resultMap = "result" parameterType = "com.pe.ibm.bean.BeanRendimiento"  statementType = "CALLABLE">
+      {call SISTOPER.SELECT_XML(
+       #{tipo,javaType=String,jdbcType=VARCHAR,mode=IN},
+       #{fecha,javaType=java.util.Date,jdbcType=DATE,mode=IN}
+      )}
+    </select>
+    
+    <resultMap id = "result_reporte" type = "com.pe.ibm.bean.BeanRendimientoDashboard">
+      <result property = "bizagi_percentil" column = "BIZAGI_PERCENTIL"/>
+      <result property = "bizagi_threshold" column = "BIZAGI_THRESHOLD"/>
+      <result property = "bizagi_total" column = "BIZAGI_TOTAL"/>
+      <result property = "bizagi_desvios" column = "BIZAGI_DESVIOS"/>
+      <result property = "bizagi_indicador" column = "BIZAGI_INDICADOR"/>
+      <result property = "proveedores_percentil" column = "PROVEEDORES_PERCENTIL"/>
+      <result property = "proveedores_threshold" column = "PROVEEDORES_THRESHOLD"/>
+      <result property = "proveedores_total" column = "PROVEEDORES_TOTAL"/>
+      <result property = "proveedores_desvios" column = "PROVEEDORES_DESVIOS"/>
+      <result property = "proveedores_indicador" column = "PROVEEDORES_INDICADOR"/>
+      <result property = "cobertura_percentil" column = "COBERTURA_PERCENTIL"/>
+      <result property = "cobertura_threshold" column = "COBERTURA_THRESHOLD"/>
+      <result property = "cobertura_total" column = "COBERTURA_TOTAL"/>
+      <result property = "cobertura_desvios" column = "COBERTURA_DESVIOS"/>
+      <result property = "cobertura_indicador" column = "COBERTURA_INDICADOR"/>
+      <result property = "asegurados_percentil" column = "ASEGURADOS_PERCENTIL"/>
+      <result property = "asegurados_threshold" column = "ASEGURADOS_THRESHOLD"/>
+      <result property = "asegurados_total" column = "ASEGURADOS_TOTAL"/>
+      <result property = "asegurados_desvios" column = "ASEGURADOS_DESVIOS"/>
+      <result property = "asegurados_indicador" column = "ASEGURADOS_INDICADOR"/>
+      <result property = "cupones_percentil" column = "CUPONES_PERCENTIL"/>
+      <result property = "cupones_threshold" column = "CUPONES_THRESHOLD"/>
+      <result property = "cupones_total" column = "CUPONES_TOTAL"/>
+      <result property = "cupones_desvios" column = "CUPONES_DESVIOS"/>
+      <result property = "cupones_indicador" column = "CUPONES_INDICADOR"/>
+      <result property = "certificado_percentil" column = "CERTIFICADO_PERCENTIL"/>
+      <result property = "certificado_threshold" column = "CERTIFICADO_THRESHOLD"/>
+      <result property = "certificado_total" column = "CERTIFICADO_TOTAL"/>
+      <result property = "certificado_desvios" column = "CERTIFICADO_DESVIOS"/>
+      <result property = "certificado_indicador" column = "CERTIFICADO_INDICADOR"/>
+      <result property = "poliza_percentil" column = "POLIZA_PERCENTIL"/>
+      <result property = "poliza_threshold" column = "POLIZA_THRESHOLD"/>
+      <result property = "poliza_total" column = "POLIZA_TOTAL"/>
+      <result property = "poliza_desvios" column = "POLIZA_DESVIOS"/>
+      <result property = "poliza_indicador" column = "POLIZA_INDICADOR"/>
+      <result property = "det_sin_percentil" column = "DET_SIN_PERCENTIL"/>
+      <result property = "det_sin_threshold" column = "DET_SIN_THRESHOLD"/>
+      <result property = "det_sin_total" column = "DET_SIN_TOTAL"/>
+      <result property = "det_sin_desvios" column = "DET_SIN_DESVIOS"/>
+      <result property = "det_sin_indicador" column = "DET_SIN_INDICADOR"/>
+      <result property = "feb_cob_percentil" column = "FEC_COB_PERCENTIL"/>
+      <result property = "feb_cob_threshold" column = "FEC_COB_THRESHOLD"/>
+      <result property = "feb_cob_total" column = "FEC_COB_TOTAL"/>
+      <result property = "feb_cob_desvios" column = "FEC_COB_DESVIOS"/>
+      <result property = "feb_cob_indicador" column = "FEC_COB_INDICADOR"/>
+      <result property = "siniestro_cert_percentil" column = "SINIESTRO_CERT_PERCENTIL"/>
+      <result property = "siniestro_cert_threshold" column = "SINIESTRO_CERT_THRESHOLD"/>
+      <result property = "siniestro_cert_total" column = "SINIESTRO_CERT_TOTAL"/>
+      <result property = "siniestro_cert_desvios" column = "SINIESTRO_CERT_DESVIOS"/>
+      <result property = "siniestro_cert_indicador" column = "SINIESTRO_CERT_INDICADOR"/>
+      <result property = "financia_percentil" column = "FINANCIA_PERCENTIL"/>
+      <result property = "financia_threshold" column = "FINANCIA_THRESHOLD"/>
+      <result property = "financia_total" column = "FINANCIA_TOTAL"/>
+      <result property = "financia_desvios" column = "FINANCIA_DESVIOS"/>
+      <result property = "financia_indicador" column = "FINANCIA_INDICADOR"/>
+      <result property = "trasmision_percentil" column = "TRASMISION_PERCENTIL"/>
+      <result property = "trasmision_threshold" column = "TRASMISION_THRESHOLD"/>
+      <result property = "trasmision_total" column = "TRASMISION_TOTAL"/>
+      <result property = "trasmision_desvios" column = "TRASMISION_DESVIOS"/>
+      <result property = "trasmision_indicador" column = "TRASMISION_INDICADOR"/>
+      <result property = "poliza_act_percentil" column = "POLIZA_ACT_PERCENTIL"/>
+      <result property = "poliza_act_threshold" column = "POLIZA_ACT_THRESHOLD"/>
+      <result property = "poliza_act_total" column = "POLIZA_ACT_TOTAL"/>
+      <result property = "poliza_act_desvios" column = "POLIZA_ACT_DESVIOS"/>
+      <result property = "poliza_act_indicador" column = "POLIZA_ACT_INDICADOR"/>
+      <result property = "poliza_buscar_percentil" column = "POLIZA_BUSCAR_PERCENTIL"/>
+      <result property = "poliza_buscar_threshold" column = "POLIZA_BUSCAR_THRESHOLD"/>
+      <result property = "poliza_buscar_total" column = "POLIZA_BUSCAR_TOTAL"/>
+      <result property = "poliza_buscar_desvios" column = "POLIZA_BUSCAR_DESVIOS"/>
+      <result property = "poliza_buscar_indicador" column = "POLIZA_BUSCAR_INDICADOR"/>
+      <result property = "poliza_preafi_percentil" column = "POLIZA_PREAFI_PERCENTIL"/>
+      <result property = "poliza_preafi_threshold" column = "POLIZA_PREAFI_THRESHOLD"/>
+      <result property = "poliza_preafi_total" column = "POLIZA_PREAFI_TOTAL"/>
+      <result property = "poliza_preafi_desvios" column = "POLIZA_PREAFI_DESVIOS"/>
+      <result property = "poliza_preafi_indicador" column = "POLIZA_PREAFI_INDICADOR"/>
+      <result property = "endoso_percentil" column = "ENDOSO_PERCENTIL"/>
+      <result property = "endoso_threshold" column = "ENDOSO_THRESHOLD"/>
+      <result property = "endoso_total" column = "ENDOSO_TOTAL"/>
+      <result property = "endoso_desvios" column = "ENDOSO_DESVIOS"/>
+      <result property = "endoso_indicador" column = "ENDOSO_INDICADOR"/>
+      <result property = "salud_percentil" column = "SALUD_PERCENTIL"/>
+      <result property = "salud_threshold" column = "SALUD_THRESHOLD"/>
+      <result property = "salud_total" column = "SALUD_TOTAL"/>
+      <result property = "salud_desvios" column = "SALUD_DESVIOS"/>
+      <result property = "salud_indicador" column = "SALUD_INDICADOR"/>
+      <result property = "trama_percentil" column = "TRAMA_PERCENTIL"/>
+      <result property = "trama_threshold" column = "TRAMA_THRESHOLD"/>
+      <result property = "trama_total" column = "TRAMA_TOTAL"/>
+      <result property = "trama_desvios" column = "TRAMA_DESVIOS"/>
+      <result property = "trama_indicador" column = "TRAMA_INDICADOR"/>
+   	</resultMap>   
+   
+    <select id = "listar_reporte" resultMap = "result_reporte" parameterType = "com.pe.ibm.bean.BeanRendimientoDashboard"  statementType = "CALLABLE">
+      {call SISTOPER.REPORTE_XML(
+       #{desde,javaType=java.util.Date,jdbcType=DATE,mode=IN},
+       #{hasta,javaType=java.util.Date,jdbcType=DATE,mode=IN}
+      )}
+    </select>
+</mapper>

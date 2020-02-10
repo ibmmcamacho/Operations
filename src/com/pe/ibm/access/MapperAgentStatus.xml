@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="com.pe.ibm.access.MapperAgentStatus">
+	<resultMap id = "result" type = "com.pe.ibm.bean.BeanAgentStatus">
+	  <result property = "status" column = "STATUS"/>
+	  <result property = "node" column = "NODE"/>
+	  <result property = "node2" column = "NODE2"/>
+	  <result property = "product" column = "PRODUCT"/>
+	  <result property = "ipaddress" column = "IPADDRESS"/>
+	  <result property = "hostname" column = "HOSTNAME"/>
+	  <result property = "version" column = "VERSION"/>
+	  <result property = "hostinfo" column = "HOSTINFO"/>
+	  <result property = "throughnode" column = "THROUGHNODE"/>
+	  <result property = "heartbeat" column = "HEARTBEAT"/>
+   	</resultMap>
+     
+    <select id = "listagentstatus" resultMap = "result" parameterType = "com.pe.ibm.bean.BeanAgentStatus">     
+     SELECT STATUS,NODE,NODE2,PRODUCT,IPADDRESS,HOSTNAME,VERSION,HOSTINFO,THROUGHNODE,HEARTBEAT FROM DB2INST2.AGENTS_STATUS
+    </select>
+    
+    <insert  id="Insert_Audit" parameterType="com.pe.ibm.bean.BeanAgentStatus" statementType="CALLABLE">
+     {call DB2INST2.REGISTER_AUDIT_AGENTS_STATUS(
+        #{status,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{node,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{node2,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{product,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{throughnode,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{lenghtnode,javaType=Integer,jdbcType=INTEGER,mode=IN},
+        #{resultado1,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{resultado2,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{usermod,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{resultado,javaType=Integer,jdbcType=INTEGER,mode=OUT}
+     )}
+	</insert>
+    
+</mapper>

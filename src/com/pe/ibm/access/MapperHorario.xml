@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="horario">
+
+	<resultMap id="resultHorario" type="com.pe.ibm.bean.BeanHorario">
+		<result property="iIdHoras" column="IDHORARIO" />
+		<result property="strHoras" column="HORAS" />
+	</resultMap>
+	
+
+	<select id="getHorario" parameterType="com.pe.ibm.bean.BeanHorario" resultMap="resultHorario">
+		SELECT 
+			IDHORARIO,
+			HORAS 
+		FROM 
+			OPERACION.HORARIOS 
+		WHERE 
+			ESTADO = 1 AND
+			IDTEAM = #{iTeam}
+	</select>
+	
+	<insert id="saveHorario" parameterType="com.pe.ibm.bean.BeanHorario">
+		INSERT INTO OPERACION.HORARIOS(HORAS,USERMOD,IDTEAM) 
+		VALUES(#{strHoras},#{strUsuario},#{iTeam})
+	</insert>
+
+	<update id="updateHorario" parameterType="com.pe.ibm.bean.BeanHorario">
+		UPDATE OPERACION.HORARIOS SET 
+			HORAS = #{strHoras},
+			USERMOD = #{strUsuario} 
+		WHERE
+			IDHORARIO = #{iIdHoras}
+	</update>
+
+	<update id="deleteHorario" parameterType="com.pe.ibm.bean.BeanHorario">
+		UPDATE OPERACION.HORARIOS SET 
+			ESTADO = 0 
+		WHERE
+			IDHORARIO = #{iIdHoras}
+	</update>
+	
+	<resultMap id="resultValidateHorario" type="com.pe.ibm.bean.BeanParameters">
+		<result property="iValor1" column="CANTIDAD" />
+	</resultMap>
+
+	<select id="getValidateHorario" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultValidateHorario">
+		SELECT 
+			COALESCE(COUNT(1),0) CANTIDAD
+		FROM 
+			OPERACION.HORARIOEMPLEADOV2
+		WHERE
+			IDTEAM = #{iTeam}
+	</select>
+
+	<resultMap id="resultHorarioAsignacion" type="com.pe.ibm.bean.BeanParameters">
+		<result property="strIdLogin" column="IDLOGIN" />
+		<result property="strValor1" column="EMPLEADO" />
+		<result property="strValor2" column="AREA" />
+		<result property="strValor3" column="HORAS" />
+		<result property="iValor1" column="IDHORARIOEMPLEADO" />
+		<result property="iIdEmpleado" column="IDEMPLEADO" />
+		<result property="iValor2" column="IDHORARIO" />
+	</resultMap>
+
+	<select id="getHorarioAsignacion" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultHorarioAsignacion">
+	SELECT 
+		A.IDHORARIOEMPLEADO, B.IDEMPLEADO,B.IDLOGIN, B.NOMBRE || ' ' || B.AP_MATERNO || ' ' || B.AP_PATERNO "EMPLEADO", D.DESCRIPCION AREA, C.HORAS, C.IDHORARIO
+	FROM 
+		OPERACION.HORARIOEMPLEADO A INNER JOIN OPERACION.EMPLEADO B ON A.IDEMPLEADO = B.IDEMPLEADO
+		INNER JOIN OPERACION.HORARIOS C ON A.IDHORARIO = C.IDHORARIO INNER JOIN OPERACION.OPTIONS D ON B.IDAREA = D.IDOPTION
+	WHERE C.IDTEAM = #{iTeam}
+	</select>
+
+	<insert id="saveHorarioAsignacion" parameterType="com.pe.ibm.bean.BeanParameters">
+		INSERT INTO OPERACION.HORARIOEMPLEADO(IDEMPLEADO,IDHORARIO) 
+		VALUES(#{iIdEmpleado},#{iValor2})
+	</insert>
+
+	<update id="updateHorarioAsignacion" parameterType="com.pe.ibm.bean.BeanParameters">
+		UPDATE OPERACION.HORARIOEMPLEADO SET 
+			IDEMPLEADO = #{iIdEmpleado}, 
+			IDHORARIO = #{iValor2}
+		WHERE 
+			IDHORARIOEMPLEADO = #{iValor1}
+	</update>
+	
+	<delete id="deleteHorarioAsignacion" parameterType="com.pe.ibm.bean.BeanParameters">
+		DELETE FROM 
+			OPERACION.HORARIOEMPLEADO
+		WHERE 
+			IDHORARIOEMPLEADO = #{iValor1}
+	</delete>
+	
+	
+	
+	
+	
+	<resultMap id="resultadoHorario" type="com.pe.ibm.bean.Horario">
+		 <result property="proyectoid" column="PROYECTOID"/>
+		 <result property="lunes" column="LUNES"/>
+		 <result property="lunes_inicio" column="LUNES_INICIO"/>
+		 <result property="lunes_fin" column="LUNES_FIN"/>
+		 <result property="martes" column="MARTES"/>
+		 <result property="martes_inicio" column="MARTES_INICIO"/>
+		 <result property="martes_fin" column="MARTES_FIN"/>
+		 <result property="miercoles" column="MIERCOLES"/>
+		 <result property="miercoles_inicio" column="MIERCOLES_INICIO"/>	
+		 <result property="miercoles_fin" column="MIERCOLES_FIN"/>	
+		 <result property="jueves" column="JUEVES"/>	
+		 <result property="jueves_inicio" column="JUEVES_INICIO"/>	
+		 <result property="jueves_fin" column="JUEVES_FIN"/>	
+		 <result property="viernes" column="VIERNES"/>	
+		 <result property="viernes_inicio" column="VIERNES_INICIO"/>	
+		 <result property="viernes_fin" column="VIERNES_FIN"/>	
+		 <result property="sabado" column="SABADO"/>	
+		 <result property="sabado_inicio" column="SABADO_INICIO"/>	
+		 <result property="sabado_fin" column="SABADO_FIN"/>	
+		 <result property="domingo" column="DOMINGO"/>	
+		 <result property="domingo_inicio" column="DOMINGO_INICIO"/>	
+		 <result property="domingo_fin" column="DOMINGO_FIN"/>	
+		 <result property="feriado" column="FERIADO"/>	
+	</resultMap>
+
+    <select id="consultaHorario" parameterType="String" resultMap="resultadoHorario">
+	SELECT 
+	PROYECTOID, LUNES, LUNES_INICIO, LUNES_FIN,
+	MARTES, MARTES_INICIO, MARTES_FIN, 
+	MIERCOLES, MIERCOLES_INICIO, MIERCOLES_FIN, 
+	JUEVES, JUEVES_INICIO, JUEVES_FIN, 
+	VIERNES, VIERNES_INICIO, VIERNES_FIN, 
+	SABADO, SABADO_INICIO, SABADO_FIN,
+	DOMINGO, DOMINGO_INICIO, DOMINGO_FIN, FERIADO
+
+	FROM
+	SMARTDESK.SLA_HORARIO
+
+	WHERE 
+	PROYECTOID = #{idproyecto} 
+    </select>
+	
+	
+	
+	
+	
+</mapper>

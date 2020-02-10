@@ -1,0 +1,85 @@
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="notificacion">
+
+	<resultMap id="resultBuscarNotificaciones" type="com.pe.ibm.bean.BeanNotificacion">
+		<result property="strTitulo" column="TITULO"/>
+		<result property="strContenido" column="CONTENIDO" />
+		<result property="strImg" column="IMG" />
+		<result property="strDateReg" column="DATEREG" />
+		<result property="strDateLectura" column="DATEREAD" />
+		<result property="iEnviado" column="ENVIO" />
+		<result property="strTipo" column="TIPO" />
+	</resultMap>
+
+	<select id="getBuscarNotificaciones" parameterType="int" resultMap="resultBuscarNotificaciones">
+		SELECT 
+			TITULO, CONTENIDO,IMG, DATEREG, DATEREAD, ENVIO, TIPO
+		FROM
+			OPERACION.NOTIFICACIONES 
+		WHERE 
+			ESTADO = 1 AND IDOWNER = #{pIdEmpleado}
+	</select>
+	
+	<resultMap id="resultBuscarNotificacionesNuevas" type="com.pe.ibm.bean.BeanNotificacion">
+		<result property="strTitulo" column="TITULO"/>
+		<result property="strContenido" column="CONTENIDO" />
+		<result property="strImg" column="IMG" />
+		<result property="strDateReg" column="DATEREG" />
+		<result property="strDateLectura" column="DATEREAD" />
+		<result property="iEnviado" column="ENVIO" />
+		<result property="strTipo" column="TIPO" />
+	</resultMap>
+
+	<select id="getBuscarNotificacionesNuevas" parameterType="int" resultMap="resultBuscarNotificacionesNuevas">
+		SELECT 
+			TITULO, CONTENIDO,IMG, DATEREG, DATEREAD, ENVIO, TIPO
+		FROM 
+			OPERACION.NOTIFICACIONES 
+		WHERE 
+			ESTADO = 1 AND IDOWNER = #{pIdEmpleado} AND DATEREAD IS NULL
+	</select>
+ 	
+	<resultMap id="resultTimeLine" type="com.pe.ibm.bean.BeanTimeLine">
+		<result property="iSumaMinutosInicio" column="SUMA_MINUTOS_POR_INICIAR"/>
+		<result property="iSumaMinutosTarea" column="SUMA_MINUTOS_POR_TAREA" />
+		<result property="strMensaje" column="MENSAJE" />
+		<result property="strEtiqueta" column="ETIQUETA" />
+	</resultMap>
+
+	<select id="getListarTimeLine" resultMap="resultTimeLine">
+		SELECT 
+			SUMA_MINUTOS_POR_INICIAR, 
+			SUMA_MINUTOS_POR_TAREA, 
+			MENSAJE, 
+			ETIQUETA 
+		FROM 
+			OPERACION.TIMELINE
+		ORDER BY ORDEN ASC
+	</select>
+
+ 	<update id="actualizarNotificaciones" parameterType="int">
+ 		UPDATE 
+ 			OPERACION.NOTIFICACIONES 
+ 		SET 
+ 			DATEREAD = CURRENT_TIMESTAMP 
+ 		WHERE 
+ 			ESTADO = 1 AND 
+ 			IDOWNER = #{pIdEmpleado} AND 
+ 			DATEREAD IS NULL
+ 	</update>
+ 	
+ 	<update id="actualizarEnvio" parameterType="int">
+ 		UPDATE 
+ 			OPERACION.NOTIFICACIONES 
+ 		SET 
+ 			ENVIO = 1 
+ 		WHERE 
+ 			ESTADO = 1 AND 
+ 			IDOWNER = #{pIdEmpleado} AND 
+ 			DATEREAD IS NULL
+ 	</update>
+ 	
+</mapper>

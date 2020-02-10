@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="chatbot">
+  
+    <insert id="InsertarMensaje" parameterType="com.pe.ibm.bean.BeanMensaje">
+    	INSERT INTO CHATBOT.MENSAJE_LOG (ID_SESION ,USUARIO ,MENSAJE ,FECHA_REGISTRO)
+        VALUES 
+       (#{id_sesion},#{usuario},#{mensaje},#{fecha_registro})
+     </insert>  
+  
+  	 
+    
+</mapper>

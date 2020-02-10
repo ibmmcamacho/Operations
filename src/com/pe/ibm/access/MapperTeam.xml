@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="team">
+	
+	<resultMap id="resultTeam" type="com.pe.ibm.bean.BeanTeam">
+		<result property="iIdTeam" column="IDTEAM"/>
+		<result property="strDescripcion" column="DESCRIPCION"/>
+	</resultMap>
+	
+	<select id="getTeam" resultMap="resultTeam">
+		SELECT IDTEAM,DESCRIPCION FROM OPERACION.TEAM WHERE ESTADO = 1
+	</select>
+	
+	
+	<resultMap id="resultTeamUsuario" type="com.pe.ibm.bean.BeanTeam">
+		<result property="iIdTeam" column="IDTEAM"/>
+		<result property="strDescripcion" column="DESCRIPCION"/>
+	</resultMap>
+	
+	<select id="getTeamUsuario" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultTeamUsuario">
+		SELECT A.IDTEAM,A.DESCRIPCION 
+		FROM OPERACION.TEAM A INNER JOIN OPERACION.EMPLEADO B ON A.IDTEAM = B.IDTEAM
+		WHERE B.ESTADO = 1
+		AND UPPER(B.IDLOGIN) = UPPER(#{strIdLogin})
+	</select>
+	
+	
+	<resultMap id="resultTeamPetro" type="com.pe.ibm.bean.BeanTeam">
+		<result property="iIdTeam" column="IDTEAM"/>
+		<result property="strDescripcion" column="DESCRIPCION"/>
+	</resultMap>
+	
+	<select id="getTeamPetro" resultMap="resultTeamPetro">
+		SELECT IDTEAM,DESCRIPCION FROM OPERACION.TEAM WHERE ESTADO = 1 AND DESCRIPCION = 'PETROPERU'
+	</select>
+	
+</mapper>

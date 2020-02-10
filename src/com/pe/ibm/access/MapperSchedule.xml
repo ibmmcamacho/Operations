@@ -1,0 +1,448 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="com.pe.ibm.access.MapperSchedule">
+  
+ 	 <insert  id="Insert_Update" parameterType="com.pe.ibm.bean.BeanSchedule" statementType="CALLABLE">
+     {call SCHEDULE.RUD_SCHEDULE(        
+      	#{operacion,javaType=String,jdbcType=VARCHAR,mode=IN},
+      	#{idSchedule,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{idusermod,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{resultado,javaType=Integer,jdbcType=INTEGER,mode=OUT}
+     )}
+	</insert>
+
+	<resultMap id = "result" type = "com.pe.ibm.bean.BeanSchedule">
+      <result property = "idSchedule" column = "IDSCHEDULE"/>
+      <result property = "fecha" column = "FECHA"/>
+      <result property = "estado" column = "ESTADO"/>
+      <result property = "descripcionEstado" column = "ESTADODESCRIPCION"/>
+      <result property = "idTurno" column = "IDTURNO"/>
+      <result property = "descripcionTurno" column = "DESCRIPCIxON"/>
+      <result property = "horaInicioTurno" column = "HORAINICIO"/>
+      <result property = "horaFinTurno" column = "HORAFIN"/>
+      <result property = "usermod" column = "USERMOD"/>
+      <result property = "descripcionSede" column = "SEDEDESCRIPCION"/>
+      <result property = "operadorAsignado" column = "OPERADOR_ASIG"/>
+      
+      <result property = "grupoTurnos" column = "GTURNOS"/>
+      <result property = "idOption" column = "IDOPTION"/>
+   	</resultMap>   
+   
+<!--    BG001 - Cambio del Procedimiento a usar por SELECT_SCHEDULE_SIN_ASIGNAR_V2 -->
+	<select id = "listar" resultMap = "result"  parameterType = "com.pe.ibm.bean.BeanEmpleado" >
+	
+	SELECT s.IDSCHEDULE,s.FECHA,s.ESTADO,s.DATEREG,s.IDTURNO,t.DESCRIPCION,t.HORAINICIO,t.HORAFIN,t.GTURNOS,t.IDOPTION,t.IDTEAM,s.USERMOD,s.IDSEDE,e.NOMBRE || ' ' || e.AP_PATERNO || ' ' || e.AP_MATERNO as OPERADOR_ASIG,se.DESCRIPCION AS SEDEDESCRIPCION 
+	FROM SCHEDULE.SCHEDULE AS s
+	LEFT JOIN SCHEDULE.TURNO_V2 t on t.IDTURNO = s.IDTURNO 
+	LEFT JOIN OPERACION.OPTIONS_CONT se ON s.IDSEDE = se.IDOPTION
+	LEFT JOIN OPERACION.EMPLEADO e on e.IDEMPLEADO = s.USERMOD
+	WHERE s.ESTADO IN (1,2) and s.IDTEAM = #{iTeam} 
+	ORDER BY s.FECHA DESC,s.IDSEDE ASC 
+	
+	</select>
+
+<!--     <select id = "listar" resultMap = "result"  parameterType = "com.pe.ibm.bean.BeanEmpleado" statementType = "CALLABLE"> -->
+<!--       {call SCHEDULE.SELECT_SCHEDULE_SIN_ASIGNAR_V2( -->
+<!--       #{iTeam,javaType=Integer,jdbcType=INTEGER,mode=IN} -->
+<!--       )} -->
+<!--     </select>  -->
+    
+    
+    
+<!--     BG001 - Cambio del Procedimiento a usar por SELECT_SCHEDULE_ACTIVOS_V2 -->
+    <select id = "listar_schedules_activos" resultMap = "result" statementType = "CALLABLE">
+      {call SCHEDULE.SELECT_SCHEDULE_ACTIVOS_V2()}
+    </select>
+<!--     BG001 - Cambio del Procedimiento a usar por SELECT_MIS_SCHEDULES_V2 -->
+    <select id = "listar_mis_schedules" resultMap = "result" statementType = "CALLABLE">
+      {call SCHEDULE.SELECT_MIS_SCHEDULES_V2(
+       #{idusermod,javaType=Integer,jdbcType=INTEGER,mode=IN}
+      )}
+    </select>
+    
+   	<!--       {call SCHEDULE.GENERAR_SCHEDULE( -->
+    <insert id = "generarSchedule" parameterType="com.pe.ibm.bean.BeanParameters" statementType = "CALLABLE">
+      {call SCHEDULE.SP_SCHEDULE_GENERAR(
+       #{strValor1,javaType=String,jdbcType=VARCHAR,mode=IN},
+       #{objDate,javaType=java.util.Date,jdbcType=DATE,mode=IN},
+       #{iValor1,javaType=Integer,jdbcType=INTEGER,mode=OUT}
+      )}
+    </insert>
+    
+    <insert id = "generarPeriodoPruebaFecha" parameterType="com.pe.ibm.bean.BeanParameters" statementType = "CALLABLE">
+      {call SCHEDULE.PERIODO_PRUEBA_FECHA(
+       #{objDate,javaType=java.util.Date,jdbcType=DATE,mode=IN}
+      )}
+    </insert>
+    
+    <insert id = "generarScheduleIndia" parameterType="com.pe.ibm.bean.BeanParameters" statementType = "CALLABLE">
+      {call SCHEDULE.GENERAR_SCHEDULE_POR_FECHA_INDIA(
+       #{objDate,javaType=java.util.Date,jdbcType=DATE,mode=IN}
+      )}                    
+    </insert>
+
+	<insert id = "generarScheduleSura" parameterType="com.pe.ibm.bean.BeanParameters" statementType = "CALLABLE">
+      {call SCHEDULE.GENERAR_SCHEDULE_POR_FECHA_SURA(
+       #{objDate,javaType=java.util.Date,jdbcType=DATE,mode=IN}
+      )}  
+    </insert>
+    
+    <!-- SELECCIONA LOS DATOS DE LA ACTIVIDAD EN MIS SCHEDULE Y LOS GUARDA EN RCT_v2  -->
+    <insert id="saveRCT" parameterType="com.pe.ibm.bean.BeanRCT">
+		INSERT INTO SCHEDULE.RCT_v2(TIPO,CLIENTE,SERVIDOR,TURNO,FECHAINICIO,FECHAVIGENCIA,IDACTIVIDAD,IDSCHEDULEORIGEN,DESCRIPCION,IDUSUARIOORIGEN,FECHAREG,HORAINICIO,ESTADO,IDTEAM)
+			VALUES(
+			'SCHEDULE',
+			${intValor1},<!-- IDLCLIENTE -->
+			${intValor2},<!-- IDSERVIDOR -->
+			${intValor3},<!-- IDTURNO -->
+			'${strValor4}',<!-- FECHAINICIO -->			
+			'${strValor5}',<!-- FECHAVIGENCIA -->
+			'${IDACTIVIDAD}',
+			${IDSCHEDULEORIGEN},				
+			'${DESCRIPCION}',
+			${IDUSUARIOORIGEN},							
+			CURRENT TIMESTAMP,	<!-- FECHAREG -->
+			'${strValor10}',
+			1 <!-- ESTADO -->,
+			${iTeam})	
+	</insert>
+    
+    <!-- LISTAR RCT  -->
+    <resultMap id="resultlistRCT" type="com.pe.ibm.bean.BeanRCT">
+		<result property="IDRCT" column="IDRCT" />
+		<result property="strValor1" column="TIPO" />
+		<result property="strValor2" column="IDSCHEDULEORIGEN2" />
+		<result property="IDSCHEDULEORIGEN" column="IDSCHEDULEORIGEN" />
+		<result property="strValor3" column="IDUSUARIOORIGEN" />
+		<result property="intValor4" column="CLIENTE" />
+		<result property="intValor5" column="SERVIDOR" />
+		<result property="intValor6" column="TURNO" />
+		<result property="strValor7" column="IDACTIVIDAD2" />
+		<result property="strValor4" column="IDACTIVIDAD" />
+		<result property="strValor8" column="FECHAINICIO" />		
+		<result property="strValor10" column="FECHAVIGENCIA" />	
+			
+		<result property="strValor11" column="IDUSUARIOATENCION" />
+		<result property="FECHAREG" column="FECHAREG" />	
+		<result property="FECHAASIG" column="FECHAASIG" />
+		<result property="strValor12" column="IDSCHEDULEDESTINO2" />
+		<result property="IDSCHEDULEDESTINO" column="IDSCHEDULEDESTINO" />		
+		
+		<result property="DESCRIPCION" column="DESCRIPCION" />
+		<result property="strValor13" column="HORAINICIO" />
+		<result property="strValor14" column="CLIENTE2" />
+		<result property="strValor15" column="SERVIDOR2" />
+		<result property="strValor16" column="TURNO2" />
+		<result property="ESTADO" column="ESTADO" />			
+		
+	</resultMap>
+
+	<select id="listarRCT" parameterType="com.pe.ibm.bean.BeanRCT" resultMap="resultlistRCT">
+		
+		SELECT 
+			IDRCT,
+			TIPO,
+			(SELECT CAST(a.DESCRIPCION AS VARCHAR(500)) FROM SCHEDULE.ACTIVIDAD a WHERE  CAST(a.IDACTIVIDAD AS VARCHAR(500)) =  CAST(c.IDACTIVIDAD AS VARCHAR(500))) AS IDACTIVIDAD2,
+			CAST(IDACTIVIDAD AS VARCHAR(500)) AS IDACTIVIDAD,
+			(SELECT a.DESCRIPCION FROM SCHEDULE.TURNO a INNER JOIN SCHEDULE.SCHEDULE b ON a.IDTURNO = b.IDTURNO WHERE c.IDSCHEDULEORIGEN = b.IDSCHEDULE) AS IDSCHEDULEORIGEN2,
+			IDSCHEDULEORIGEN,
+			(SELECT a.DESCRIPCION FROM SCHEDULE.TURNO a INNER JOIN SCHEDULE.SCHEDULE b ON a.IDTURNO = b.IDTURNO WHERE c.IDSCHEDULEDESTINO = b.IDSCHEDULE) AS IDSCHEDULEDESTINO2,
+			IDSCHEDULEDESTINO,
+			DESCRIPCION,
+			(SELECT IDLOGIN FROM OPERACION.EMPLEADO b WHERE b.IDEMPLEADO = c.IDUSUARIOORIGEN ) AS IDUSUARIOORIGEN,
+			(SELECT IDLOGIN FROM OPERACION.EMPLEADO b WHERE b.IDEMPLEADO = c.IDUSUARIOATENCION ) AS IDUSUARIOATENCION,
+			FECHAREG,
+			FECHAASIG, 
+			CLIENTE,
+			SERVIDOR,
+			TURNO,
+			FECHAINICIO,			
+			FECHAVIGENCIA,
+			HORAINICIO,
+			(SELECT a.DESCRIPCION FROM OPERACION.OPTIONS_CONT a WHERE a.IDOPTION = c.CLIENTE ) AS CLIENTE2,			
+			(SELECT a.DESCRIPCION FROM OPERACION.OPTIONS_CONT a WHERE a.IDOPTION = c.SERVIDOR ) AS SERVIDOR2,			
+			(SELECT a.DESCRIPCION FROM SCHEDULE.TURNO a WHERE a.IDTURNO = c.TURNO ) AS TURNO2,
+			ESTADO
+		FROM 
+			SCHEDULE.RCT_v2  c 
+			
+			WHERE
+		<if test="ESTADO != null">			
+			ESTADO IN ('${ESTADO}') AND
+		</if>
+		 IDTEAM IN (${iTeam})
+		ORDER BY FECHAREG  DESC
+		
+		          
+	</select>
+	
+	 <resultMap id="resultlistActividades" type="com.pe.ibm.bean.BeanRCT">
+		<result property="IDACTIVIDAD" column="IDACTIVIDAD" />
+		<result property="DESCRIPCION" column="DESCRIPCION" />
+		
+	</resultMap>
+
+	<select id="listarActividades" parameterType="com.pe.ibm.bean.BeanRCT" resultMap="resultlistActividades">
+		
+	SELECT DISTINCT
+	 	a.IDACTIVIDAD ,a.DESCRIPCION  
+	FROM 
+		SCHEDULE.ACTIVIDAD a INNER JOIN SCHEDULE.SCHEDULEACTIVIDAD b 
+	ON 
+		a.IDACTIVIDAD = b.IDACTIVIDAD ORDER BY IDACTIVIDAD ASC    
+	</select>
+	
+	
+	<!-- SELECCIONAR A CUAL SCHEDULE DESEA ASIGNAR LA ACTIVIDAD -->
+	 <resultMap id="resultListSchedule" type="com.pe.ibm.bean.BeanRCT">
+		<result property="strValor1" column="DESCRIPCION"/>	
+		<result property="strValor2" column="IDSCHEDULE"/>	
+		
+	</resultMap> 
+	<select id="listarSchedulePorUsuario" parameterType="com.pe.ibm.bean.BeanRCT" resultMap="resultListSchedule">
+		
+		SELECT 
+			b.DESCRIPCION ,a.IDSCHEDULE
+		FROM  
+			SCHEDULE.SCHEDULE a INNER JOIN SCHEDULE.TURNO b ON a.IDTURNO =b.IDTURNO
+	 	WHERE 
+	 		USERMOD IN ('${IDUSUARIOORIGEN}')
+			     
+	</select>
+	<!-- FIN SELECCIONAR A CUAL SCHEDULE DESEA ASIGNAR LA ACTIVIDAD -->
+	
+	
+
+	<!-- PARA GUARDAR NUEVA ACTIVIDAD (UTILIZANDO MODAL) -->
+	 <insert id="guardarmodalactividad" parameterType="com.pe.ibm.bean.BeanRCT">
+	 
+	 <if test="intValor1 != 0">
+		INSERT INTO SCHEDULE.RCT_v2(TIPO,CLIENTE,SERVIDOR,TURNO,DESCRIPCION,FECHAVIGENCIA,FECHAINICIO,IDUSUARIOORIGEN,FECHAREG,ESTADO,IDTEAM)
+			VALUES(
+			'REQUERIMIENTO', <!-- TIPO -->
+			${intValor1},<!-- IDLCLIENTE -->
+			${intValor2},<!-- IDSERVIDOR -->
+			${intValor3},<!-- IDTURNO -->			
+			'${strValor4}', <!-- DESCRIPCIONACTIVIDAD -->
+			'${strValor5}',<!-- FECHAVIGENCIA -->
+			'${strValor6}',<!-- FECHAINICIO -->			
+			${IDUSUARIOORIGEN}, <!-- IDUSUARIOORIGEN -->							
+			CURRENT TIMESTAMP ,<!-- FECHAREG -->
+			1 <!-- ESTADO -->,
+			${iTeam})
+	</if>
+			
+		<if test="intValor1 == 0">
+			INSERT INTO SCHEDULE.RCT_v2(TIPO,DESCRIPCION,IDUSUARIOORIGEN,FECHAREG,ESTADO,IDTEAM)
+			VALUES(
+			'ANUNCIO', <!-- TIPO -->
+			'${strValor4}', <!-- DESCRIPCIONACTIVIDAD -->
+			${IDUSUARIOORIGEN}, <!-- IDUSUARIOORIGEN -->
+			CURRENT TIMESTAMP, <!-- FECHAREG -->
+			1,
+			${iTeam})
+		</if>
+			
+	</insert>
+	
+	
+	<insert id="guardarmodalactividadNotificacion" parameterType="com.pe.ibm.bean.BeanRCT">
+	 
+	 <if test="intValor1 == 0">
+		INSERT INTO OPERACION.NOTIFICACIONES(TITULO,CONTENIDO,IDOWNER,TIPO,IMG,ESTADO)
+			VALUES(
+			'ANUNCIO', <!-- TITULO -->
+			'${strValor4}', <!-- DESCRIPCIONACTIVIDAD -->
+			
+			<if test="IDUSUARIOORIGEN == 1332">
+			881,<!-- CONTENIDO -->
+			</if>
+			
+			<if test="IDUSUARIOORIGEN == 881">
+			1332,<!-- CONTENIDO -->
+			</if>
+			
+			'SCHEDULE','resource/gritter/images/warning.png',1)
+	</if>
+			
+	</insert>
+	
+	<!-- FIN PARA GUARDAR NUEVA ACTIVIDAD (UTILIZANDO MODAL) -->
+	
+	
+	
+	<!-- PARA GUARDAR DESCRIPCION (UTILIZANDO MODAL DETALLE) -->
+	 <insert id="guardarDetalleDesc" parameterType="com.pe.ibm.bean.BeanRCT">
+		
+		<if test="strValor4 == null">
+		INSERT INTO SCHEDULE.RCT_DETALLE_v2(IDRCT,DESCRIPCION,FECHAREG,USUARIOREG)
+		VALUES(
+			${intValor1}, <!-- IDRCT -->
+			'${strValor2}',<!-- DESCRIPCION -->
+			CURRENT TIMESTAMP ,<!-- FECHAREG -->
+			${intValor3} <!-- USUARIOREG -->)	
+		</if>
+			
+			
+		<if test="strValor4 != null">
+		
+		UPDATE SCHEDULE.RCT_DETALLE_v2 SET 			
+			DESCRIPCION = '${strValor2}'			
+		WHERE IDRCTDETALLE IN ('${strValor4}')
+		
+		</if>
+		
+		
+	</insert>
+	
+	<update id="guardarUltimoUsuarioRCT" parameterType="com.pe.ibm.bean.BeanRCT">
+		
+		UPDATE SCHEDULE.RCT_v2 SET 			
+			IDUSUARIOATENCION = '${intValor3}'			
+		WHERE IDRCT IN ('${intValor1}') 
+	</update>
+	
+	<update id="eliminarRCTDETALLE" parameterType="com.pe.ibm.bean.BeanRCT">
+		
+	DELETE FROM SCHEDULE.RCT_DETALLE_v2 WHERE IDRCTDETALLE IN ('${intValor1}')
+	
+	</update>
+	
+	
+	
+	<update id="actualizarRCTactividad" parameterType="com.pe.ibm.bean.BeanRCT">
+		
+		UPDATE SCHEDULE.RCT_v2 SET 			
+			FECHAINICIO = '${strValor1}',
+			FECHAVIGENCIA = '${strValor2}',			
+			CLIENTE = '${intValor4}',
+			SERVIDOR = '${intValor5}',
+			TURNO = '${intValor6}',
+			DESCRIPCION = '${strValor7}'	 
+					
+		WHERE IDRCT IN ('${intValor8}') 
+	</update>
+	
+	
+	<resultMap id="resultListRCTDETALLEMODAL" type="com.pe.ibm.bean.BeanRCT">
+		<result property="strValor1" column="FECHAREG"/>
+		<result property="strValor2" column="DESCRIPCION"/>
+		<result property="strValor3" column="USUARIOREG"/>	
+		<result property="strValor4" column="USUARIOREG2"/>
+		<result property="strValor5" column="IDRCTDETALLE"/>	
+		
+	</resultMap> 
+	<select id="listRCTDetalleModal" parameterType="com.pe.ibm.bean.BeanRCT" resultMap="resultListRCTDETALLEMODAL">
+		
+	SELECT
+		d.IDRCTDETALLE,
+	 	d.FECHAREG,
+	 	d.DESCRIPCION,
+	 	d.USUARIOREG,
+	 	(SELECT r.IDLOGIN FROM OPERACION.EMPLEADO r WHERE r.IDEMPLEADO = d.USUARIOREG) AS USUARIOREG2 
+ 	FROM 
+ 		SCHEDULE.RCT_DETALLE_v2 d
+	WHERE 
+		d.IDRCT = ${intValor1}
+	ORDER BY FECHAREG DESC
+			     
+	</select>
+	
+	<!-- FIN PARA GUARDAR DESCRIPCION (UTILIZANDO MODAL DETALLE) -->
+	
+	<update id="actividadEstado4" parameterType="com.pe.ibm.bean.BeanRCT">
+		
+		UPDATE SCHEDULE.SCHEDULEACTIVIDAD SET 			
+			ESTADO = '4'			
+		WHERE IDSCHEDULE IN ('${IDSCHEDULEORIGEN}') AND IDACTIVIDAD IN ('${IDACTIVIDAD}')
+	</update>
+	
+	
+	<insert id="saveNuevoActividad" parameterType="com.pe.ibm.bean.BeanRCT">	
+ 		
+ 		UPDATE SCHEDULE.SCHEDULEACTIVIDAD SET 			
+			IDSCHEDULE = '${IDSCHEDULEDESTINO}',
+			<if test="strValor10 != null"> <!-- TIENE HORA DE INICIO -->				
+			ESTADO = '2'			
+			</if>
+			<if test="strValor10 == null"> <!-- NOOOO TIENE HORA DE INICIO -->		
+			ESTADO = '1'			
+			</if>			
+		WHERE 
+			IDSCHEDULE  IN ('${IDSCHEDULEORIGEN}')
+		AND 
+			IDACTIVIDAD IN ('${IDACTIVIDAD}')
+ 		
+	</insert>	
+	
+	<update id="saveRCTupdate" parameterType="com.pe.ibm.bean.BeanRCT">
+		
+		UPDATE SCHEDULE.RCT_v2 SET 			
+			IDSCHEDULEDESTINO = '${IDSCHEDULEDESTINO}',
+			IDUSUARIOATENCION = '${IDUSUARIOATENCION}',			
+			FECHAASIG = CURRENT TIMESTAMP,
+			ESTADO = 2			
+		WHERE 
+			IDRCT = '${IDRCT}'
+	
+	</update>
+	
+	
+	<resultMap id="resultMCliente" type="com.pe.ibm.bean.BeanRCT">
+		<result property="strValor1" column="IDOPTION"/>	
+		<result property="strValor2" column="DESCRIPCION"/>	
+		
+	</resultMap> 
+	<select id="listarMCliente" parameterType="com.pe.ibm.bean.BeanRCT" resultMap="resultMCliente">
+		
+		SELECT IDOPTION,DESCRIPCION FROM OPERACION.OPTIONS_CONT WHERE TIPO in ('SCHEDWEB_CLIENTE')
+	</select>
+	
+	<resultMap id="resultMServidor" type="com.pe.ibm.bean.BeanRCT">
+		<result property="strValor1" column="IDOPTION"/>	
+		<result property="strValor2" column="DESCRIPCION"/>	
+		
+	</resultMap> 
+	<select id="listarMServidor" parameterType="com.pe.ibm.bean.BeanRCT" resultMap="resultMServidor">		
+		SELECT IDOPTION,DESCRIPCION FROM OPERACION.OPTIONS_CONT WHERE TIPO IN ('SCHEDWEB_SERVIDOR')
+	</select>
+	
+	
+	<resultMap id="resultMTurno" type="com.pe.ibm.bean.BeanRCT">
+		<result property="strValor1" column="IDTURNO"/>	
+		<result property="strValor2" column="DESCRIPCION"/>	
+		
+	</resultMap> 
+	<select id="listarMTurno" parameterType="com.pe.ibm.bean.BeanRCT" resultMap="resultMTurno">		
+		SELECT IDTURNO ,DESCRIPCION FROM SCHEDULE.TURNO
+	</select>
+	
+	
+	<!-- PARA GUARDAR DESCRIPCION (UTILIZANDO MODAL DETALLE) -->
+	 <insert id="editarDescripcionAnuncio" parameterType="com.pe.ibm.bean.BeanRCT">
+		
+		UPDATE SCHEDULE.RCT_v2 SET 			
+			DESCRIPCION = '${strValor1}'			
+		WHERE IDRCT IN ('${strValor2}')
+		
+	
+	</insert>
+	
+	
+	<!--FINALIZAR RCT  -->
+	 <insert id="finalizarRCT" parameterType="com.pe.ibm.bean.BeanRCT">
+		
+		UPDATE SCHEDULE.RCT_v2 SET 			
+			ESTADO = 2			
+		WHERE IDRCT IN ('${IDRCT}')
+		
+	
+	</insert>
+	
+	
+	
+	
+</mapper>

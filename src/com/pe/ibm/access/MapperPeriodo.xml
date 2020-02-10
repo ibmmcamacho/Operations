@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="com.pe.ibm.access.MapperPeriodo">
+  
+	<resultMap id = "result" type = "com.pe.ibm.bean.BeanPeriodo">
+<!--       <result property = "idTurno" column = "IDTURNO"/> -->
+<!--       <result property = "descripcion" column = "DESCRIPCION"/> -->
+<!--       <result property = "horaInicio" column = "HORAINICIO"/> -->
+<!--       <result property = "horaFin" column = "HORAFIN"/> -->
+<!--       <result property = "estado" column = "ESTADO"/> -->
+
+		<result property = "idPeriodo" column = "ID_PERIODO"/>
+		<result property = "descripcion" column = "TITULO"/>
+		<result property = "estado" column = "ESTADO"/>
+   	</resultMap>   
+   
+    <select id = "listar" resultMap = "result" statementType = "CALLABLE">
+      {call SCHEDULE.SELECT_PERIODO_V2()}
+    </select> 
+    
+    
+  	<insert id="savePeriodo" parameterType="com.pe.ibm.bean.BeanPeriodo">
+  		INSERT INTO OPERACION.PERIODO_V2(TITULO, USUARIO_REG, ESTADO, ID_TIPOPERIODO, FECHA_INI, FECHA_FIN, INTERVALO, DIA_HABIL, DIA_FERIADO)
+  			VALUES(#{titulo}, #{usuario_reg}, #{estado}, #{id_tipo_periodo}, #{fecha_Ini}, #{fecha_Fin}, #{intervalo}, #{dia_habil}, #{dia_feriado})  			
+    </insert>
+    
+	<insert id="savePeriodoDetalle" parameterType="com.pe.ibm.bean.BeanPeriodoDet">
+    	INSERT INTO OPERACION.PERIODO_DETALLE_V2
+    		(ANIO, MES_NOMBRE, MES_NUMERO, DIA_NOMBRE, DIA_NUMERO, DIA_TIEMPO_NOMBRE, DIA_TIEMPO_NUMERO, ID_PERIODO, 
+    		NUMEROS_ORDINALES, SEMANA, DIA_ESPECIAL) 
+			VALUES
+			(#{anio}, #{mes_nombre}, #{mes_numero}, #{dia_nombre} , #{dia_numero}, #{dia_tiempo_nombre}, #{dia_tiempo_numero},  
+			(SELECT MAX(ID_PERIODO)
+			FROM OPERACION.PERIODO_V2),
+			#{ordinales}, #{semana} , #{dia_especial})
+    </insert>
+    
+    <insert id="updatePeriodoDetalle" parameterType="com.pe.ibm.bean.BeanPeriodoDet">
+    	INSERT INTO OPERACION.PERIODO_DETALLE_V2
+    		(ANIO, MES_NOMBRE, MES_NUMERO, DIA_NOMBRE, DIA_NUMERO, DIA_TIEMPO_NOMBRE, DIA_TIEMPO_NUMERO, ID_PERIODO, 
+    		NUMEROS_ORDINALES, SEMANA, DIA_ESPECIAL) 
+			VALUES
+			(#{anio}, #{mes_nombre}, #{mes_numero}, #{dia_nombre} , #{dia_numero}, #{dia_tiempo_nombre}, #{dia_tiempo_numero},  
+			#{id_periodo},
+			#{ordinales}, #{semana} , #{dia_especial})
+    </insert>    
+    
+<!--     Nuevo Listado de Periodos -->
+    <resultMap id="resultReportePeriodo" type="com.pe.ibm.bean.BeanPeriodo">
+    	<result property="idPeriodo" column="ID_PERIODO" />
+		<result property="titulo" column="TITULO" />
+		<result property="fecha_Ini" column="FECHA_INICIO" />
+		<result property="fecha_Fin" column="FECHA_FIN" />
+		<result property="estado" column="ESTADO" />
+		<result property="id_tipo_periodo" column="ID_TIPOPERIODO" />		
+		<result property="tipo_periodo" column="TIPO_PERIODO" />
+		<result property="intervalo" column="INTERVALO" />
+		<result property="dia_habil" column="DIA_HABIL" />
+		<result property="dia_feriado" column="DIA_FERIADO" />
+	</resultMap>
+	<select id="listReportPeriodo" parameterType="com.pe.ibm.bean.BeanPeriodo" resultMap="resultReportePeriodo">
+	SELECT 
+		PER.ID_PERIODO AS ID_PERIODO, PER.TITULO AS TITULO, PER.FECHA_INI AS FECHA_INICIO, 
+		PER.FECHA_FIN AS FECHA_FIN, PER.ID_TIPOPERIODO AS ID_TIPOPERIODO, OPT.DESCRIPCION AS TIPO_PERIODO,
+		PER.INTERVALO AS INTERVALO, PER.DIA_HABIL AS DIA_HABIL, PER.DIA_FERIADO AS DIA_FERIADO
+	FROM OPERACION.PERIODO_V2 PER 
+	INNER JOIN OPERACION.OPTIONS OPT
+	ON PER.ID_TIPOPERIODO = OPT.IDOPTION
+	WHERE PER.ESTADO = 1
+    </select>
+    
+    <update id="deletePeriodo" parameterType="com.pe.ibm.bean.BeanPeriodo">
+		UPDATE OPERACION.PERIODO_V2 SET ESTADO = 0 WHERE ID_PERIODO = #{idPeriodo} 
+	</update>
+	
+		
+	<resultMap id="resultmBuscarDatos_PeriodoDet" type="com.pe.ibm.bean.BeanPeriodoDet">
+    	<result property="iIdPeriodo_Detalle" column="ID_PERIODO_DETALLE" />
+		<!-- <result property="anio" column="ANIO" /> -->
+		<result property="mes_nombre" column="MES_NOMBRE" />
+		<!-- <result property="mes_numero" column="MES_NUMERO" /> -->
+		<result property="dia_nombre" column="DIA_NOMBRE" />
+		<result property="dia_numero" column="DIA_NUMERO" />		
+		<result property="dia_tiempo_nombre" column="DIA_TIEMPO_NOMBRE" />
+		<result property="dia_tiempo_numero" column="DIA_TIEMPO_NUMERO" />
+		<result property="id_periodo" column="ID_PERIODO" />
+		<result property="ordinales" column="NUMEROS_ORDINALES" />
+		<result property="semana" column="SEMANA" />
+		<result property="dia_especial" column="DIA_ESPECIAL" />
+	</resultMap>
+	<select id="mBuscarDatos_PeriodoDet" parameterType="com.pe.ibm.bean.BeanPeriodoDet" resultMap="resultmBuscarDatos_PeriodoDet">
+	SELECT 
+	PD.*
+	FROM OPERACION.PERIODO_DETALLE_V2 PD
+	WHERE PD.ID_PERIODO = #{id_periodo} 
+    </select>
+        
+    <insert id="updatePeriodo" parameterType="com.pe.ibm.bean.BeanPeriodo">
+  		UPDATE OPERACION.PERIODO_V2
+		SET 
+			TITULO = #{titulo},
+			USU_UPDATE = #{usu_update},
+			FECHA_UPDATE = CURRENT_DATE,
+			FECHA_INI = #{fecha_Ini},
+			FECHA_FIN = #{fecha_Fin},
+			INTERVALO = #{intervalo},
+			DIA_HABIL =  #{dia_habil},
+			DIA_FERIADO = #{dia_feriado}
+		WHERE ID_PERIODO = #{idPeriodo}			
+    </insert>    	
+    
+   	<delete id="deletePeriodoDet" parameterType="com.pe.ibm.bean.BeanPeriodoDet">
+   		DELETE FROM OPERACION.PERIODO_DETALLE_V2
+		WHERE ID_PERIODO = #{id_periodo}
+   	</delete>
+	
+
+    
+</mapper>
+

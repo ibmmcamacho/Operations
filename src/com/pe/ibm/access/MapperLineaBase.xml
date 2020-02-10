@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="com.pe.ibm.access.MapperLineaBase">
+
+		<resultMap id="ResultadoLineaBaseDetalle" type="com.pe.ibm.bean.LineaBaseOnsiteDetalle">
+			 <result property="id" column="ID"/>
+			 <result property="id_sla" column="ID_SLA"/>
+			 <result property="descripcion" column="DESCRIPCION"/>
+			 <result property="formula" column="FORMULA"/>
+		</resultMap>
+
+		<select id="obtenerLineaBaseOnsiteDetalle" parameterType="com.pe.ibm.bean.BeanBusqueda" resultMap="ResultadoLineaBaseDetalle">
+		SELECT 
+		ID, ID_SLA, DESCRIPCION, FORMULA
+		
+		FROM
+		SMARTDESK.LINEABASE_ONSITE_DETALLE
+		
+		WHERE 
+		ID_SLA = #{idsla} 
+	    </select>
+	    
+	    <resultMap id="ResultadoLineaBaseOnsiteDistribucion" type="com.pe.ibm.bean.LineaBaseOnsiteDistribucion">
+			 <result property="id" column="ID"/>
+			 <result property="id_resultado_sla" column="ID_RESULTADO_SLA"/>
+			 <result property="descripcion" column="DESCRIPCION"/>
+			 <result property="id_lineabase_detalle" column="ID_LINEABASE_DETALLE"/>
+			 <result property="resultado" column="RESULTADO"/>
+		</resultMap>
+	
+	    <select id="buscarResultadoLineaBaseOnsiteDistribucion"  parameterType="com.pe.ibm.bean.BeanResultadoMensualNivelServicio" resultMap="ResultadoLineaBaseOnsiteDistribucion">
+		SELECT DIST.ID_RESULTADO_SLA, DIST.ID_LINEABASE_DETALLE, DET.DESCRIPCION, DIST.RESULTADO 
+		FROM SMARTDESK.LINEABASE_ONSITE_DISTRIBUCION DIST
+		LEFT JOIN SMARTDESK.LINEABASE_ONSITE_DETALLE DET ON DIST.ID_LINEABASE_DETALLE = DET.ID
+		WHERE DET.ID_SLA = #{id_sla} 
+		AND DIST.ID_RESULTADO_SLA LIKE (SELECT T.ID_RESULTADO_SLA FROM SMARTDESK.SLA_RESULTADO_MENSUAL T
+		WHERE T.ID_SLA = #{id_sla}  AND T.MES = CAST (#{mes} AS INTEGER)  AND T.ANIO = #{anio}  ) 
+	    </select>
+	    
+	    <insert id="insertarResultadoLineaBaseOnsiteDistribucion" parameterType="com.pe.ibm.bean.LineaBaseOnsiteDistribucion">
+    	INSERT INTO SMARTDESK.LINEABASE_ONSITE_DISTRIBUCION (
+    	ID_RESULTADO_SLA, ID_LINEABASE_DETALLE, RESULTADO)
+       
+        VALUES 
+       
+       (#{id_resultado_sla},
+		#{id_lineabase_detalle},
+		#{resultado}
+       )
+     	</insert>  
+  		
+  		<update id="actualizarResultadoLineaBaseOnsiteDistribucion" parameterType="com.pe.ibm.bean.LineaBaseOnsiteDistribucion">
+  		
+  		UPDATE SMARTDESK.LINEABASE_ONSITE_DISTRIBUCION  
+    	
+		SET  
+		RESULTADO=#{resultado}	
+		
+    	WHERE 
+    	ID_RESULTADO_SLA = #{id_resultado_sla}  AND ID_LINEABASE_DETALLE = #{id_lineabase_detalle}  
+    	     
+      
+     	</update> 
+
+
+ 
+    
+</mapper>

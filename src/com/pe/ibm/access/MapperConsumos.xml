@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="consumos">
+
+	<resultMap id="resultConsumosDisco" type="com.pe.ibm.bean.BeanConsumoDisco">
+		<result property="lpart" column="LPART" />
+		<result property="sysbase" column="SYSBASE" />
+		<result property="tmoviasp" column="TMOVIASP" />
+		<result property="ssd" column="SSD" />
+		<result property="tmoviasp_dispo" column="TMOVIASP_DISPO" />
+		<result property="tmoviasp_dispo" column="TMOVIASP_DISPO" />
+		<result property="hora" column="HORA" />
+		<result property="fecha" column="FECHA" />
+	</resultMap>
+
+	<select id="getConsumosDisco" resultMap="resultConsumosDisco">
+		SELECT 
+			LPART, SYSBASE, TMOVIASP, SSD, TMOVIASP_DISPO
+		FROM 
+			CONSUMOS.DISCO
+		ORDER BY ID DESC FETCH FIRST 8 ROWS ONLY
+		
+<!-- 		WHERE  -->
+<!-- 			VARCHAR_FORMAT(DATETIMEREG,'DDMMYYYY') = VARCHAR_FORMAT(CURRENT_TIMESTAMP - 300 SECOND,'DDMMYYYY') AND  -->
+<!-- 			VARCHAR_FORMAT(DATETIMEREG,'HH24') = VARCHAR_FORMAT(CURRENT_TIMESTAMP - 300 SECOND,'HH24') -->
+	</select>
+	
+	<select id="getHistoricoConsumosDisco" parameterType="com.pe.ibm.bean.BeanBusqueda" resultMap="resultConsumosDisco">
+		SELECT 
+			LPART, SYSBASE, TMOVIASP, SSD, TMOVIASP_DISPO, VARCHAR_FORMAT(DATETIMEREG,'HH24:MI:SS') AS HORA, VARCHAR_FORMAT(DATETIMEREG,'DD-MM-YYYY') AS FECHA
+		FROM 
+			CONSUMOS.DISCO
+		WHERE 
+			DATETIMEREG BETWEEN  #{fechaInicio} AND  #{fechaFin}
+	</select>
+	
+	<resultMap id="resultConsumosBackup" type="com.pe.ibm.bean.BeanConsumoBackup">
+	    <result property="id" column="ID" />
+		<result property="fcfull" column="FCFULL" />
+		<result property="inicio" column="INICIO" />
+		<result property="fin" column="FIN" />
+		<result property="hora" column="HORA" />
+		<result property="fecha" column="FECHA" />
+		<result property="estado" column="ESTADO" />
+		<result property="descripcionEstado" column="DESCRIPCION" />
+		<result property="observacion" column="OBSERVACION" />
+	</resultMap>
+
+	<select id="getConsumosBackup" resultMap="resultConsumosBackup">
+		SELECT 
+			ID, FCFULL, INICIO, FIN, ESTADO, OBSERVACION
+		FROM 
+			CONSUMOS.BACKUP
+		ORDER BY ID DESC FETCH FIRST 4 ROWS ONLY
+<!-- 		WHERE  -->
+<!-- 			VARCHAR_FORMAT(DATETIMEREG,'DDMMYYYY') = VARCHAR_FORMAT(CURRENT_TIMESTAMP - 300 SECOND,'DDMMYYYY') AND  -->
+<!-- 			VARCHAR_FORMAT(DATETIMEREG,'HH24') = VARCHAR_FORMAT(CURRENT_TIMESTAMP - 300 SECOND,'HH24') -->
+	</select>
+	
+	<select id="getHistorialConsumosBackup" resultMap="resultConsumosBackup">
+		SELECT 
+			BCK.FCFULL, BCK.INICIO, BCK.FIN, VARCHAR_FORMAT(BCK.DATETIMEREG,'HH24:MI:SS') AS HORA, VARCHAR_FORMAT(BCK.DATETIMEREG,'DD-MM-YYYY') AS FECHA,
+			BCK.ESTADO, BCK.OBSERVACION, OPT.DESCRIPCION
+		
+		FROM 
+			CONSUMOS.BACKUP	AS BCK
+		
+		LEFT JOIN OPERACION.OPTIONS AS OPT ON OPT.IDOPTION = BCK.ESTADO
+		
+		WHERE 
+			BCK.DATETIMEREG BETWEEN  #{fechaInicio} AND  #{fechaFin}
+	</select>
+	
+	<insert  id="insertUpdateBackup" parameterType="com.pe.ibm.bean.BeanConsumoBackup" statementType="CALLABLE">
+     {call CONSUMOS.RUD_BACKUP(
+     	#{operacion,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{id,javaType=Integer,jdbcType=INTEGER,mode=IN},
+        #{estado,javaType=Integer,jdbcType=INTEGER,mode=IN},
+        #{observacion,javaType=String,jdbcType=VARCHAR,mode=IN},
+        #{resultado,javaType=Integer,jdbcType=INTEGER,mode=OUT}
+     )}
+	</insert>
+	
+	
+	
+	<resultMap id="resultConsumosSistema" type="com.pe.ibm.bean.BeanConsumoSistema">
+		<result property="estado" column="ESTADO" />
+		<result property="cantidad" column="CANTIDAD" />
+		<result property="porcent" column="PORCENT" />
+		<result property="umbral" column="UMBRAL" />
+		<result property="valmax" column="VALMAX" />
+		<result property="hora" column="HORA" />
+		<result property="fecha" column="FECHA" />
+	</resultMap>
+
+	<select id="getConsumosSistema" resultMap="resultConsumosSistema">
+		SELECT 
+			ESTADO, CANTIDAD, PORCENT, UMBRAL, VALMAX 
+		FROM 
+			CONSUMOS.SISTEMA
+		ORDER BY ID DESC FETCH FIRST 3 ROWS ONLY
+<!-- 		WHERE  -->
+<!-- 			VARCHAR_FORMAT(DATETIMEREG,'DDMMYYYY') = VARCHAR_FORMAT(CURRENT_TIMESTAMP - 300 SECOND,'DDMMYYYY') AND  -->
+<!-- 			VARCHAR_FORMAT(DATETIMEREG,'HH24') = VARCHAR_FORMAT(CURRENT_TIMESTAMP - 300 SECOND,'HH24') -->
+	</select>
+	
+	<select id="getHistorialConsumosSistema" resultMap="resultConsumosSistema">
+		SELECT 
+			ESTADO, CANTIDAD, PORCENT, UMBRAL, VALMAX, VARCHAR_FORMAT(DATETIMEREG,'HH24:MI:SS') AS HORA, VARCHAR_FORMAT(DATETIMEREG,'DD-MM-YYYY') AS FECHA
+		FROM 
+			CONSUMOS.SISTEMA
+		WHERE 
+			DATETIMEREG BETWEEN  #{fechaInicio} AND  #{fechaFin}
+	</select>
+	
+</mapper>

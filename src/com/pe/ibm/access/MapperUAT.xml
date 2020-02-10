@@ -1,0 +1,399 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="uat">
+	
+	<resultMap id = "ruatlistimg" type = "com.pe.ibm.bean.BeanUAT">
+      <result property = "strMensaje" column = "IMG"/>
+   	</resultMap>
+   
+    <select id = "listimg" resultMap = "ruatlistimg" parameterType = "com.pe.ibm.bean.BeanUAT" statementType = "CALLABLE">
+      {call UAT.SP_LISTREQIMG(
+        #{iIdRequerimiento,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{strTipoRequerimiento,javaType=String,jdbcType=VARCHAR,mode=IN}
+     )}
+    </select>
+    
+	
+	<insert  id="ustate" parameterType="com.pe.ibm.bean.BeanUAT" statementType="CALLABLE">
+     {call UAT.SP_REQAUDIT(
+        #{iTipo,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{iIdRequerimiento,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{strEstado,javaType=String,jdbcType=VARCHAR,mode=IN},
+      	#{strMensaje,javaType=String,jdbcType=VARCHAR,mode=IN},
+      	#{strUsuarioC,javaType=String,jdbcType=VARCHAR,mode=IN},
+      	#{iIdEstado,javaType=Integer,jdbcType=INTEGER,mode=OUT},
+      	#{strEstado,javaType=String,jdbcType=VARCHAR,mode=OUT},
+      	#{strEstado,javaType=String,jdbcType=VARCHAR,mode=OUT}
+     )}
+	</insert>
+	
+	<insert  id="cuduat" parameterType="com.pe.ibm.bean.BeanUAT" statementType="CALLABLE">
+     {call UAT.SP_REQUERIMIENTOSUAT(
+        #{iTipo,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{iIdRequerimiento,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{iTipoRequerimiento,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{strIdTicket,javaType=String,jdbcType=VARCHAR,mode=IN},
+      	#{strIdCar,javaType=String,jdbcType=VARCHAR,mode=IN},
+      	#{strHostname,javaType=String,jdbcType=VARCHAR,mode=IN},
+      	#{iIdAmbiente,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{iIdPlataforma,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{iIdUsuario,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{strCliente,javaType=String,jdbcType=VARCHAR,mode=IN},
+      	#{iIdRequerimiento,javaType=Integer,jdbcType=INTEGER,mode=OUT}
+     )}
+	</insert>
+	
+	<resultMap id = "ruatRs" type = "com.pe.ibm.bean.BeanUAT">
+      <result property = "iIdRequerimiento" column = "IDREQUERIMIENTO"/>
+      <result property = "strTipoRequerimiento" column = "TIPOREQUERIMIENTO"/>
+      <result property = "strIdTicket" column = "IDTICKET"/>
+      <result property = "strIdCar" column = "IDCAR"/>
+      <result property = "strHostname" column = "HOSTNAME"/>
+      <result property = "strAmbiente" column = "AMBIENTE"/>
+      <result property = "strPlataforma" column = "PLATAFORMA"/>
+      <result property = "iIdAmbiente" column = "IDAMBIENTE"/>
+      <result property = "iIdPlataforma" column = "IDPLATAFORMA"/>
+      <result property = "iTipoRequerimiento" column = "IDTIPOREQUERIMIENTO"/>
+      <result property = "inroDisp" column = "NRODISP"/>
+      <result property = "inroGrup" column = "NROGRUP"/>
+      <result property = "inroUsu" column = "NROUSERS"/>
+      <result property = "inroSha" column = "NROSHAR"/>
+      <result property = "strEstado" column = "ESTADOFINAL"/>
+      <result property = "strCliente" column = "CLIENTE"/>
+      <result property = "strUsuarioC" column = "CREADOR"/>
+      <result property = "strUsuarioM" column = "MODIFICADOR"/>
+      <result property = "strFechaM" column = "DATEMOD"/>
+      
+      <result property = "strSystem" column = "SYSTEM_"/>
+      <result property = "strSo" column = "SO_"/>
+      <result property = "strFechaVenc" column = "FECHAVENC_"/>
+   	</resultMap>   
+    
+    <select id = "ruat" resultMap = "ruatRs" parameterType = "com.pe.ibm.bean.BeanUAT" statementType = "CALLABLE">
+      {call UAT.SP_LISTARREQUERIMIENTOSUAT(
+       #{iIdRequerimiento,javaType=Integer,jdbcType=INTEGER,mode=IN},
+       #{strEstado,javaType=String,jdbcType=VARCHAR,mode=IN}
+      )}
+    </select>
+    
+    
+    
+    <!-- UAT DISPOSITIVO -->
+    <insert  id="cuduatdisp" parameterType="com.pe.ibm.bean.BeanUATDispositivos" statementType="CALLABLE">
+     {call UAT.SP_REQDISPOSITIVOSUAT(
+        #{iTipo,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{iIdDispositivo,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{iIdRequerimiento,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{strHostname,javaType=String,jdbcType=VARCHAR,mode=IN},
+      	#{strIp,javaType=String,jdbcType=VARCHAR,mode=IN},
+      	
+      	#{iEstadoDispositivo,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{iTeamDelivery,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{iAutomatizado,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{iRoleDispositivo,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		
+		#{strDispositivoMaestro,javaType=String,jdbcType=VARCHAR,mode=IN},
+		#{strDispositivoMaestro2,javaType=String,jdbcType=VARCHAR,mode=IN},
+		#{strUltQEV,javaType=String,jdbcType=VARCHAR,mode=IN},
+		#{strUltCbnAcceso,javaType=String,jdbcType=VARCHAR,mode=IN},
+		
+		#{strUltCbnPriv,javaType=String,jdbcType=VARCHAR,mode=IN},
+		#{strUltQEVCli,javaType=String,jdbcType=VARCHAR,mode=IN},
+		#{strUltCbnAccesoCli,javaType=String,jdbcType=VARCHAR,mode=IN},
+		#{strUltCbnPrivCli,javaType=String,jdbcType=VARCHAR,mode=IN},
+		
+		#{iConexion,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{iIdUsuario,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{iIdRequerimiento,javaType=Integer,jdbcType=INTEGER,mode=OUT}
+     )}
+	</insert>
+	
+	<resultMap id = "ruatdispRs" type = "com.pe.ibm.bean.BeanUATDispositivos">
+      <result property = "iIdDispositivo" column = "IDDISPOSITIVO"/>
+      <result property = "iIdRequerimiento" column = "IDREQ"/>
+      <result property = "strIp" column = "IP"/>
+      <result property = "strHostname" column = "HOSTNAME"/>
+      
+      <result property = "strEstadoDisp" column = "ESTADODISP_"/>
+      <result property = "strTeamDelivery" column = "TEAMDELIVERY_"/>
+      <result property = "strAutomatizado" column = "AUTOMATIZADO_"/>
+      <result property = "strRole" column = "ROLE_	"/>
+      <result property = "strConexion" column = "CONEXION_"/>
+      
+      <result property = "strDispositivoMaestro" column = "DISPOSITIVOMAESTRO"/>
+      <result property = "strDispositivoMaestro2" column = "DISPOSITIVOMAESTRO2"/>
+      <result property = "strUltQEV" column = "ULTQEV"/>
+      <result property = "strUltCbnAcceso" column = "ULTCBNACCESO"/>
+      <result property = "strUltCbnPriv" column = "ULTCBNPRIV"/>
+      <result property = "strUltQEVCli" column = "ULTQEVCLI"/>
+      <result property = "strUltCbnAccesoCli" column = "ULTCBNACCESOCLI"/>
+      <result property = "strUltCbnPrivCli" column = "ULTCBNPRIVCLI"/>
+      
+      <result property = "iEstadoDispositivo" column = "ESTADODISP"/>
+      <result property = "iTeamDelivery" column = "TEAMDELIVERY"/>
+      <result property = "iAutomatizado" column = "AUTOMATIZADO"/>
+      <result property = "iRoleDispositivo" column = "ROLEDISP"/>
+      <result property = "iConexion" column = "CONEXION"/>
+      <result property = "strUsuarioC" column = "CREADOR"/>
+      <result property = "strUsuarioM" column = "MODIFICADOR"/>
+      <result property = "strFechaM" column = "DATEMOD"/>
+   	</resultMap>
+   
+    <select id = "ruatdisp" resultMap = "ruatdispRs" parameterType = "com.pe.ibm.bean.BeanUATDispositivos" statementType = "CALLABLE">
+      {call UAT.SP_LISTARREQDISPOSITIVOSUAT(
+       #{iIdDispositivo,javaType=Integer,jdbcType=INTEGER,mode=IN},
+       #{iIdRequerimiento,javaType=Integer,jdbcType=INTEGER,mode=IN}
+      )}
+    </select>
+    
+    
+    
+    <!-- UAT GRUPOS -->
+    <insert  id="cuduatgrupos" parameterType="com.pe.ibm.bean.BeanUATGrupos" statementType="CALLABLE">
+     {call UAT.SP_REQGRUPOSUAT(
+        #{iTipo_,javaType=Integer,jdbcType=INTEGER,mode=IN},
+	    #{iIdGrupo,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{iIdRequerimiento,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{strGrupo,javaType=String,jdbcType=VARCHAR,mode=IN},
+		#{iCodigoIntermedio,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{iTipo,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{iSistema,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{iPrimaria,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{iRestringido,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{iPrivilegio,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{iTipoAcceso,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{strSistema2,javaType=String,jdbcType=VARCHAR,mode=IN},
+		#{iIdUsuario,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{iIdGrupo,javaType=Integer,jdbcType=INTEGER,mode=OUT}
+     )}
+	</insert>
+	
+	<resultMap id = "ruatgruposRs" type = "com.pe.ibm.bean.BeanUATGrupos">
+		<result property = "iIdGrupo" column = "IDGRUPOS"/>
+		<result property = "iIdRequerimiento" column = "IDREQ"/>
+		<result property = "strGrupo" column = "GRUPO"/>
+		
+		<result property = "strCodigoIntermedio" column = "CODIGOINTERMEDIO_"/>
+		<result property = "strTipo" column = "TIPO_"/>
+		<result property = "strSistema" column = "SISTEMA_"/>
+		<result property = "strPrimaria" column = "PRIMARIA_"/>
+		<result property = "strRestringido" column = "RESTRINGIDO_"/>
+		<result property = "strPrivilegio" column = "PRIVILEGIO_"/>
+		<result property = "strTipoAcceso" column = "TIPOACCESO_"/>
+		
+		<result property = "strSistema2" column = "SISTEMA2"/>
+		<result property = "iCodigoIntermedio" column = "CODIGOINTERMEDIO"/>
+		<result property = "iTipo" column = "TIPO"/>
+		<result property = "iSistema" column = "SISTEMA"/>
+		<result property = "iPrimaria" column = "PRIMARIA"/>
+		<result property = "iRestringido" column = "RESTRINGIDO"/>
+		<result property = "iPrivilegio" column = "PRIVILEGIO"/>
+		<result property = "iTipoAcceso" column = "TIPOACCESO"/>
+		<result property = "strUsuarioC" column = "CREADOR"/>
+	    <result property = "strUsuarioM" column = "MODIFICADOR"/>
+	    <result property = "strFechaM" column = "DATEMOD"/>
+   	</resultMap>
+   
+    <select id = "ruatgrupos" resultMap = "ruatgruposRs" parameterType = "com.pe.ibm.bean.BeanUATGrupos" statementType = "CALLABLE">
+      {call UAT.SP_LISTARGRUPOSUAT(
+       #{iIdGrupo,javaType=Integer,jdbcType=INTEGER,mode=IN},
+       #{iIdRequerimiento,javaType=Integer,jdbcType=INTEGER,mode=IN}
+      )}
+    </select>
+    
+    
+    
+    <!-- UAT USUARIOS -->
+    <insert  id="cuduatusuarios" parameterType="com.pe.ibm.bean.BeanUATUsuarios" statementType="CALLABLE">
+     {call UAT.SP_REQUSERSUAT(
+        #{iTipo_,javaType=Integer,jdbcType=INTEGER,mode=IN},      	
+      	#{iIdUsuarios,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{iIdRequerimiento,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{strUsuario,javaType=String,jdbcType=VARCHAR,mode=IN},
+		#{strEtiqueta,javaType=String,jdbcType=VARCHAR,mode=IN},
+		#{strPropietario,javaType=String,jdbcType=VARCHAR,mode=IN},
+		#{iTipo,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{iSistema,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{iContraseniaExpira,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{strPerfilesAsociados,javaType=String,jdbcType=VARCHAR,mode=IN},
+		#{iIdUsuario,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{iIdUsuarios,javaType=Integer,jdbcType=INTEGER,mode=OUT}
+     )}     
+	</insert>
+	
+	<resultMap id = "ruatusuariosRs" type = "com.pe.ibm.bean.BeanUATUsuarios">
+	    <result property = "iIdUsuarios" column = "IDUSERS"/>
+		<result property = "iIdRequerimiento" column = "IDREQ"/>
+		<result property = "strUsuario" column = "USUARIO"/>
+		<result property = "strEtiqueta" column = "ETIQUETA"/>
+		<result property = "strPropietario" column = "PROPIETARIO"/>
+		<result property = "strTipo" column = "TIPO_"/>
+		<result property = "strSistema" column = "SISTEMA_"/>
+		<result property = "strContraseniaExpira" column = "CONTRASENIAEXPIRA_"/>
+		<result property = "iTipo" column = "TIPO"/>
+		<result property = "iSistema" column = "SISTEMA"/>
+		<result property = "iContraseniaExpira" column = "CONTRASENIAEXPIRA"/>
+		<result property = "strPerfilesAsociados" column = "PERFILESASOCIADOS"/>
+		<result property = "strUsuarioC" column = "CREADOR"/>
+	    <result property = "strUsuarioM" column = "MODIFICADOR"/>
+	    <result property = "strFechaM" column = "DATEMOD"/>
+   	</resultMap>   
+   
+    <select id = "ruatusuarios" resultMap = "ruatusuariosRs" parameterType = "com.pe.ibm.bean.BeanUATUsuarios" statementType = "CALLABLE">
+      {call UAT.SP_LISTARUSUARIOSUAT(
+       #{iIdUsuarios,javaType=Integer,jdbcType=INTEGER,mode=IN},
+       #{iIdRequerimiento,javaType=Integer,jdbcType=INTEGER,mode=IN}
+      )}
+    </select>
+    
+    
+    
+    <!-- UAT SHAREDID -->
+    <insert  id="cuduatsharedid" parameterType="com.pe.ibm.bean.BeanUATSharedId" statementType="CALLABLE">
+     {call UAT.SP_REQSHAREDIDUAT(
+      	#{iTipo,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{iIdSharedId,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{iIdRequerimiento,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{strUsuarioCompartido,javaType=String,jdbcType=VARCHAR,mode=IN},
+		#{iUsuarioFuncional,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{strEjecutivoAprobar,javaType=String,jdbcType=VARCHAR,mode=IN},
+		#{iCambioContraseniaAuto,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{iContraseniaCambiable,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{strContrasenia,javaType=String,jdbcType=VARCHAR,mode=IN},
+		#{strJustificacionNoCambio,javaType=String,jdbcType=VARCHAR,mode=IN},
+		#{iVisibilidad,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{iTimeApoyo,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{iContraseniaServ,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{iIntervaloCambioContrasenia,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{iPeriodoAntApertLlamada,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{strJustificacionCompartir,javaType=String,jdbcType=VARCHAR,mode=IN},
+		#{strCriterioAprobar,javaType=String,jdbcType=VARCHAR,mode=IN},
+		#{iCambioPeriodo,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{iTipoAccion,javaType=Integer,jdbcType=INTEGER,mode=IN},
+		#{iIdUsuario,javaType=Integer,jdbcType=INTEGER,mode=IN},
+      	#{iIdRequerimiento,javaType=Integer,jdbcType=INTEGER,mode=OUT}
+     )}
+	</insert>
+	
+	<resultMap id = "ruatsharedidRs" type = "com.pe.ibm.bean.BeanUATSharedId">
+	    <result property = "iIdSharedId" column = "IDSHAREDID"/>
+		<result property = "iIdRequerimiento" column = "IDREQ"/>
+		<result property = "strUsuarioCompartido" column = "USUARIOCOMPARTIDO"/>
+		
+		<result property = "strUsuarioFuncional" column = "USUARIOFUNCIONAL_"/>
+		<result property = "strCambioContraseniaAuto" column = "CAMBIOCONTRASENIAAUTO_"/>
+		<result property = "strContraseniaCambiable" column = "CONTRASENIACAMBIABLE_"/>
+		<result property = "strVisibilidad" column = "VISIBILIDAD_"/>
+		<result property = "strTimeApoyo" column = "TIMEAPOYO_"/>
+		<result property = "strContraseniaServ" column = "CONTRASENIASERV_"/>
+		<result property = "strIntervaloCambioContrasenia" column = "INTERVALOCAMBIOCONTRASENIA_"/>
+		<result property = "strPeriodoAntApertLlamada" column = "PERIODOANTAPERTLLAMADA_"/>
+		
+		<result property = "strEjecutivoAprobar" column = "EJECUTIVOAPROBADOR"/>
+		<result property = "strContrasenia" column = "CONTRASENIA"/>
+		<result property = "strJustificacionNoCambio" column = "JUSTIFICACIONNOCAMBIO"/>
+		
+		<result property = "iUsuarioFuncional" column = "USUARIOFUNCIONAL"/>
+		<result property = "iCambioContraseniaAuto" column = "CAMBIOCONTRASENIAAUTO"/>
+		<result property = "iContraseniaCambiable" column = "CONTRASENIACAMBIABLE"/>
+		<result property = "iVisibilidad" column = "VISIBILIDAD"/>
+		<result property = "iTimeApoyo" column = "TIMEAPOYO"/>
+		<result property = "iContraseniaServ" column = "CONTRASENIASERV"/>
+		<result property = "iIntervaloCambioContrasenia" column = "INTERVALOCAMBIOCONTRASENIA"/>
+		<result property = "iPeriodoAntApertLlamada" column = "PERIODOANTAPERTLLAMADA"/>
+		<result property = "strJustificacionCompartir" column = "JUSTIFICACIONCOMPARTIR"/>
+		<result property = "strCriterioAprobar" column = "CRITERIOAPROBAR"/>
+		<result property = "iCambioPeriodo" column = "CAMBIOPERIODO"/>
+		<result property = "iTipoAccion" column = "TIPOACCION"/>
+		<result property = "strUsuarioC" column = "CREADOR"/>
+	    <result property = "strUsuarioM" column = "MODIFICADOR"/>
+	    <result property = "strFechaM" column = "DATEMOD"/>
+   	</resultMap>
+   
+    <select id = "ruatsharedid" resultMap = "ruatsharedidRs" parameterType = "com.pe.ibm.bean.BeanUATSharedId" statementType = "CALLABLE">
+      {call UAT.SP_LISTARSHAREDIDUAT(
+       #{iIdSharedId,javaType=Integer,jdbcType=INTEGER,mode=IN},
+       #{iIdRequerimiento,javaType=Integer,jdbcType=INTEGER,mode=IN}
+      )}
+    </select>
+    
+    <resultMap id = "rmaxresult" type = "com.pe.ibm.bean.BeanParameters">
+	    <result property = "strValor1" column = "WONUM"/>
+		<result property = "strValor2" column = "HOSTNAME"/>
+		<result property = "strValor3" column = "IP"/>
+		<result property = "strValor4" column = "CLIENT"/>
+<!-- 		<result property = "strValor5" column = "NOMBRECLIENTE"/> -->
+   	</resultMap>
+   
+    <select id = "rmax" resultMap = "rmaxresult" parameterType = "com.pe.ibm.bean.BeanParameters">
+      select WONUM,
+       max(case when rownum = 1 Then ALNVALUE end) as CLIENT,
+       max(case when rownum = 2 Then ALNVALUE end) as HOSTNAME,
+       max(case when rownum = 3 Then ALNVALUE end) as IP
+<!--        max(case when rownum = 4 Then ALNVALUE end) as NOMBRECLIENTE -->
+	  from
+	  (
+	  SELECT WONUM,ALNVALUE,
+		rownumber() over (partition by WONUM) as rownum
+		FROM (
+		select WONUM,ALNVALUE
+		  FROM
+		    "MAXIMO"."WORKORDERSPEC"
+		     WHERE WONUM IN (#{strValor1})
+		     AND ASSETATTRID IN ('GSB__12','GSB__15')
+		UNION ALL
+		SELECT WONUM,PLUSPCUSTOMER ALNVALUE FROM "MAXIMO"."WOCHANGE" WHERE WONUM = #{strValor1}
+<!-- 		UNION ALL -->
+<!-- 		SELECT WO.WONUM, PL.NAME ALNVALUE FROM "MAXIMO"."WOCHANGE" WO INNER JOIN  -->
+<!-- 		"MAXIMO"."PLUSPCUSTOMER" PL ON WO.PLUSPCUSTOMER = PL.CUSTOMER WHERE WONUM = #{strValor1}) -->
+		)
+	  )
+	  GROUP BY WONUM
+
+    </select>
+    
+    <resultMap id = "rmaxattachmentresult" type = "com.pe.ibm.bean.BeanParameters">
+	    <result property = "strValor1" column = "DESCRIPTION"/>
+	    <result property = "strValor2" column = "DESCRIPTIONENCODE"/>
+	    <result property = "strValor3" column = "CHANGEBY"/>
+	    <result property = "strValor4" column = "CHANGEDATE"/>
+   	</resultMap>
+   
+    <select id = "rmaxattachment" resultMap = "rmaxattachmentresult" parameterType = "com.pe.ibm.bean.BeanParameters">
+      SELECT DESCRIPTION, REPLACE(URLNAME,'/doclinks/attachments/','') DESCRIPTIONENCODE, CHANGEBY, CHANGEDATE FROM MAXIMO.DOCINFO WHERE DOCINFOID IN  
+		(SELECT DOCINFOID FROM MAXIMO.DOCLINKS WHERE OWNERID = 
+		(SELECT WORKORDERID FROM MAXIMO.WOCHANGE WHERE WONUM = #{strValor1}))
+    </select>
+    
+    
+    
+    <resultMap id = "rcodintermedioresult" type = "com.pe.ibm.bean.BeanParameters">
+	    <result property = "strValor1" column = "VALOR1"/> <!-- PROPIETARIO -->
+	    <result property = "strValor2" column = "DESCRIPCION"/> <!-- ETIQUETADO -->
+	    <result property = "strValor3" column = "VALOR2"/> <!-- TRIBU --> 
+   	</resultMap>
+   
+    <select id = "rcodintermedio" resultMap = "rcodintermedioresult" parameterType = "com.pe.ibm.bean.BeanParameters">
+    	SELECT DESCRIPCION,VALOR2 FROM OPERACION.OPTIONS WHERE TIPO = 'UAT_CODINTERMEDIARIO' AND VALOR1 = #{strValor1}
+    </select>
+    
+    
+    
+    <resultMap id = "rcodintermedio2result" type = "com.pe.ibm.bean.BeanParameters">
+	    <result property = "strValor1" column = "IDOPTION"/> <!-- COD INTERMEDIARIO -->
+   	</resultMap>
+   
+    <select id = "rcodintermedio2" resultMap = "rcodintermedio2result" parameterType = "com.pe.ibm.bean.BeanParameters">
+    	SELECT IDOPTION FROM OPERACION.OPTIONS WHERE TIPO = 'UAT_GRP_CINTERMEDIARIO' AND DESCRIPCION = (
+		SELECT VALOR1 FROM OPERACION.OPTIONS WHERE TIPO = 'UAT_CODINTERMEDIARIO' AND DESCRIPCION LIKE '%OWNER%' AND VALOR2 = (
+		SELECT VALOR2 FROM OPERACION.OPTIONS WHERE TIPO = 'UAT_TRIBU' AND DESCRIPCION = #{strValor1}
+		))
+    </select>
+    
+    
+    
+
+</mapper>

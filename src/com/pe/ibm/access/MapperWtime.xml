@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="etime">
+
+	<resultMap id="resultHours" type="com.pe.ibm.bean.BeanParameters">
+		<result property="strdate1" column="HORAS" />
+	</resultMap>
+
+	<select id="getHours" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultHours">
+		SELECT 
+			REPLACE(SUBSTR(HORAS,1,5),'.',':') AS HORAS 
+		FROM 
+			OPERACION.HORARIOS 
+		WHERE 
+			HORAS BETWEEN (CASE WHEN TIME(#{strdate1}) <![CDATA[ <= ]]> TIME('03:00:00') THEN TIME('00:00:00') ELSE TIME(#{strdate1}) - 3 HOURS END) AND 
+			(CASE WHEN TIME(#{strdate1}) <![CDATA[ >= ]]> TIME('21:00:00') THEN TIME('24:00:00') ELSE TIME(#{strdate1}) + 3 HOURS END) AND
+			IDTEAM = #{iTeam}
+		UNION
+			SELECT '00:00' FROM SYSIBM.SYSDUMMY1
+	</select>
+	
+	
+<!-- 	VALUES CASE WHEN TIME(#{strdate1}) <![CDATA[ >= ]]> TIME('21:00:00') THEN '00:00' END -->
+	
+	<resultMap id="resultHorarioEmpleado" type="com.pe.ibm.bean.BeanParameters">
+		<result property="strdate2" column="HORARIOINGRESO" />
+		<result property="iTeam" column="IDTEAM" />
+	</resultMap>
+	
+	<select id="getHorarioEmpleado" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultHorarioEmpleado">
+		SELECT VARCHAR_FORMAT(INICIO,'HH24:MI:SS') HORARIOINGRESO, IDTEAM FROM OPERACION.HORARIOEMPLEADOV2 WHERE IDEMPLEADO = (SELECT IDEMPLEADO FROM OPERACION.EMPLEADO WHERE IDLOGIN = #{strIdLogin} AND IDTEAM = #{iTeam} FETCH FIRST 1 ROWS ONLY) AND VARCHAR_FORMAT(INICIO,'YYYY-MM-DD') = VARCHAR_FORMAT(CURRENT_TIMESTAMP,'YYYY-MM-DD')
+	</select>
+	
+	
+	<resultMap id="resultUsuario" type="com.pe.ibm.bean.BeanEmpleado">
+		<result property="strNombre" column="NOMBRE"/>
+		<result property="strApPaterno" column="AP_PATERNO"/>
+	</resultMap>
+	
+	<select id="getUsuario" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultUsuario">
+		SELECT NOMBRE, AP_PATERNO FROM OPERACION.EMPLEADO WHERE IDLOGIN = #{strIdLogin} AND IDTEAM = #{iTeam} FETCH FIRST 1 ROWS ONLY
+	</select>
+	
+	<resultMap id="resultUsuariosConectados" type="com.pe.ibm.bean.BeanParameters">
+		<result property="iIdEmpleado" column="IDEMPLEADO"/>
+		<result property="strNombre1" column="NOMBRE"/>
+		<result property="strdate1" column="FECHA_E"/>
+		<result property="strdate2" column="HORA_E"/>
+		<result property="strIdLogin" column="IDLOGIN"/>
+		<result property="strValor1" column="AREA"/>
+	</resultMap>
+	
+	<select id="getUsuariosConectados" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultUsuariosConectados">
+		SELECT 
+		A.IDEMPLEADO, A.NOMBRE NOMBRE, DATE(B.FECHA_E) FECHA_E, TIME(B.FECHA_E) HORA_E, IDLOGIN, (SELECT DESCRIPCION FROM OPERACION.OPTIONS WHERE IDOPTION = A.IDAREA) AREA
+		FROM 
+		OPERACION.EMPLEADO A LEFT JOIN OPERACION.REG B ON A.IDEMPLEADO = B.IDEMPLEADO 
+		WHERE 
+		B.IDTEAM = #{iTeam} AND B.FECHA_S IS NULL AND B.FECHA_E IS NOT NULL 
+		ORDER BY FECHA_E DESC
+		FETCH FIRST 200 ROWS ONLY
+	</select>
+	
+	<resultMap id="resultUsuarioConectado" type="com.pe.ibm.bean.BeanEmpleado">
+		<result property="iIdEmpleado" column="IDEMPLEADO"/>
+		<result property="strNombre" column="NOMBRE"/>
+		<result property="strApPaterno" column="AP_PATERNO"/>
+	</resultMap>
+	
+	<select id="getUsuarioConectado" parameterType="com.pe.ibm.bean.BeanParameters" resultMap="resultUsuarioConectado">
+		SELECT 
+		A.IDEMPLEADO, A.NOMBRE NOMBRE, A.AP_PATERNO AP_PATERNO  
+		FROM 
+		OPERACION.EMPLEADO A LEFT JOIN OPERACION.REG B ON A.IDEMPLEADO = B.IDEMPLEADO 
+		WHERE 
+		B.IDTEAM = #{iTeam} AND A.IDLOGIN = #{strIdLogin} AND B.FECHA_S IS NULL AND B.FECHA_E IS NOT NULL 
+		ORDER BY FECHA_E ASC
+		FETCH FIRST 1 ROWS ONLY
+	</select>
+	
+    <insert id="saveRegIn2" parameterType="com.pe.ibm.bean.BeanParameters">
+    	INSERT INTO OPERACION.REG(IDEMPLEADO,HORARIO_E,FECHA_E,IDTEAM,OBS,IP_ENTRADA,SO_ENTRADA,BROWSER_ENTRADA,HOSTNAME,IDEMPLEADOREG)
+		VALUES (
+		(SELECT IDEMPLEADO FROM OPERACION.EMPLEADO WHERE IDLOGIN = #{strIdLogin} AND IDTEAM = #{iTeam} FETCH FIRST 1 ROWS ONLY),
+		(SELECT VARCHAR_FORMAT(INICIO,'HH24:MI:SS')
+		FROM OPERACION.HORARIOEMPLEADOV2 
+		WHERE ESTADO = 1 AND IDEMPLEADO = 
+			(SELECT IDEMPLEADO 
+			FROM OPERACION.EMPLEADO 
+			WHERE ESTADO = 1 AND IDLOGIN = #{strIdLogin} AND IDTEAM = #{iTeam} FETCH FIRST 1 ROWS ONLY) 
+		AND VARCHAR_FORMAT(INICIO,'YYYY-MM-DD') = VARCHAR_FORMAT(CURRENT_TIMESTAMP,'YYYY-MM-DD') FETCH FIRST 1 ROWS ONLY),
+		#{strdate1},
+		#{iTeam},
+		#{strObs},
+		#{strIp},
+    	#{strSo},
+    	#{strBrowser},
+    	#{strHostname},
+    	#{iIdEmpleado})
+    </insert>
+    
+    <insert id="saveRegIn" parameterType="com.pe.ibm.bean.BeanParameters">
+    	INSERT INTO OPERACION.REG(IDEMPLEADO,FECHA_E,HORARIO_E,IDTEAM,OBS,IP_ENTRADA,SO_ENTRADA,BROWSER_ENTRADA,HOSTNAME,IDEMPLEADOREG)
+    	VALUES(
+    	(SELECT IDEMPLEADO FROM OPERACION.EMPLEADO WHERE IDLOGIN = #{strIdLogin} AND IDTEAM = #{iTeam} FETCH FIRST 1 ROWS ONLY),
+    	#{strdate1},
+    	#{strdate2},
+    	#{iTeam},
+    	#{strObs},
+    	#{strIp},
+    	#{strSo},
+    	#{strBrowser},
+    	#{strHostname},
+    	#{iIdEmpleado})
+    </insert>
+    
+    <update id="updateRegOut" parameterType="com.pe.ibm.bean.BeanParameters">
+    	UPDATE OPERACION.REG SET 
+    		FECHA_S = #{strdate1} 
+    	WHERE 
+    		IDEMPLEADO = (SELECT IDEMPLEADO FROM OPERACION.EMPLEADO WHERE IDLOGIN = #{strIdLogin} AND IDTEAM = #{iTeam} FETCH FIRST 1 ROWS ONLY) AND 
+    		FECHA_S IS NULL AND
+    		IDTEAM = #{iTeam}
+    </update>
+    
+     <!-- OBTENER FECHA DE ENTRADA Y SALIDA DEL USUARIO "strNombre1" AS EMAIL_EMPLEADO --> 
+	<resultMap id="entradafec" type="com.pe.ibm.bean.BeanParameters">
+		<result property="iValor1" column="IDEMPLEADO" />
+		<result property="strValor2" column="EMAIL_EMPLEADO" />	  	
+		<result property="strdateE" column="FECHA_E" />
+		
+	</resultMap>
+
+	<select id="obtenerFec"  resultMap="entradafec" parameterType="com.pe.ibm.bean.BeanParameters" >
+		
+		SELECT
+		IDEMPLEADO, 
+		(select e.email from operacion.empleado e where e.idempleado = b.idempleado) AS EMAIL_EMPLEADO,		
+		FECHA_E 	
+		FROM OPERACION.REG b
+		WHERE IDTEAM in(${strValor1}) 
+		AND IDEMPLEADO in (${strValor2})
+		AND FECHA_S is NULL
+		ORDER BY IDEMPLEADO ASC
+		
+	</select>
+    
+	
+   
+    
+    
+
+</mapper>
